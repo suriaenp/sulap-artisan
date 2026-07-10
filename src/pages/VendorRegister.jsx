@@ -19,8 +19,8 @@ const STEPS = ['', 'Business details', 'Contact & logistics', 'Product photos', 
 const PROGRESS = ['', '25%', '50%', '75%', '100%'];
 
 export default function VendorRegister() {
-  const { state, dispatch, set, showToast } = useStore();
-  const { regStep, selectedCat, tcAccepted, tcScrolled, content, rf, vendors } = state;
+  const { state, dispatch, set, showToast, logActivity } = useStore();
+  const { regStep, selectedCat, tcAccepted, tcScrolled, content, rf, vendors, settings, regResult } = state;
   const termsRef = useRef(null);
   const upd = (k, val) => set({ rf: { ...rf, [k]: val } });
 
@@ -38,6 +38,7 @@ export default function VendorRegister() {
     if (!tcAccepted) { showToast('Please accept the market terms first', 'info'); return; }
 
     const cat = CATS.find(c => c.id === selectedCat);
+    const autoApproved = !!settings.autoApprove;
     const newVendor = {
       id: 'v' + Date.now(),
       business: rf.business.trim(),
@@ -48,13 +49,15 @@ export default function VendorRegister() {
       ig: rf.ig.trim(), fb: rf.fb.trim(), tiktok: rf.tiktok.trim(),
       plate: rf.plate.trim(),
       regDate: fmtShort(new Date()),
-      status: 'pending',
+      status: autoApproved ? 'approved' : 'pending',
       power: rf.power.trim() || 'None',
       photos: rf.photos,
       desc: rf.desc.trim(),
     };
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
-    set({ regStep: 5, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 } });
+    logActivity(newVendor.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
+    if (autoApproved) logActivity('Admin', `auto-approved ${newVendor.business} as a vendor.`, { icon: 'check', tint: '#F8E9EE' });
+    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 } });
   };
 
   const handleTermsScroll = (e) => {
@@ -75,9 +78,13 @@ export default function VendorRegister() {
         <div style={{ width:84, height:84, borderRadius:'50%', background:'#E8F5F0', display:'flex', alignItems:'center', justifyContent:'center' }}>
           <Icon name="check" size={42} color="#2D6A4F" />
         </div>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:27, fontWeight:600, color:'#1C1A17', marginTop:24 }}>We've received your application</div>
-        <div style={{ fontSize:14, color:'#6B6560', marginTop:10, lineHeight:1.55, maxWidth:290 }}>Thank you for applying to become a Sulap Artisan vendor. Our team will review your application — if you're selected, you'll receive a confirmation email with next steps.</div>
-        <button onClick={() => set({ view:'public', pubScreen:'home', vScreen:'login' })} style={{ marginTop:30, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:'15px 40px', cursor:'pointer', boxShadow:'0 4px 12px rgba(166,54,78,0.22)' }}>Back to home</button>
+        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:27, fontWeight:600, color:'#1C1A17', marginTop:24 }}>{regResult === 'approved' ? "You're in!" : "We've received your application"}</div>
+        <div style={{ fontSize:14, color:'#6B6560', marginTop:10, lineHeight:1.55, maxWidth:290 }}>
+          {regResult === 'approved'
+            ? "Your vendor account has been auto-approved — you can sign in to the Vendor Portal right away to apply for markets."
+            : "Thank you for applying to become a Sulap Artisan vendor. Our team will review your application — if you're selected, you'll receive a confirmation email with next steps."}
+        </div>
+        <button onClick={() => set({ view:'public', pubScreen:'home', vScreen:'login', regResult:null })} style={{ marginTop:30, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:'15px 40px', cursor:'pointer', boxShadow:'0 4px 12px rgba(166,54,78,0.22)' }}>Back to home</button>
       </div>
     );
   }

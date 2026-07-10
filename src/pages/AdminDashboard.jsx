@@ -41,8 +41,9 @@ function Pager({ total, perPage, page, onPage }) {
 }
 
 export default function AdminDashboard() {
-  const { state, set, dispatch, showToast, closeModals } = useStore();
-  const { aTab, events, vendors, apps, payments, deposits, offenses, eventPhotos, parking, passes, cats, content, settings, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
+  const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
+  const { aTab, events, vendors, apps, payments, deposits, offenses, eventPhotos, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
+  const [showRejected, setShowRejected] = useState(false);
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
@@ -68,6 +69,7 @@ export default function AdminDashboard() {
   const pagedPass    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pendingVendors = vendors.filter(v => v.status === 'pending');
   const approvedVendors = vendors.filter(v => v.status === 'approved' || v.status === 'suspended');
+  const rejectedVendors = vendors.filter(v => v.status === 'rejected');
   const pagedVendors = pendingVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedVendorList = approvedVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
@@ -167,13 +169,40 @@ export default function AdminDashboard() {
                     <Icon name="eye" size={14} color="#A6364E"/>View details
                   </button>
                   <div style={{ flex:1 }}/>
-                  <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); showToast('Vendor approved','check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
-                  <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'rejected'}:x)}); showToast('Vendor rejected','x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
+                  <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F8E9EE'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
+                  <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
                 </div>
               </div>
             ))}
           </div>
           <Pager total={pendingVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          {rejectedVendors.length > 0 && (
+            <div style={{ marginTop:22, paddingTop:16, borderTop:'1px solid #efe7dc' }}>
+              <button onClick={()=>setShowRejected(s=>!s)} style={{ background:'none', border:'none', color:'#A09890', fontSize:12, fontWeight:600, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <Icon name={showRejected?'x':'eye'} size={13} color="#A09890"/>
+                {showRejected ? 'Hide' : 'Show'} {rejectedVendors.length} rejected application{rejectedVendors.length>1?'s':''}
+              </button>
+              {showRejected && (
+                <div style={{ display:'flex', flexDirection:'column', gap:11, marginTop:13 }}>
+                  {rejectedVendors.map(v => (
+                    <div key={v.id} style={{ background:'#FBF7F1', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:15, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                          <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
+                        </div>
+                        <Badge status={v.status}/>
+                      </div>
+                      <div style={{ fontSize:11.5, color:'#A09890', marginTop:6 }}>Registered {v.regDate}</div>
+                      <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'#FEF8EC'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                        <Icon name="pencil" size={13} color="#A6364E"/>Reconsider — move back to pending
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -278,6 +307,7 @@ export default function AdminDashboard() {
                 const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:d, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', img:'linear-gradient(135deg,#C75C84,#A6364E)' };
                 dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
                 set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:''}});
+                logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'#E8F5F0'});
                 showToast('Event created','tent');
               }} className="cta" style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Create event</button>
             </div>
@@ -342,8 +372,8 @@ export default function AdminDashboard() {
                       <Icon name="eye" size={14} color="#A6364E"/>View &amp; share booth
                     </button>
                     <div style={{ flex:1 }}/>
-                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); showToast('Application approved','check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
-                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'rejected'}:x)}); showToast('Application rejected','x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
+                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'#F8E9EE'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
+                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'x', tint:'#FDEEEC'}); showToast('Application rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
                   </div>
                 </div>
               );
@@ -602,7 +632,7 @@ export default function AdminDashboard() {
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14, display:'flex', gap:9 }}>
             <input value={state.newCat} onChange={e=>set({newCat:e.target.value})} placeholder="New category name" style={{ flex:1, border:'1px solid #e3d8ca', background:'#FAF8F5', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
-            <button onClick={()=>{ const n=state.newCat.trim(); if(!n) return; dispatch({type:'MERGE_CATS',payload:[...cats,{id:'c'+Date.now(),name:n}]}); set({newCat:''}); showToast('Category added','check'); }} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
+            <button onClick={()=>{ const n=state.newCat.trim(); if(!n) return; dispatch({type:'MERGE_CATS',payload:[...cats,{id:'c'+Date.now(),name:n}]}); set({newCat:''}); logActivity('Admin', `added the "${n}" category.`, {icon:'folder', tint:'#F8E9EE'}); showToast('Category added','check'); }} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
           </div>
           <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:14 }}>
             {cats.map(c => (
@@ -661,13 +691,10 @@ export default function AdminDashboard() {
             ))}
           </div>
           <div style={{ display:'flex', flexDirection:'column' }}>
-            {[
-              { who:'Admin',        what:'approved Nutmeg & Clay as a vendor.',           when:'Today 10:42 AM', tint:'#F8E9EE', icon:'check',    type:'admin' },
-              { who:'Borneo Brews', what:'submitted a vendor application.',                when:'Today 9:15 AM',  tint:'#FEF8EC', icon:'pen',      type:'vendor' },
-              { who:'Admin',        what:'created the Harvest Night Market event.',        when:'Yesterday 4:30 PM', tint:'#E8F5F0', icon:'tent',  type:'admin' },
-              { who:'Rattan Republic',what:'applied for Borneo Makers Fair.',             when:'Yesterday 2:18 PM', tint:'#F8E9EE', icon:'clipboard', type:'vendor' },
-              { who:'Admin',        what:'updated deposit record for Kinabalu Kopi.',      when:'28 Jun 11:00 AM', tint:'#EEF1FB', icon:'wallet',  type:'admin' },
-            ].filter(a => actTab==='all' || a.type===actTab).map((a,i,arr) => (
+            {activity.filter(a => actTab==='all' || a.type===actTab).length === 0 && (
+              <div style={{ fontSize:13, color:'#A09890', textAlign:'center', padding:'20px 0' }}>No activity yet.</div>
+            )}
+            {activity.filter(a => actTab==='all' || a.type===actTab).map((a,i,arr) => (
               <div key={i} style={{ display:'flex', gap:13 }}>
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
                   <div style={{ width:32, height:32, borderRadius:'50%', background:a.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -787,6 +814,7 @@ export default function AdminDashboard() {
                 if(!added.length){ showToast('Select at least one vendor first','info'); return; }
                 dispatch({type:'MERGE_OFFENSES',payload:[...offenses,...added]});
                 set({compSel:{}});
+                logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${curEv.name}.`, {icon:'shield', tint:'#F8E9EE'});
                 showToast(`${added.length} offence${added.length>1?'s':''} logged`,'shield');
               }} className="cta" style={{ marginTop:14, width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>
                 Log selected offences for {curEv.name}
@@ -855,7 +883,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize:12, color:'#A09890', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
               <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>
             </div>
-            <button onClick={()=>{ set({content:{...state.cf},cf:null}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
+            <button onClick={()=>{ set({content:{...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'#F8E9EE'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
           </div>
         </div>
       )}

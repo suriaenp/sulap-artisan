@@ -103,3 +103,11 @@ export const OFFENSE_TYPES = {
 };
 
 export const CURRENT_VENDOR_ID = 'v1';
+
+export const INITIAL_ACTIVITY = [
+  { who:'Admin',        what:'approved Nutmeg & Clay as a vendor.',           when:'28 Jun 10:42 AM', tint:'#F8E9EE', icon:'check',    type:'admin' },
+  { who:'Borneo Brews', what:'submitted a vendor application.',                when:'28 Jun 9:15 AM',  tint:'#FEF8EC', icon:'pen',      type:'vendor' },
+  { who:'Admin',        what:'created the Harvest Night Market event.',        when:'27 Jun 4:30 PM', tint:'#E8F5F0', icon:'tent',  type:'admin' },
+  { who:'Rattan Republic',what:'applied for Borneo Makers Fair.',             when:'27 Jun 2:18 PM', tint:'#F8E9EE', icon:'clipboard', type:'vendor' },
+  { who:'Admin',        what:'updated deposit record for Kinabalu Kopi.',      when:'28 Jun 11:00 AM', tint:'#EEF1FB', icon:'wallet',  type:'admin' },
+];

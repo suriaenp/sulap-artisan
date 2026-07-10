@@ -31,8 +31,8 @@ function SheetHeader({ title, sub, onClose }) {
 
 // ── Vendor Application Detail ─────────────────────────────────────────────────
 export function VendorDetailModal() {
-  const { state, dispatch, set, showToast } = useStore();
-  const { vendorDetailId, vendors } = state;
+  const { state, dispatch, set, showToast, logActivity } = useStore();
+  const { vendorDetailId, vendors, settings } = state;
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
   const tileColors = ['linear-gradient(135deg,#F0D8DD,#C75C84)','linear-gradient(135deg,#cdbBa0,#8B6F4E)','linear-gradient(135deg,#d8c0a8,#9c7a52)'];
@@ -60,8 +60,8 @@ export function VendorDetailModal() {
       </div>
       {v.status === 'pending' && (
         <div style={{ display:'flex', gap:10, marginTop:20 }}>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); showToast('Vendor approved','check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'rejected'}:x)}); showToast('Vendor rejected','x'); close(); }} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F8E9EE'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); close(); }} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
         </div>
       )}
       {v.status === 'approved' && (
@@ -70,7 +70,8 @@ export function VendorDetailModal() {
             onClick={()=>{
               if (!window.confirm(`Suspend ${v.business}? They will lose access to apply for markets until reinstated.`)) return;
               dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'suspended'}:x)});
-              showToast('Vendor suspended','shield');
+              logActivity('Admin', `suspended ${v.business}.`, {icon:'shield', tint:'#F2EDE6'});
+              showToast('Vendor suspended'+(settings.emailAlerts?' · vendor emailed':''),'shield');
               close();
             }}
             style={{ background:'none', border:'none', color:'#A09890', fontSize:11.5, fontWeight:600, padding:'4px 8px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}
@@ -81,7 +82,7 @@ export function VendorDetailModal() {
       )}
       {v.status === 'suspended' && (
         <div style={{ marginTop:20 }}>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); showToast('Vendor reinstated','check'); close(); }} style={{ width:'100%', background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reinstate vendor</button>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `reinstated ${v.business}.`, {icon:'check', tint:'#E8F5F0'}); showToast('Vendor reinstated'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ width:'100%', background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reinstate vendor</button>
         </div>
       )}
     </Sheet>
@@ -140,7 +141,7 @@ export function AppDetailModal() {
 
 // ── Vendor Apply Modal ────────────────────────────────────────────────────────
 export function ApplyModal() {
-  const { state, dispatch, set, showToast } = useStore();
+  const { state, dispatch, set, showToast, logActivity } = useStore();
   const { showApplyModal, applyEventId, applyShare, applyPartners, applyPartnerSearch, apps, events, vendors } = state;
   if (!showApplyModal || !applyEventId) return null;
   const ev = events.find(e=>e.id===applyEventId)||{};
@@ -159,6 +160,7 @@ export function ApplyModal() {
     const newApp = { id:'a'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners] };
     dispatch({type:'MERGE_APPS',payload:[...apps,newApp]});
     set({showApplyModal:false,applyEventId:null});
+    logActivity(me.business, `applied for ${ev.name}.`, {icon:'clipboard', tint:'#F8E9EE', type:'vendor'});
     showToast('Application submitted','mail');
   };
 
@@ -308,7 +310,7 @@ export function PayModal() {
 
 // ── Deposit Modal ─────────────────────────────────────────────────────────────
 export function DepositModal() {
-  const { state, dispatch, set, showToast } = useStore();
+  const { state, dispatch, set, showToast, logActivity } = useStore();
   const { depModalVendor, depf, vendors } = state;
   if (!depModalVendor) return null;
   const v = vendors.find(x=>x.id===depModalVendor)||{};
@@ -317,6 +319,7 @@ export function DepositModal() {
   const save = () => {
     dispatch({type:'MERGE_DEPOSITS',payload:{[depModalVendor]:{...depf}}});
     set({depModalVendor:null});
+    logActivity('Admin', `updated deposit record for ${v.business}.`, {icon:'wallet', tint:'#EEF1FB'});
     showToast('Deposit record saved','check');
   };
   const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' };

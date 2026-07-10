@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useRef } from 'reac
 import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS,
-  INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT,
+  INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
 } from '../data/mockData';
 
 const INIT = {
@@ -14,6 +14,7 @@ const INIT = {
   vTab: 'events',
   aTab: 'overview',
   regStep: 1,
+  regResult: null,
   selectedCat: null,
   tcAccepted: false,
   tcScrolled: false,
@@ -29,6 +30,7 @@ const INIT = {
   passes: INITIAL_PASSES,
   cats: INITIAL_CATS,
   content: INITIAL_CONTENT,
+  activity: INITIAL_ACTIVITY,
   settings: { autoApprove:false, publicEvents:true, emailAlerts:true },
   // modals / drawers
   vendorDetailId: null,
@@ -80,6 +82,7 @@ function reducer(state, action) {
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
     case 'MERGE_CATS': return { ...state, cats: action.payload };
+    case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
     default: return state;
   }
 }
@@ -98,6 +101,12 @@ export function StoreProvider({ children }) {
     toastTimer.current = setTimeout(() => dispatch({ type: 'SET', payload: { toast: null } }), 2400);
   }, []);
 
+  const logActivity = useCallback((who, what, opts = {}) => {
+    const { type = 'admin', icon = 'check', tint = '#F8E9EE' } = opts;
+    const when = 'Today ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    dispatch({ type: 'LOG_ACTIVITY', payload: { who, what, when, tint, icon, type } });
+  }, []);
+
   const closeModals = useCallback(() => set({
     vendorDetailId: null, appDetailId: null, payModalKey: null,
     depModalVendor: null, passModalVendor: null, showApplyModal: false,
@@ -105,7 +114,7 @@ export function StoreProvider({ children }) {
   }), [set]);
 
   return (
-    <StoreContext.Provider value={{ state, dispatch, set, showToast, closeModals }}>
+    <StoreContext.Provider value={{ state, dispatch, set, showToast, closeModals, logActivity }}>
       {children}
     </StoreContext.Provider>
   );
