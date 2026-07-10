@@ -16,8 +16,9 @@ Living reference for what's built, what each screen does, and the business rules
 ## Vendor side
 
 ### Vendor Registration (`VendorRegister.jsx`)
-4-step form: category → business details → photos/power needs → review & accept market terms.
-- ⚠️ **Known gap: the "Submit application" button does not persist anything.** It doesn't dispatch to the store or create a vendor record — it's UI-only at the moment. The 5 vendors visible everywhere in the admin console are hardcoded seed data (`src/data/mockData.js`), not something created by using this form. This needs to be wired up (likely as part of Phase 2/Supabase) before registration is real.
+4-step form: business details + category + password → contact/social/logistics → product photos → review & accept market terms.
+- **Fully wired (as of 2026-07-11):** all fields are controlled, bound to `state.rf`. Step 1 validates business name/owner/email/phone, category selection, and an 8+ char password before advancing. Submitting on step 4 requires terms acceptance, then dispatches a new vendor record (`status: 'pending'`, `regDate` = today) into the store — it shows up immediately in the admin's Vendor Applications queue. Photo upload is a mock tile counter (up to 8), not real file upload.
+- Still mock/local only — nothing is persisted server-side yet (no Supabase), so registrations don't survive a page refresh.
 
 ### Vendor Login (`VendorLogin.jsx`)
 Mock login — no real auth yet, goes straight to Vendor Dashboard as a hardcoded "current vendor" (`CURRENT_VENDOR_ID = 'v1'` in `mockData.js`).
@@ -87,8 +88,7 @@ pending ──approve──► approved ──suspend──► suspended
 
 ## Known gaps / not wired yet
 
-- **Vendor registration form doesn't persist** — "Submit application" doesn't create a vendor record in the store. All 5 vendors in the admin console are seed data.
-- **"Auto-approve vendors" and "Email alerts" settings toggles have no effect** — UI exists, logic doesn't.
+- **"Auto-approve vendors" and "Email alerts" settings toggles have no effect** — UI exists, logic doesn't. (Now that registration actually creates a vendor record, wiring "Auto-approve" to skip straight to `status: 'approved'` on submit would be a natural next step if wanted.)
 - **Activity tab is static/fake** — not a real log of admin/vendor actions.
 - **No way to un-reject a rejected vendor**, and rejected vendors don't appear in either Vendor Applications or Vendor Listing (they become invisible once rejected).
 - **No real authentication** for either vendor or admin login — both are mocked, always logging in as fixed accounts.
