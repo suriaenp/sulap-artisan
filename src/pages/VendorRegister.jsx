@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import Icon from '../components/Icon';
 import { useStore } from '../lib/store';
+import { fmtShort } from '../lib/helpers';
 
 const CATS = [
   { id:'fnb',      icon:'utensils', name:'Food & Beverage',                desc:'Coffee, drinks, cakes, cookies, desserts, snacks, meals, packaged food' },
@@ -18,18 +19,42 @@ const STEPS = ['', 'Business details', 'Contact & logistics', 'Product photos', 
 const PROGRESS = ['', '25%', '50%', '75%', '100%'];
 
 export default function VendorRegister() {
-  const { state, set, showToast } = useStore();
-  const { regStep, selectedCat, tcAccepted, tcScrolled, content } = state;
+  const { state, dispatch, set, showToast } = useStore();
+  const { regStep, selectedCat, tcAccepted, tcScrolled, content, rf, vendors } = state;
   const termsRef = useRef(null);
+  const upd = (k, val) => set({ rf: { ...rf, [k]: val } });
 
   const back = () => {
     if (regStep > 1) set({ regStep: regStep - 1 });
     else set({ vScreen: 'login' });
   };
   const next = () => {
+    if (regStep === 1) {
+      if (!rf.business.trim() || !rf.owner.trim() || !rf.email.trim() || !rf.phone.trim()) { showToast('Please fill in all business details', 'info'); return; }
+      if (!selectedCat) { showToast('Please select a product category', 'info'); return; }
+      if (!rf.password || rf.password.length < 8) { showToast('Password must be at least 8 characters', 'info'); return; }
+    }
     if (regStep < 4) { set({ regStep: regStep + 1 }); return; }
     if (!tcAccepted) { showToast('Please accept the market terms first', 'info'); return; }
-    set({ regStep: 5 });
+
+    const cat = CATS.find(c => c.id === selectedCat);
+    const newVendor = {
+      id: 'v' + Date.now(),
+      business: rf.business.trim(),
+      owner: rf.owner.trim(),
+      category: cat ? cat.name : 'Others',
+      email: rf.email.trim(),
+      phone: rf.phone.trim(),
+      ig: rf.ig.trim(), fb: rf.fb.trim(), tiktok: rf.tiktok.trim(),
+      plate: rf.plate.trim(),
+      regDate: fmtShort(new Date()),
+      status: 'pending',
+      power: rf.power.trim() || 'None',
+      photos: rf.photos,
+      desc: rf.desc.trim(),
+    };
+    dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
+    set({ regStep: 5, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 } });
   };
 
   const handleTermsScroll = (e) => {
@@ -79,10 +104,10 @@ export default function VendorRegister() {
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Business details</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Tell us about your craft business.</div>
           <div className="form-grid" style={{ marginTop:20 }}>
-            <div><label style={lbl}>Business name</label><input placeholder="e.g. Nutmeg & Clay" style={inp} /></div>
-            <div><label style={lbl}>Owner name</label><input placeholder="Full name" style={inp} /></div>
-            <div><label style={lbl}>Email</label><input placeholder="you@email.com" style={inp} /></div>
-            <div><label style={lbl}>Phone</label><input placeholder="01x-xxxxxxx" style={inp} /></div>
+            <div><label style={lbl}>Business name</label><input value={rf.business} onChange={e=>upd('business',e.target.value)} placeholder="e.g. Nutmeg & Clay" style={inp} /></div>
+            <div><label style={lbl}>Owner name</label><input value={rf.owner} onChange={e=>upd('owner',e.target.value)} placeholder="Full name" style={inp} /></div>
+            <div><label style={lbl}>Email</label><input value={rf.email} onChange={e=>upd('email',e.target.value)} placeholder="you@email.com" style={inp} /></div>
+            <div><label style={lbl}>Phone</label><input value={rf.phone} onChange={e=>upd('phone',e.target.value)} placeholder="01x-xxxxxxx" style={inp} /></div>
             <div className="span2">
               <div style={lbl}>Product category</div>
               <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
@@ -101,10 +126,10 @@ export default function VendorRegister() {
                 })}
               </div>
             </div>
-            <div className="span2"><label style={lbl}>Product description</label><textarea placeholder="What do you make and sell?" style={{ ...inp, minHeight:74, resize:'none' }} /></div>
+            <div className="span2"><label style={lbl}>Product description</label><textarea value={rf.desc} onChange={e=>upd('desc',e.target.value)} placeholder="What do you make and sell?" style={{ ...inp, minHeight:74, resize:'none' }} /></div>
             <div className="span2">
               <label style={lbl}>Create a password</label>
-              <input type="password" placeholder="Min. 8 characters" style={inp} />
+              <input type="password" value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder="Min. 8 characters" style={inp} />
               <div style={{ fontSize:11, color:'#A09890', marginTop:6 }}>You'll use this to sign in to your portal later.</div>
             </div>
           </div>
@@ -118,20 +143,20 @@ export default function VendorRegister() {
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Help shoppers find you and help us plan the day.</div>
           <div className="reg-narrow" style={{ marginTop:20, display:'flex', flexDirection:'column', gap:15 }}>
             <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>Social media</div>
-            {[['instagram','@instagram_handle'],['facebook','Facebook page name or URL'],['camera','@tiktok_handle']].map(([icon,ph]) => (
+            {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['camera','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
               <div key={icon} style={{ display:'flex', alignItems:'center', gap:11, border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'0 14px' }}>
                 <Icon name={icon} size={18} color="#A6364E" />
-                <input placeholder={ph} style={{ flex:1, border:'none', padding:'13px 0', fontSize:14.5, outline:'none', background:'transparent' }} />
+                <input value={rf[key]} onChange={e=>upd(key,e.target.value)} placeholder={ph} style={{ flex:1, border:'none', padding:'13px 0', fontSize:14.5, outline:'none', background:'transparent' }} />
               </div>
             ))}
             <div>
               <label style={lbl}>Car plate number</label>
-              <input placeholder="e.g. SAB 1234 B" style={{ ...inp, textTransform:'uppercase' }} />
+              <input value={rf.plate} onChange={e=>upd('plate',e.target.value.toUpperCase())} placeholder="e.g. SAB 1234 B" style={{ ...inp, textTransform:'uppercase' }} />
               <div style={{ fontSize:11, color:'#A09890', marginTop:6 }}>Used to assign your parking serial on market day.</div>
             </div>
             <div>
               <label style={lbl}>Power supply needs</label>
-              <textarea placeholder="List machines + voltage, e.g. 1× coffee machine (240V, 13A), 1× chest freezer" style={{ ...inp, minHeight:84, resize:'none' }} />
+              <textarea value={rf.power} onChange={e=>upd('power',e.target.value)} placeholder="List machines + voltage, e.g. 1× coffee machine (240V, 13A), 1× chest freezer" style={{ ...inp, minHeight:84, resize:'none' }} />
             </div>
           </div>
         </div>
@@ -142,19 +167,20 @@ export default function VendorRegister() {
         <div style={{ padding:20 }}>
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Product photos</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Show your best work — this appears on your vendor profile.</div>
-          <div style={{ marginTop:20, border:'2px dashed #d8c6b2', borderRadius:18, background:'#FBF7F1', padding:'30px 20px', textAlign:'center', cursor:'pointer' }}>
+          <div onClick={()=>{ if (rf.photos < 8) upd('photos', rf.photos + 1); else showToast('Up to 8 photos','info'); }} style={{ marginTop:20, border:'2px dashed #d8c6b2', borderRadius:18, background:'#FBF7F1', padding:'30px 20px', textAlign:'center', cursor:'pointer' }}>
             <Icon name="camera" size={32} color="#A6364E" />
             <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17', marginTop:11 }}>Tap to upload photos</div>
             <div style={{ fontSize:12, color:'#A09890', marginTop:4 }}>JPG or PNG · up to 8 images</div>
           </div>
-          <div style={{ display:'flex', gap:9, marginTop:16 }}>
-            {[['linear-gradient(135deg,#F0D8DD,#C75C84)','×'],['linear-gradient(135deg,#cdbBa0,#8B6F4E)',''],['linear-gradient(135deg,#d8c0a8,#9c7a52)','']].map(([bg,x],i) => (
-              <div key={i} style={{ flex:1, aspectRatio:'1', borderRadius:13, background:bg, position:'relative' }}>
-                {x && <span style={{ position:'absolute', top:5, right:6, background:'rgba(28,26,23,0.45)', color:'#fff', width:20, height:20, borderRadius:'50%', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center' }}>×</span>}
-              </div>
-            ))}
-            <div style={{ flex:1, aspectRatio:'1', borderRadius:13, border:'1.5px solid #e3d8ca', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, color:'#bcae9c' }}>+</div>
-          </div>
+          {rf.photos > 0 && (
+            <div style={{ display:'flex', gap:9, marginTop:16, flexWrap:'wrap' }}>
+              {Array.from({length:rf.photos}).map((_,i) => (
+                <div key={i} style={{ width:'calc(25% - 7px)', aspectRatio:'1', borderRadius:13, background:`linear-gradient(135deg,hsl(${i*35+340},50%,72%),hsl(${i*35+320},45%,52%))`, position:'relative' }}>
+                  <span onClick={e=>{ e.stopPropagation(); upd('photos', rf.photos - 1); }} style={{ position:'absolute', top:5, right:6, background:'rgba(28,26,23,0.45)', color:'#fff', width:20, height:20, borderRadius:'50%', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>×</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div style={{ background:'#E8F5F0', border:'1px solid #cfe9df', borderRadius:12, padding:'13px 14px', marginTop:20, display:'flex', gap:10, alignItems:'flex-start' }}>
             <Icon name="check" size={17} color="#2D6A4F" style={{ marginTop:1 }} />
             <div style={{ fontSize:12.5, color:'#2D6A4F', lineHeight:1.45 }}>One more step — review the market terms, then submit your application for our team to review.</div>

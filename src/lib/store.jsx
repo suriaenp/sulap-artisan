@@ -45,6 +45,7 @@ const INIT = {
   pf: {},
   payf: {},
   depf: {},
+  rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 },
   ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'' },
   cf: null,
   newCat: '',
