@@ -14,6 +14,7 @@ const VENDOR_TABS = [
 const ADMIN_TABS = [
   { id:'overview',    label:'Overview',         icon:'bars' },
   { id:'vendors',     label:'Vendor Applications', icon:'users' },
+  { id:'vendorList',  label:'Vendor Listing',   icon:'file' },
   { id:'events',      label:'Events',           icon:'tent' },
   { id:'apps',        label:'Event Applications', icon:'clipboard' },
   { id:'payments',    label:'Payments',         icon:'receipt' },

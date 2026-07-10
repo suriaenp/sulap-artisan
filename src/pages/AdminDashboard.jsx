@@ -8,6 +8,7 @@ import { OFFENSE_TYPES, CURRENT_VENDOR_ID } from '../data/mockData';
 const ADMIN_TABS = [
   { id:'overview',   label:'Overview',            icon:'bars' },
   { id:'vendors',    label:'Vendor Applications', icon:'users' },
+  { id:'vendorList', label:'Vendor Listing',      icon:'file' },
   { id:'events',     label:'Events',              icon:'tent' },
   { id:'apps',       label:'Event Applications',  icon:'clipboard' },
   { id:'payments',   label:'Payments',            icon:'receipt' },
@@ -65,7 +66,10 @@ export default function AdminDashboard() {
   const pagedPark    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPhotos  = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPass    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const pagedVendors = vendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pendingVendors = vendors.filter(v => v.status === 'pending');
+  const approvedVendors = vendors.filter(v => v.status === 'approved' || v.status === 'suspended');
+  const pagedVendors = pendingVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pagedVendorList = approvedVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -128,15 +132,20 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* ── Vendor Applications ── */}
+      {/* ── Vendor Applications (new sign-ups awaiting a decision) ── */}
       {aTab === 'vendors' && (
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-            <div style={{ fontSize:13, color:'#6B6560' }}>{vendors.length} registered · <b style={{ color:'#A6364E' }}>{vendors.filter(v=>v.status==='pending').length} pending review</b></div>
+            <div style={{ fontSize:13, color:'#6B6560' }}><b style={{ color:'#A6364E' }}>{pendingVendors.length}</b> awaiting review</div>
             <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
               <Icon name="download" size={14} color="#A6364E"/>Export CSV
             </button>
           </div>
+          {pendingVendors.length === 0 && (
+            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13 }}>
+              No new applications right now.
+            </div>
+          )}
           <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
             {pagedVendors.map(v => (
               <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
@@ -164,7 +173,62 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-          <Pager total={vendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          <Pager total={pendingVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+        </div>
+      )}
+
+      {/* ── Vendor Listing (master list of approved/suspended vendors) ── */}
+      {aTab === 'vendorList' && (
+        <div style={{ padding:'14px 16px 20px' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+            <div style={{ fontSize:13, color:'#6B6560' }}><b style={{ color:'#2D6A4F' }}>{approvedVendors.filter(v=>v.status==='approved').length}</b> approved vendors</div>
+            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+              <Icon name="download" size={14} color="#A6364E"/>Export CSV
+            </button>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+            {pagedVendorList.map(v => {
+              const vOff = offenses.filter(o=>o.vendorId===v.id);
+              const typeCounts = {};
+              vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
+              return (
+                <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:15, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                      <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
+                    </div>
+                    <Badge status={v.status}/>
+                  </div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 14px', marginTop:11, fontSize:11.5, color:'#6B6560' }}>
+                    <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="mail" size={13} color="#A09890"/>{v.email}</span>
+                    <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="phone" size={13} color="#A09890"/>{v.phone}</span>
+                    <span style={{ display:'flex', alignItems:'center', gap:5, color:'#A6364E' }}><Icon name="instagram" size={13} color="#A6364E"/>{v.ig}</span>
+                  </div>
+                  <div style={{ fontSize:11.5, color:'#A09890', marginTop:6 }}>Registered {v.regDate}</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#1C1A17', marginTop:12, marginBottom:6 }}>Compliance</div>
+                  {vOff.length === 0 ? (
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:'#E8F5F0', color:'#2D6A4F' }}>
+                      <span style={{ width:6, height:6, borderRadius:'50%', background:'#2D6A4F' }}/>No offences on record
+                    </span>
+                  ) : (
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                      {Object.entries(typeCounts).map(([type,count]) => {
+                        const ot = OFFENSE_TYPES[type]||{};
+                        return <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label} ×{count}</span>;
+                      })}
+                    </div>
+                  )}
+                  <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
+                    <button onClick={()=>set({vendorDetailId:v.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                      <Icon name="eye" size={14} color="#A6364E"/>View details
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <Pager total={approvedVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
         </div>
       )}
 

@@ -4,11 +4,11 @@ import { useStore } from '../lib/store';
 import { OFFENSE_TYPES, CURRENT_VENDOR_ID } from '../data/mockData';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
-function Sheet({ onClose, children, maxW = 560 }) {
+function Sheet({ onClose, children, maxW = 560, centered = false }) {
   return (
-    <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius:'26px 26px 0 0', padding:'22px 22px 30px', maxHeight:'90%', overflowY:'auto', animation:'modalIn 0.22s ease' }}>
-        <div style={{ width:40, height:4, borderRadius:3, background:'#ddd2c4', margin:'0 auto 16px' }}/>
+    <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems: centered ? 'center' : 'flex-end', justifyContent:'center', padding: centered ? 24 : 0 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius: centered ? 20 : '26px 26px 0 0', padding:'22px 22px 30px', maxHeight:'90%', overflowY:'auto', animation:'modalIn 0.22s ease' }}>
+        {!centered && <div style={{ width:40, height:4, borderRadius:3, background:'#ddd2c4', margin:'0 auto 16px' }}/>}
         {children}
       </div>
     </div>
@@ -35,15 +35,13 @@ export function VendorDetailModal() {
   const { vendorDetailId, vendors } = state;
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
-  const dep = state.deposits[vendorDetailId]||{status:'unpaid'};
   const tileColors = ['linear-gradient(135deg,#F0D8DD,#C75C84)','linear-gradient(135deg,#cdbBa0,#8B6F4E)','linear-gradient(135deg,#d8c0a8,#9c7a52)'];
   const close = () => set({vendorDetailId:null});
   return (
-    <Sheet onClose={close}>
+    <Sheet onClose={close} centered>
       <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close}/>
       <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:12 }}>
         <Badge status={v.status}/>
-        <Badge status={dep.status} style={{ background: dep.status==='paid'?'#E8F5F0':'#FEF8EC', color: dep.status==='paid'?'#2D6A4F':'#B7770D' }}/>
       </div>
       <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:14 }}>{v.desc}</div>
       <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginTop:14, display:'flex', flexDirection:'column', gap:9 }}>
@@ -60,10 +58,32 @@ export function VendorDetailModal() {
       <div style={{ display:'flex', flexWrap:'wrap', gap:9 }}>
         {tileColors.slice(0,v.photos||2).map((bg,i)=><div key={i} style={{ width:96, height:96, borderRadius:12, background:bg }}/>)}
       </div>
-      <div style={{ display:'flex', gap:10, marginTop:20 }}>
-        <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); showToast('Vendor approved','check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
-        <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'rejected'}:x)}); showToast('Vendor rejected','x'); close(); }} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
-      </div>
+      {v.status === 'pending' && (
+        <div style={{ display:'flex', gap:10, marginTop:20 }}>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); showToast('Vendor approved','check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'rejected'}:x)}); showToast('Vendor rejected','x'); close(); }} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
+        </div>
+      )}
+      {v.status === 'approved' && (
+        <div style={{ marginTop:24, paddingTop:14, borderTop:'1px solid #efe7dc', textAlign:'center' }}>
+          <button
+            onClick={()=>{
+              if (!window.confirm(`Suspend ${v.business}? They will lose access to apply for markets until reinstated.`)) return;
+              dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'suspended'}:x)});
+              showToast('Vendor suspended','shield');
+              close();
+            }}
+            style={{ background:'none', border:'none', color:'#A09890', fontSize:11.5, fontWeight:600, padding:'4px 8px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}
+          >
+            Suspend vendor
+          </button>
+        </div>
+      )}
+      {v.status === 'suspended' && (
+        <div style={{ marginTop:20 }}>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); showToast('Vendor reinstated','check'); close(); }} style={{ width:'100%', background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reinstate vendor</button>
+        </div>
+      )}
     </Sheet>
   );
 }
@@ -80,7 +100,7 @@ export function AppDetailModal() {
   const tileColors = ['linear-gradient(135deg,#F0D8DD,#C75C84)','linear-gradient(135deg,#cdbBa0,#8B6F4E)','linear-gradient(135deg,#d8c0a8,#9c7a52)'];
   const close = () => set({appDetailId:null});
   return (
-    <Sheet onClose={close}>
+    <Sheet onClose={close} centered>
       <SheetHeader title={v.business} sub={`${ev.name} · ${v.category}`} onClose={close}/>
       <span style={{ display:'inline-block', marginTop:8 }}><Badge status={a.status}/></span>
       <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:13 }}>{v.desc}</div>

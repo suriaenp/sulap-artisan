@@ -90,6 +90,7 @@ export default function VendorDashboard() {
             const open = !ev.lastApp || new Date(ev.lastApp) >= today;
             const applied = !!myApp;
             const st = myApp?.status;
+            const vendorApproved = me.status === 'approved';
             return (
               <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
                 <div style={{ display:'flex', gap:13, padding:13 }}>
@@ -112,12 +113,13 @@ export default function VendorDashboard() {
                   <button
                     onClick={() => {
                       if (applied) { showToast('You have already applied','info'); return; }
+                      if (!vendorApproved) { showToast('Your vendor registration must be approved before you can apply to markets','lock'); return; }
                       if (!open)   { showToast('Applications closed for this market','lock'); return; }
                       set({ showApplyModal:true, applyEventId:ev.id, applyShare:null, applyPartners:[], applyPartnerSearch:'' });
                     }}
-                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):(open?'#A6364E':'#F2EDE6'), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):(open?'#FAF8F5':'#A09890') }}
+                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):(!vendorApproved?'#F2EDE6':(open?'#A6364E':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):(!vendorApproved?'#A09890':(open?'#FAF8F5':'#A09890')) }}
                   >
-                    {applied ? (st==='approved'?'Approved': st==='rejected'?'Not selected':'Applied') : (open?'Apply to this market':'Applications closed')}
+                    {applied ? (st==='approved'?'Approved': st==='rejected'?'Not selected':'Applied') : (!vendorApproved ? 'Awaiting registration approval' : (open?'Apply to this market':'Applications closed'))}
                   </button>
                 </div>
               </div>

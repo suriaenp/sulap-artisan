@@ -24,6 +24,7 @@ export function badge(status) {
     pending:   ['#FEF8EC', '#B7770D', 'Pending'],
     approved:  ['#E8F5F0', '#2D6A4F', 'Approved'],
     rejected:  ['#FDEEEC', '#B03A2E', 'Rejected'],
+    suspended: ['#F2EDE6', '#8B6F4E', 'Suspended'],
     collected: ['#E8F5F0', '#2D6A4F', 'Collected'],
     returned:  ['#F8E9EE', '#A6364E', 'Returned'],
     paid:      ['#E8F5F0', '#2D6A4F', 'Paid'],
