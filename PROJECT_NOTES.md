@@ -55,11 +55,11 @@ When a vendor applies to an event, they choose solo or shared booth:
 | Event Pictures | Vendor-uploaded product photos (read-only count) + admin can upload additional event photos per vendor, and download a vendor's uploads |
 | Vendor Pass | Physical pass issue/return tracking per vendor (collector name, phone, tags issued/returned, dates) — status: pending → collected → returned |
 | Categories | Add/remove vendor categories; reassign a vendor's category from a dropdown; each category shows its member count |
-| Activity | ⚠️ **Currently hardcoded mock entries, not a live log.** Filterable by All/Admin/Vendor but the 5 entries shown never change — nothing in the app actually writes to this feed yet. |
+| Activity | **Live log (as of 2026-07-11).** Real entries are appended via a `logActivity()` store helper on: vendor approve/reject/suspend/reinstate/reconsider, event application approve/reject, event creation, category add, offence logging, content updates, deposit record updates, and vendor-side registration/event-application submissions. Newest first, filterable by All/Admin/Vendor. Seeded with 5 historical entries on first load. |
 | Vendor Chart | Vendor performance/ranking view |
 | Compliance | Two sub-tabs: **Log offences** (pick an event, tag vendors with an offense type — only vendors with an *approved* application to that event are selectable) and **Vendor review** (per-vendor offense history, grouped by type with counts — this is the same data source that powers the compliance tags shown in Vendor Listing and Event Applications) |
 | Content | Edit public homepage copy (badge text, title, subtitle) and the market terms & conditions text shown at vendor registration step 4 |
-| Settings | Three toggles: **Auto-approve vendors** (⚠️ not wired to anything — flipping it has no effect on the registration flow since registration itself isn't wired either), **Show events publicly**, **Email alerts** (also cosmetic — no actual emails are sent anywhere in this prototype) |
+| Settings | Three toggles: **Auto-approve vendors** (wired as of 2026-07-11 — when on, registration submits directly with `status: 'approved'` instead of `'pending'`, skips the Vendor Applications queue, and shows a "You're in!" confirmation instead of "we'll review it"), **Show events publicly**, **Email alerts** (wired as of 2026-07-11 — when on, vendor status-change toasts append "· vendor emailed"; no real email is sent, this is still a mock signal, not an actual notification system) |
 
 ---
 
@@ -74,7 +74,7 @@ Fixed list admins tag vendors with: Late opening, Early closing, Late payment, P
 4. **Deposit is per-vendor, not per-event**, and auto-attaches to the vendor's first unpaid event invoice.
 5. **Booth sharing** is capped at 3 vendors and restricted to same-tier (F&B/non-F&B) partners.
 6. **Parking ticket entry is time-locked** to the event's actual dates unless manually overridden by admin.
-7. **Suspend is reversible, Reject currently is not (in the UI).** Suspend only appears on already-approved vendors, is a small deliberately low-emphasis link (not a full button) behind a confirm dialog, and sets `status: 'suspended'` — vendor loses event-application access but stays visible in Vendor Listing with a "Reinstate vendor" option. There's no UI to un-reject a rejected vendor yet.
+7. **Suspend and Reject are both reversible.** Suspend only appears on already-approved vendors, is a small deliberately low-emphasis link (not a full button) behind a confirm dialog, and sets `status: 'suspended'` — vendor loses event-application access but stays visible in Vendor Listing with a "Reinstate vendor" option. Rejected vendors are hidden by default under a collapsed "Show N rejected applications" section at the bottom of Vendor Applications, with a "Reconsider" action that moves them back to `'pending'`.
 8. **All application-detail modals (vendor + event) are centered dialogs**, not bottom sheets.
 9. **Events close to applications automatically** once today's date passes the event's `lastApp` date — enforced both on the public home page and inside the vendor dashboard's apply button.
 
@@ -82,18 +82,19 @@ Fixed list admins tag vendors with: Late opening, Early closing, Late payment, P
 
 ```
 pending ──approve──► approved ──suspend──► suspended
-   │                     │                      │
+   │  ▲                  │                      │
+   │  └──reconsider──┐   │                      │
    └──reject──► rejected └────────reinstate─────┘
 ```
+(Auto-approve setting on: registration goes straight to `approved`, bypassing `pending` entirely.)
 
 ## Known gaps / not wired yet
 
-- **"Auto-approve vendors" and "Email alerts" settings toggles have no effect** — UI exists, logic doesn't. (Now that registration actually creates a vendor record, wiring "Auto-approve" to skip straight to `status: 'approved'` on submit would be a natural next step if wanted.)
-- **Activity tab is static/fake** — not a real log of admin/vendor actions.
-- **No way to un-reject a rejected vendor**, and rejected vendors don't appear in either Vendor Applications or Vendor Listing (they become invisible once rejected).
 - **No real authentication** for either vendor or admin login — both are mocked, always logging in as fixed accounts.
+- **"Email alerts" is a mock signal, not real email** — the toast note ("· vendor emailed") is cosmetic confirmation that the setting is respected; no actual email is sent anywhere in this prototype.
+- **"Show events publicly" toggle is still not wired** — flipping it doesn't currently hide events from the public home page.
 
 ## Phase 2 / 3 — not started
 
-- **Supabase:** no tables wired, everything is mock data in `src/data/mockData.js` + in-memory store (`src/lib/store.jsx`). Needs: vendors, events, applications, payments, deposits, offenses, passes, parking tables + real auth — and wiring up registration submit, settings toggles, and the activity log to actually write/read from it.
+- **Supabase:** no tables wired, everything is mock data in `src/data/mockData.js` + in-memory store (`src/lib/store.jsx`). Needs: vendors, events, applications, payments, deposits, offenses, passes, parking, activity tables + real auth, and a real email/notification provider.
 - **Netlify:** not deployed, no env vars configured.
