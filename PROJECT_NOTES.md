@@ -70,7 +70,7 @@ Fixed list admins tag vendors with: Late opening, Early closing, Late payment, P
 ## Key business rules
 
 1. **Registration ≠ event approval.** A vendor's `status` (`pending` → `approved`/`rejected`, or `approved` → `suspended`) only reflects whether they're allowed to *be* a Sulap vendor at all. It says nothing about payment or event participation.
-2. **Vendor must be `approved` before they can apply to any event.** Enforced in `VendorDashboard.jsx`.
+2. **Vendor must be `approved` before they can apply to any event, or appear in booth-sharing search.** A vendor still sitting in the Vendor Applications queue (`pending`) has zero event-side visibility — no Apply access of their own, and other vendors can't find or add them as a booth partner. Enforced in `VendorDashboard.jsx` (apply gate) and the partner search in `Modals.jsx` → `ApplyModal` (`v.status === 'approved'` filter, fixed 2026-07-11 — see mock data note below).
 3. **Deposit and payment status belong to event participation**, not registration — they must never appear on the registration review screen (Vendor Applications / Vendor Listing "view details" modal).
 4. **Deposit is per-vendor, not per-event**, and auto-attaches to the vendor's first unpaid event invoice.
 5. **Booth sharing** is capped at 3 vendors and restricted to same-tier (F&B/non-F&B) partners.
@@ -88,6 +88,8 @@ pending ──approve──► approved ──suspend──► suspended
    └──reject──► rejected └────────reinstate─────┘
 ```
 (Auto-approve setting on: registration goes straight to `approved`, bypassing `pending` entirely.)
+
+**Mock data fix (2026-07-11):** the original seed data had Borneo Brews (`v2`) and Pulau Soap Co. (`v4`) marked `status: 'pending'` while already carrying event applications, a payment record, offense history, and (for Pulau Soap Co.) an approved shared booth — which violates rule 2 above. Both were corrected to `approved` since their data already reflects real event participation. Two new vendors (`v6` Kadazan Silver, `v7` Rumah Anyaman) were added as clean `pending` examples with no event footprint, to keep the Vendor Applications queue demo intact.
 
 ## Known gaps / not wired yet
 
