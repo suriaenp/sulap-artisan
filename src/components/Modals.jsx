@@ -230,7 +230,7 @@ export function ApplyModal() {
   const close = () => set({showApplyModal:false,applyEventId:null});
 
   const results = applyPartnerSearch.trim()
-    ? vendors.filter(v => v.id !== CURRENT_VENDOR_ID && !applyPartners.includes(v.id) && v.business.toLowerCase().includes(applyPartnerSearch.toLowerCase()) && (v.category==='Food & Beverage')===isFnb).slice(0,5)
+    ? vendors.filter(v => v.id !== CURRENT_VENDOR_ID && v.status === 'approved' && !applyPartners.includes(v.id) && v.business.toLowerCase().includes(applyPartnerSearch.toLowerCase()) && (v.category==='Food & Beverage')===isFnb).slice(0,5)
     : [];
 
   const submit = () => {

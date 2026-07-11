@@ -38,7 +38,8 @@ Mock login — no real auth yet, goes straight to Vendor Dashboard as a hardcode
 When a vendor applies to an event, they choose solo or shared booth:
 - A shared booth can have **up to 3 vendors total** (the applicant + up to 2 partners)
 - Booth partners must be the **same tier** — an F&B vendor can only share with other F&B vendors, and a non-F&B vendor only with other non-F&B vendors
-- Partners are picked by searching existing registered vendors
+- **Booth partners must be `approved` vendors** (fixed 2026-07-11 — the partner search previously let `pending`/`suspended` vendors show up and be picked; now filtered out alongside the tier check)
+- Partners are picked by searching existing registered vendors (live search-as-you-type on business name, up to 5 results)
 
 ## Admin Console (`AdminDashboard.jsx`) — 15 tabs
 
