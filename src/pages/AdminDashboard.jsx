@@ -148,7 +148,7 @@ export default function AdminDashboard() {
               No new applications right now.
             </div>
           )}
-          <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+          <div className="admin-cards">
             {pagedVendors.map(v => (
               <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -183,7 +183,7 @@ export default function AdminDashboard() {
                 {showRejected ? 'Hide' : 'Show'} {rejectedVendors.length} rejected application{rejectedVendors.length>1?'s':''}
               </button>
               {showRejected && (
-                <div style={{ display:'flex', flexDirection:'column', gap:11, marginTop:13 }}>
+                <div className="admin-cards" style={{ marginTop:13 }}>
                   {rejectedVendors.map(v => (
                     <div key={v.id} style={{ background:'#FBF7F1', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -215,7 +215,7 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export CSV
             </button>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+          <div className="admin-cards">
             {pagedVendorList.map(v => {
               const vOff = offenses.filter(o=>o.vendorId===v.id);
               const typeCounts = {};
@@ -317,7 +317,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17', margin:'18px 2px 10px' }}>Existing events</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <div className="admin-cards">
             {events.map(ev => (
               <div key={ev.id} onClick={()=>set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||'',img:ev.img||EVENT_IMG_PALETTE[0]}})} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'12px 13px', display:'flex', alignItems:'center', gap:12, cursor:'pointer' }}>
                 <div style={{ width:76, height:46, borderRadius:9, background:ev.img, flexShrink:0 }}/>
@@ -349,7 +349,7 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export
             </button>
           </div>
-          <div className="app-cards">
+          <div className="admin-cards">
             {pagedApps.map(a => {
               const v = vById(a.vendorId);
               const vOffenses = offenses.filter(o=>o.vendorId===a.vendorId);
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
               {pagedPayments.filter(a=>payRec(`${a.vendorId}-${a.eventId}`).status==='paid').length} of {pagedPayments.length} fully paid
             </span>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div className="admin-cards">
             {pagedPayments.map((a,idx) => {
               const v = vById(a.vendorId);
               const dep = deposits[a.vendorId]||{status:'unpaid'};
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div style={{ fontSize:11.5, color:'#A09890', marginBottom:11, lineHeight:1.5 }}>The refundable RM100 deposit is tracked once per vendor. While unpaid, it is automatically added to that vendor's first event invoice.</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <div className="admin-cards">
             {vendors.map(v => {
               const dep = depRec(v.id);
               return (
@@ -533,7 +533,7 @@ export default function AdminDashboard() {
                     {parkOverride ? 'Lock' : 'Override'}
                   </button>
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+                <div className="admin-cards">
                   {pagedPark.map(a => {
                     const v = vById(a.vendorId);
                     const cells = Array.from({length:ev.days||1},(_,i)=>({
@@ -578,7 +578,7 @@ export default function AdminDashboard() {
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
           <div style={{ fontSize:11.5, color:'#A09890', marginBottom:14 }}>Vendors submit product photos when applying. Download their uploads or upload event photos for them to download.</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div className="admin-cards">
             {pagedPhotos.map(a => {
               const v = vById(a.vendorId);
               const key = `${a.vendorId}-${filterEvent}`;
@@ -617,7 +617,7 @@ export default function AdminDashboard() {
           <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:14 }}>
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
-          <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+          <div className="admin-cards">
             {pagedPass.map(a => {
               const v = vById(a.vendorId);
               const p = passes[a.vendorId]||{status:'pending'};
@@ -651,7 +651,7 @@ export default function AdminDashboard() {
             <input value={state.newCat} onChange={e=>set({newCat:e.target.value})} placeholder="New category name" style={{ flex:1, border:'1px solid #e3d8ca', background:'#FAF8F5', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
             <button onClick={()=>{ const n=state.newCat.trim(); if(!n) return; dispatch({type:'MERGE_CATS',payload:[...cats,{id:'c'+Date.now(),name:n}]}); set({newCat:''}); logActivity('Admin', `added the "${n}" category.`, {icon:'folder', tint:'#F8E9EE'}); showToast('Category added','check'); }} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:14 }}>
+          <div className="admin-cards" style={{ marginTop:14 }}>
             {cats.map(c => (
               <div key={c.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', display:'flex', alignItems:'center', gap:12 }}>
                 <div style={{ width:34, height:34, borderRadius:10, background:'#F8E9EE', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
@@ -668,7 +668,7 @@ export default function AdminDashboard() {
             ))}
           </div>
           <div style={{ fontSize:13, fontWeight:700, color:'#1C1A17', margin:'20px 2px 11px' }}>Vendors by category</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div className="admin-cards">
             {cats.map(c => {
               const members = vendors.filter(v=>v.category===c.name);
               return (
@@ -795,7 +795,7 @@ export default function AdminDashboard() {
               <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:14 }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
-              <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+              <div className="admin-cards">
                 {Object.entries(OFFENSE_TYPES).map(([type,ot]) => {
                   const sel = compSel[type]||[];
                   const eventVendors = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
@@ -852,7 +852,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <div className="admin-cards">
                 {vendors.map(v => {
                   const vOff = offenses.filter(o=>o.vendorId===v.id);
                   const typeCounts = {};
