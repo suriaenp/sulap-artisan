@@ -1,6 +1,6 @@
 import { badge } from '../lib/helpers';
 
-export default function Badge({ status, style }) {
+export default function Badge({ status, style, label }) {
   const b = badge(status);
   return (
     <span style={{
@@ -9,7 +9,7 @@ export default function Badge({ status, style }) {
       padding: '5px 11px', flexShrink: 0, whiteSpace: 'nowrap',
       ...style,
     }}>
-      {b.label}
+      {label || b.label}
     </span>
   );
 }

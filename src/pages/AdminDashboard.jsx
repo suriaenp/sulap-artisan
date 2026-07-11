@@ -360,7 +360,7 @@ export default function AdminDashboard() {
                       <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
                       <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
                     </div>
-                    <Badge status={a.status}/>
+                    <Badge status={a.status} label={a.status==='pending'?'Awaiting review':undefined}/>
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:7, marginTop:10 }}>
                     <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#6B6560', background:'#F2EDE6', borderRadius:999, padding:'4px 10px' }}>

@@ -157,7 +157,7 @@ export default function VendorDashboard() {
                           {a.shared ? `Sharing booth with ${partnerNames.join(', ')}` : 'Solo booth'}
                         </div>
                       </div>
-                      <Badge status={a.status} />
+                      <Badge status={a.status} label={a.status==='pending'?'Awaiting review':undefined} />
                     </div>
                   );
                 })}
