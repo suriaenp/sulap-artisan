@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useCallback, useRef } from 'react';
 import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
-  INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS,
+  INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
   EVENT_IMG_PALETTE,
 } from '../data/mockData';
@@ -29,6 +29,7 @@ const INIT = {
   offenses: INITIAL_OFFENSES,
   eventPhotos: INITIAL_EVENT_PHOTOS,
   photoDownloads: INITIAL_PHOTO_DOWNLOADS,
+  payDocDownloads: INITIAL_PAY_DOC_DOWNLOADS,
   parking: INITIAL_PARKING,
   passes: INITIAL_PASSES,
   cats: INITIAL_CATS,
@@ -44,6 +45,7 @@ const INIT = {
   refundModalKey: null,
   depModalVendor: null,
   passModalVendor: null,
+  docPreview: null,       // { payKey, field, editable } — payment doc preview modal
   showApplyModal: false,
   applyEventId: null,
   applyShare: null,
@@ -91,6 +93,7 @@ function reducer(state, action) {
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
     case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };
+    case 'MERGE_PAY_DOC_DOWNLOADS': return { ...state, payDocDownloads: { ...state.payDocDownloads, ...action.payload } };
     case 'MERGE_CATS': return { ...state, cats: action.payload };
     case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
     default: return state;
@@ -119,7 +122,7 @@ export function StoreProvider({ children }) {
 
   const closeModals = useCallback(() => set({
     vendorDetailId: null, vendorDetailReturnAppId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
-    refundModalKey: null, depModalVendor: null, passModalVendor: null, showApplyModal: false,
+    refundModalKey: null, depModalVendor: null, passModalVendor: null, docPreview: null, showApplyModal: false,
     applyEventId: null,
   }), [set]);
 

@@ -2,7 +2,7 @@ import { StoreProvider, useStore } from './lib/store';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import Toast from './components/Toast';
-import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, PassModal, DepositModal, RefundModal } from './components/Modals';
+import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, PassModal, DepositModal, RefundModal, DocPreviewModal } from './components/Modals';
 import { payCalc, money } from './lib/helpers';
 import PublicHome from './pages/PublicHome';
 import VendorLogin from './pages/VendorLogin';
@@ -86,6 +86,7 @@ function AppShell() {
           <PayModal />
           <DepositModal />
           <RefundModal />
+          <DocPreviewModal />
         </div>
       </div>
     </div>

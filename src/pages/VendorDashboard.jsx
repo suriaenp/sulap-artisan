@@ -5,6 +5,7 @@ import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc } from '../lib/helpers';
 import { CURRENT_VENDOR_ID } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
+import { scanAndRecord, scanNotice } from '../lib/payScan';
 
 const TABS = [
   { id:'events',   label:'Available Markets' },
@@ -331,14 +332,13 @@ export default function VendorDashboard() {
             const ref = refundRec(payKey);
             const isPartial = rec.status === 'partial';
             const overpaidAmt = rec.paid - calc.total;
-            const toggleAdvice = (field, label) => {
-              const p = {...payments};
-              const cur = p[payKey] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
-              const wasUploaded = cur[field];
-              p[payKey] = {...cur, [field]: !wasUploaded};
-              dispatch({type:'MERGE_PAYMENTS', payload:p});
-              logActivity(me.business, `${wasUploaded?'removed':'uploaded'} ${label} for ${ev.name}.`, {icon:'file', tint:'#F8E9EE', type:'vendor'});
-              showToast(wasUploaded?`${label} removed`:`${label} uploaded`,'file');
+            const notice = scanNotice(rec, calc);
+            const uploadAdvice = async (field, e) => {
+              const f = e.target.files[0]; e.target.value = '';
+              if (!f) return;
+              const doc = await fileToPhoto(f);
+              showToast('Scanning your payment advice for the amount…','search');
+              await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, dispatch, showToast, logActivity, who: me.business });
             };
             return (
               <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
@@ -362,20 +362,52 @@ export default function VendorDashboard() {
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <div style={{ flex:1, display:'flex', alignItems:'center', gap:8, background:'#FAF8F5', border:'1px solid #efe7dc', borderRadius:10, padding:'9px 11px' }}>
-                      <Icon name="file" size={15} color="#A6364E"/><span style={{ fontSize:12, color:'#6B6560' }}>INV-{ev.id?.toUpperCase()}-001</span>
+                      <Icon name="file" size={15} color="#A6364E"/><span style={{ fontSize:12, color:'#6B6560' }}>{rec.invoice ? rec.invoice.name : 'Invoice not issued yet'}</span>
                     </div>
-                    <button style={{ display:'flex', alignItems:'center', gap:6, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
-                      <Icon name="download" size={14} color="#FAF8F5"/>Invoice
+                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', gap:6, background:rec.invoice?'#A6364E':'#F2EDE6', color:rec.invoice?'#FAF8F5':'#A09890', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
+                      <Icon name="eye" size={14} color={rec.invoice?'#FAF8F5':'#A09890'}/>Invoice
                     </button>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:9 }}>
-                    <button onClick={()=>toggleAdvice('advice','Payment advice')} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:rec.advice?'#E8F5F0':'#FAF8F5', border:`1px solid ${rec.advice?'#cfe9df':'#e3d8ca'}`, color:rec.advice?'#2D6A4F':'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
-                      <Icon name={rec.advice?'check':'upload'} size={14} color={rec.advice?'#2D6A4F':'#6B6560'}/>{rec.advice?'Payment advice uploaded':'Upload payment advice'}
-                    </button>
-                    {isPartial && (
-                      <button onClick={()=>toggleAdvice('advice2','second payment advice')} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:rec.advice2?'#E8F5F0':'#FAF8F5', border:`1px solid ${rec.advice2?'#cfe9df':'#e3d8ca'}`, color:rec.advice2?'#2D6A4F':'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
-                        <Icon name={rec.advice2?'check':'upload'} size={14} color={rec.advice2?'#2D6A4F':'#6B6560'}/>{rec.advice2?'Second payment advice uploaded':'Upload second payment advice (remaining balance)'}
+                    {rec.advice ? (
+                      <button onClick={()=>set({docPreview:{payKey, field:'advice', editable:true}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                        <Icon name="eye" size={14} color="#2D6A4F"/>Payment advice uploaded — view
                       </button>
+                    ) : (
+                      <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer', textAlign:'center' }}>
+                        <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={e=>uploadAdvice('advice',e)}/>
+                        <Icon name="upload" size={14} color="#6B6560"/>Upload payment advice (PDF or photo) — amount is read automatically
+                      </label>
+                    )}
+                    {(isPartial || rec.advice2) && (rec.advice2 ? (
+                      <button onClick={()=>set({docPreview:{payKey, field:'advice2', editable:true}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                        <Icon name="eye" size={14} color="#2D6A4F"/>Second payment advice uploaded — view
+                      </button>
+                    ) : (
+                      <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer', textAlign:'center' }}>
+                        <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={e=>uploadAdvice('advice2',e)}/>
+                        <Icon name="upload" size={14} color="#6B6560"/>Upload second payment advice (remaining balance)
+                      </label>
+                    ))}
+                    {rec.receipt && (
+                      <button onClick={()=>set({docPreview:{payKey, field:'receipt', editable:false}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                        <Icon name="eye" size={14} color="#A6364E"/>Official receipt from Sulap — view
+                      </button>
+                    )}
+                    {notice && notice.kind === 'unread' && (
+                      <div style={{ background:'#F7F4EF', border:'1px solid #EFEAE2', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#8A837B', lineHeight:1.45 }}>
+                        Auto-scan couldn't read an amount from your payment advice — the Sulap team will verify it manually.
+                      </div>
+                    )}
+                    {notice && notice.kind === 'match' && (
+                      <div style={{ background:'#F1F7F3', border:'1px solid #E3EFE7', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#5F8A72', lineHeight:1.45 }}>
+                        Auto-scan: your payment advice matches the total due (RM {money(notice.scanned)}).
+                      </div>
+                    )}
+                    {notice && (notice.kind === 'short' || notice.kind === 'over') && (
+                      <div style={{ background:'#FDF9EE', border:'1px solid #F3EBD5', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#A98B3D', lineHeight:1.45 }}>
+                        Auto-scan read RM {money(notice.scanned)} from your advice{notice.kind==='short' ? ` — RM ${money(notice.diff)} of the total due is still outstanding.` : ` — RM ${money(notice.diff)} more than the total due; a refund will be arranged.`}
+                      </div>
                     )}
                   </div>
                   {overpaidAmt > 0 && ref.status !== 'closed' && (

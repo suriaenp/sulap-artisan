@@ -6,6 +6,7 @@ import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount } from '../lib/helpers';
 import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
+import { scanNotice } from '../lib/payScan';
 
 const ADMIN_TABS = [
   { id:'overview',   label:'Overview',            icon:'bars' },
@@ -44,12 +45,15 @@ function Pager({ total, perPage, page, onPage }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, eventPhotos, photoDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
   const [showRejected, setShowRejected] = useState(false);
   const [photoSel, setPhotoSel] = useState({});        // booth-group selection for bulk download
   const [photoFilter, setPhotoFilter] = useState('all'); // 'all' | 'new'
   const [bulkUpMsg, setBulkUpMsg] = useState(null);      // bulk upload result summary
   const [zipBusy, setZipBusy] = useState(false);
+  const [paySel, setPaySel] = useState({});          // payment-card selection for bulk advice download
+  const [payFilter, setPayFilter] = useState('all'); // 'all' | 'new'
+  const [payUpMsg, setPayUpMsg] = useState(null);    // bulk invoice/receipt upload summary
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
@@ -70,7 +74,11 @@ export default function AdminDashboard() {
   const filteredApps = apps.filter(a => a.eventId === filterEvent);
   const approvedApps = apps.filter(a => a.eventId === filterEvent && a.status === 'approved');
   const pagedApps    = filteredApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const pagedPayments= approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const filteredPayApps = payFilter === 'new'
+    ? approvedApps.filter(a => { const r = payRec(`${a.vendorId}-${a.eventId}`); return (r.advice || r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; })
+    : approvedApps;
+  const pagedPayments= filteredPayApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const selectedPayApps = filteredPayApps.filter(a => paySel[a.id]);
   const pagedPark    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPass    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
@@ -162,6 +170,54 @@ export default function AdminDashboard() {
     }
     setBulkUpMsg({ count, vendors:matchedVendors.size, unmatched:[...unmatched] });
     showToast(count ? `${count} photo(s) uploaded to ${matchedVendors.size} vendor(s)` : 'No folders matched vendor names', count ? 'check' : 'info');
+  };
+
+  // ── Payments handlers ──
+  const bulkDownloadAdvices = async () => {
+    if (!selectedPayApps.length) { showToast('Tick at least one vendor first','info'); return; }
+    const entries = []; const marks = {};
+    selectedPayApps.forEach(a => {
+      const v = vById(a.vendorId);
+      const rec = payRec(`${a.vendorId}-${a.eventId}`);
+      if (rec.advice)  entries.push({ folder:v.business, filename:`${safeName(v.business)} - Payment Advice - ${safeName(curEv.name)}.${photoExt(rec.advice)}`, photo:rec.advice });
+      if (rec.advice2) entries.push({ folder:v.business, filename:`${safeName(v.business)} - Payment Advice 2 - ${safeName(curEv.name)}.${photoExt(rec.advice2)}`, photo:rec.advice2 });
+      if (rec.advice || rec.advice2) marks[`${a.vendorId}-${a.eventId}`] = fmtShort(new Date());
+    });
+    if (!entries.length) { showToast('Selected vendors have no payment advices yet','info'); return; }
+    setZipBusy(true); showToast('Preparing ZIP…','download');
+    try {
+      await downloadZip(entries, `${safeName(curEv.name)} - payment advices.zip`);
+      dispatch({ type:'MERGE_PAY_DOC_DOWNLOADS', payload:marks });
+      setPaySel({});
+      logActivity('Admin', `bulk downloaded ${entries.length} payment advice(s) — ${curEv.name}.`, {icon:'download', tint:'#EEF1FB'});
+      showToast(`ZIP saved · ${entries.length} advice(s) from ${Object.keys(marks).length} vendor(s)`,'check');
+    } finally { setZipBusy(false); }
+  };
+
+  const bulkUploadPayDocs = (field, label) => async (e) => {
+    const files = [...e.target.files].filter(f => f.type.startsWith('image/') || f.type === 'application/pdf');
+    e.target.value = '';
+    if (!files.length) { showToast('No images or PDFs found in that folder','info'); return; }
+    const nameMap = {};
+    approvedApps.forEach(a => { const v = vById(a.vendorId); nameMap[(v.business||'').toLowerCase().trim()] = a.vendorId; });
+    const payload = {}; const unmatched = new Set(); const matched = new Set();
+    for (const f of files) {
+      const parts = (f.webkitRelativePath || f.name).split('/');
+      const folder = parts.length >= 2 ? parts[parts.length-2] : '';
+      const vid = nameMap[folder.toLowerCase().trim()];
+      if (!vid) { unmatched.add(folder || f.name); continue; }
+      if (matched.has(vid)) continue; // one document per vendor — first file wins
+      const doc = await fileToPhoto(f);
+      const key = `${vid}-${filterEvent}`;
+      payload[key] = { ...payRec(key), [field]: doc };
+      matched.add(vid);
+    }
+    if (matched.size) {
+      dispatch({ type:'MERGE_PAYMENTS', payload });
+      logActivity('Admin', `bulk uploaded ${label.toLowerCase()}s for ${matched.size} vendor(s) — ${curEv.name}.`, {icon:'file', tint:'#E8F5F0'});
+    }
+    setPayUpMsg({ label, count:matched.size, unmatched:[...unmatched] });
+    showToast(matched.size ? `${label}s attached to ${matched.size} vendor(s)` : 'No folders matched vendor names', matched.size ? 'check' : 'info');
   };
 
   return (
@@ -494,7 +550,7 @@ export default function AdminDashboard() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:13 }}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={lbl}>Filter by event</div>
-              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none' }}>
+              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPaySel({}); setPayUpMsg(null); }} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none' }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
@@ -502,7 +558,7 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export
             </button>
           </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:14 }}>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:12 }}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', background:'#FBF7F1', border:'1px solid #efe7dc', color:'#6B6560' }}>
               <Icon name="calendar" size={13} color="#A09890"/>Payment due by {curEv.lastApp ? fmtShort(curEv.lastApp) : 'TBC'}
             </span>
@@ -510,6 +566,42 @@ export default function AdminDashboard() {
               {pagedPayments.filter(a=>payRec(`${a.vendorId}-${a.eventId}`).status==='paid').length} of {pagedPayments.length} fully paid
             </span>
           </div>
+
+          {/* Bulk toolbar */}
+          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
+            {[['all','All vendors'],['new',`New advices — not downloaded (${approvedApps.filter(a=>{ const r=payRec(`${a.vendorId}-${a.eventId}`); return (r.advice||r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; }).length})`]].map(([id,label]) => (
+              <button key={id} onClick={()=>{ setPayFilter(id); setPaySel({}); set({page:1}); }} style={{ background:payFilter===id?'#A6364E':'#fff', border:`1px solid ${payFilter===id?'#A6364E':'#e3d8ca'}`, color:payFilter===id?'#FAF8F5':'#6B6560', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
+            ))}
+            <div style={{ flex:1 }}/>
+            <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:600, color:'#6B6560', cursor:'pointer', background:'#fff', border:'1px solid #e3d8ca', borderRadius:9, padding:'8px 12px' }}>
+              <input type="checkbox" style={{ accentColor:'#A6364E', width:15, height:15, cursor:'pointer' }}
+                checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
+                onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}/>
+              Select all
+            </label>
+            <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'#A6364E':'#F2EDE6', border:'none', color:selectedPayApps.length?'#FAF8F5':'#A09890', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
+              <Icon name="download" size={14} color={selectedPayApps.length?'#FAF8F5':'#A09890'}/>Bulk download advices{selectedPayApps.length?` (${selectedPayApps.length})`:''}
+            </button>
+            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+              <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('invoice','Invoice')}/>
+              <Icon name="upload" size={14} color="#A6364E"/>Bulk upload invoices
+            </label>
+            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+              <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('receipt','Receipt')}/>
+              <Icon name="upload" size={14} color="#A6364E"/>Bulk upload receipts
+            </label>
+          </div>
+
+          {payUpMsg && (
+            <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:payUpMsg.count?'#E8F5F0':'#FEF8EC', border:`1px solid ${payUpMsg.count?'#cfe9df':'#f3e6c9'}`, borderRadius:12, padding:'11px 13px', marginBottom:12, fontSize:12, color:payUpMsg.count?'#2D6A4F':'#B7770D', lineHeight:1.5 }}>
+              <Icon name={payUpMsg.count?'check':'info'} size={15} color={payUpMsg.count?'#2D6A4F':'#B7770D'} style={{ marginTop:1 }}/>
+              <div style={{ flex:1 }}>
+                {payUpMsg.count > 0 && <div><b>{payUpMsg.label}s</b> attached to <b>{payUpMsg.count} vendor(s)</b>. Vendors can view them in their portal.</div>}
+                {payUpMsg.unmatched.length > 0 && <div style={{ marginTop:payUpMsg.count?4:0 }}>Folders that didn't match any vendor in this event: <b>{payUpMsg.unmatched.join(', ')}</b>.</div>}
+              </div>
+              <button onClick={()=>setPayUpMsg(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}><Icon name="x" size={14} color={payUpMsg.count?'#2D6A4F':'#B7770D'}/></button>
+            </div>
+          )}
           <div className="admin-cards">
             {pagedPayments.map((a,idx) => {
               const v = vById(a.vendorId);
@@ -520,12 +612,19 @@ export default function AdminDashboard() {
               const ref = refundRec(payKey);
               const isPartial = rec.status === 'partial';
               const overpaidAmt = rec.paid - calc.total;
-              const cardBorder = rec.status==='paid' ? '#cfe9df' : rec.status==='partial' ? '#f3e6c9' : '#efe7dc';
+              const cardBorder = paySel[a.id] ? '#A6364E' : rec.status==='paid' ? '#cfe9df' : rec.status==='partial' ? '#f3e6c9' : '#efe7dc';
+              const notice = scanNotice(rec, calc);
+              const advDl = payDocDownloads[payKey];
               return (
                 <div key={a.id} style={{ background:'#fff', border:`1px solid ${cardBorder}`, borderRadius:16, padding:15 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
+                    <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#A6364E', width:16, height:16, cursor:'pointer', flexShrink:0, marginTop:2 }}/>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8 }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890' }}>#{(page-1)*PER_PAGE+idx+1}</span><span style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{v.business}</span></div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#A09890' }}>#{(page-1)*PER_PAGE+idx+1}</span>
+                        <span style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{v.business}</span>
+                        {advDl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:600, color:'#2D6A4F', background:'#E8F5F0', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="#2D6A4F"/>Advices downloaded {advDl}</span>}
+                      </div>
                       <div style={{ fontSize:11.5, color:'#6B6560', marginTop:3 }}>{calc.tier} · RM {calc.rate}/day × {calc.days} days</div>
                     </div>
                     <Badge status={rec.status}/>
@@ -555,31 +654,59 @@ export default function AdminDashboard() {
                   {overpaidAmt > 0 && ref.status === 'closed' && (
                     <div style={{ fontSize:11, color:'#A09890', marginTop:9 }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
                   )}
+                  {notice && notice.kind === 'unread' && (
+                    <div style={{ background:'#F7F4EF', border:'1px solid #EFEAE2', borderRadius:10, padding:'9px 12px', marginTop:10, fontSize:11.5, color:'#8A837B', lineHeight:1.45 }}>
+                      Auto-scan couldn't read an amount from the vendor's payment advice — verify and record manually.
+                    </div>
+                  )}
+                  {notice && notice.kind === 'match' && (
+                    <div style={{ background:'#F1F7F3', border:'1px solid #E3EFE7', borderRadius:10, padding:'9px 12px', marginTop:10, fontSize:11.5, color:'#5F8A72', lineHeight:1.45 }}>
+                      Auto-scan: advice matches the total due (RM {money(notice.scanned)}).{notice.overridden ? ` Recorded amount RM ${money(rec.paid)} was set manually.` : ''}
+                    </div>
+                  )}
+                  {notice && (notice.kind === 'short' || notice.kind === 'over') && (
+                    <div style={{ background:'#FDF9EE', border:'1px solid #F3EBD5', borderRadius:10, padding:'9px 12px', marginTop:10, fontSize:11.5, color:'#A98B3D', lineHeight:1.45 }}>
+                      Auto-scan read RM {money(notice.scanned)} from the advice — {notice.kind==='short' ? `RM ${money(notice.diff)} short of` : `RM ${money(notice.diff)} more than`} the total due.{notice.overridden ? ` Recorded amount RM ${money(rec.paid)} was set manually.` : ' Please double-check.'}
+                    </div>
+                  )}
                   <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:11 }}>
                     {rec.advice ? (
-                      <button onClick={()=>showToast(`Downloading ${v.business}'s payment advice…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                        <Icon name="download" size={13} color="#2D6A4F"/>Payment advice
+                      <button onClick={()=>set({docPreview:{payKey, field:'advice', editable:false}})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <Icon name="eye" size={13} color="#2D6A4F"/>Payment advice
                       </button>
                     ) : (
                       <span title="Uploaded by the vendor, not admin" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#F2EDE6', border:'1px solid #e7ddd0', color:'#A09890', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px' }}>
                         <Icon name="clock" size={13} color="#A09890"/>Payment advice — not yet uploaded by vendor
                       </span>
                     )}
-                    {isPartial && (rec.advice2 ? (
-                      <button onClick={()=>showToast(`Downloading ${v.business}'s second payment advice…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                        <Icon name="download" size={13} color="#2D6A4F"/>2nd payment advice
+                    {(isPartial || rec.advice2) && (rec.advice2 ? (
+                      <button onClick={()=>set({docPreview:{payKey, field:'advice2', editable:false}})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <Icon name="eye" size={13} color="#2D6A4F"/>2nd payment advice
                       </button>
                     ) : (
                       <span title="Uploaded by the vendor, not admin" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#F2EDE6', border:'1px solid #e7ddd0', color:'#A09890', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px' }}>
                         <Icon name="clock" size={13} color="#A09890"/>2nd payment advice — not yet uploaded
                       </span>
                     ))}
-                    {[['invoice','Invoice'],['receipt','Receipt']].map(([flag,label]) => {
-                      const has = rec[flag];
-                      return (
-                        <button key={flag} onClick={()=>{ const p={...payments}; const cur=p[payKey]||{status:'unpaid',paid:0,advice:false,invoice:false,receipt:false}; p[payKey]={...cur,[flag]:!cur[flag]}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast((has?'Removed ':'Uploaded ')+label,'file'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:has?'#E8F5F0':'#FAF8F5', border:`1px solid ${has?'#cfe9df':'#e3d8ca'}`, color:has?'#2D6A4F':'#6B6560', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                          <Icon name={has?'check':'upload'} size={13} color={has?'#2D6A4F':'#6B6560'}/>{label}
+                    {[['invoice','Invoice'],['receipt','Receipt']].map(([field,label]) => {
+                      const f = rec[field];
+                      if (f) return (
+                        <button key={field} onClick={()=>set({docPreview:{payKey, field, editable:true}})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                          <Icon name="eye" size={13} color="#2D6A4F"/>{label}
                         </button>
+                      );
+                      return (
+                        <label key={field} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#6B6560', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                          <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={async e=>{
+                            const file = e.target.files[0]; e.target.value='';
+                            if (!file) return;
+                            const doc = await fileToPhoto(file);
+                            dispatch({type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: doc } }});
+                            logActivity('Admin', `uploaded the ${label.toLowerCase()} for ${v.business} — ${curEv.name}.`, {icon:'file', tint:'#E8F5F0'});
+                            showToast(`${label} uploaded`,'file');
+                          }}/>
+                          <Icon name="upload" size={13} color="#6B6560"/>Upload {label.toLowerCase()}
+                        </label>
                       );
                     })}
                   </div>
@@ -594,7 +721,7 @@ export default function AdminDashboard() {
               );
             })}
           </div>
-          <Pager total={approvedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          <Pager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
         </div>
       )}
 

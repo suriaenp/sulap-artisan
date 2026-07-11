@@ -4,6 +4,8 @@ import PhotoTile from './PhotoTile';
 import { useStore } from '../lib/store';
 import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 import { dayCount, fmtShort, money } from '../lib/helpers';
+import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
+import { scanAndRecord } from '../lib/payScan';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 function Sheet({ onClose, children, maxW = 560, centered = false }) {
@@ -410,6 +412,92 @@ export function RefundModal() {
       <div style={{ marginTop:13 }}><div style={lbl}>Date of refund</div><input type="date" value={reff.date||''} onChange={e=>upd('date',e.target.value)} style={inp}/></div>
       <div style={{ marginTop:13 }}><div style={lbl}>Time of refund</div><input type="time" value={reff.time||''} onChange={e=>upd('time',e.target.value)} style={inp}/></div>
       <button onClick={save} style={{ marginTop:18, width:'100%', background:'#A6364E', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark refund complete</button>
+    </Sheet>
+  );
+}
+
+// ── Payment Document Preview ──────────────────────────────────────────────────
+// Opened via state.docPreview = { payKey, field, editable }.
+// Preview any payment file (advice / invoice / receipt) with Download,
+// and Replace / Remove when the viewer owns the document.
+const DOC_LABELS = { advice:'Payment advice', advice2:'Second payment advice', invoice:'Invoice', receipt:'Receipt' };
+
+export function DocPreviewModal() {
+  const { state, dispatch, set, showToast, logActivity } = useStore();
+  const { docPreview, payments, vendors, events, deposits } = state;
+  if (!docPreview) return null;
+  const { payKey, field, editable } = docPreview;
+  const [vid, eid] = payKey.split('-');
+  const v = vendors.find(x=>x.id===vid)||{};
+  const ev = events.find(x=>x.id===eid)||{};
+  const rec = payments[payKey]||{};
+  const file = rec[field];
+  const close = () => set({ docPreview:null });
+  if (!file) return null;
+  const label = DOC_LABELS[field]||'Document';
+  const isPdf = (file.url||'').startsWith('data:application/pdf');
+  const scan = field.startsWith('advice') ? rec.scans?.[field] : null;
+
+  const onReplace = async (e) => {
+    const f = e.target.files[0]; e.target.value='';
+    if (!f) return;
+    const doc = await fileToPhoto(f);
+    if (field.startsWith('advice')) {
+      showToast('Scanning for the paid amount…','search');
+      await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, dispatch, showToast, logActivity, who:v.business });
+    } else {
+      dispatch({ type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: doc } } });
+      logActivity('Admin', `replaced the ${label.toLowerCase()} for ${v.business} — ${ev.name}.`, { icon:'file', tint:'#E8F5F0' });
+      showToast(`${label} replaced`,'file');
+    }
+  };
+
+  const onRemove = () => {
+    if (!window.confirm(`Remove this ${label.toLowerCase()}?`)) return;
+    const scans = { ...(rec.scans||{}) }; delete scans[field];
+    dispatch({ type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: null, scans } } });
+    showToast(`${label} removed`,'x');
+    close();
+  };
+
+  return (
+    <Sheet onClose={close} centered maxW={620}>
+      <SheetHeader title={label} sub={`${v.business} · ${ev.name}`} onClose={close}/>
+      <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:10, fontSize:12, color:'#6B6560' }}>
+        <Icon name="file" size={14} color="#A09890"/><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{file.name}</span>
+      </div>
+      <div style={{ marginTop:12, borderRadius:14, overflow:'hidden', border:'1px solid #efe7dc', background:'#fff', height:360 }}>
+        {isPdf ? (
+          <iframe title={file.name} src={file.url} style={{ width:'100%', height:'100%', border:'none' }}/>
+        ) : file.url ? (
+          <img src={file.url} alt={file.name} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#FBF7F1' }}/>
+        ) : (
+          <div style={{ width:'100%', height:'100%', background:`linear-gradient(135deg,${file.grad?.[0]||'#F0D8DD'},${file.grad?.[1]||'#C75C84'})`, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.85)', fontSize:13, fontWeight:600 }}>
+            Sample document (demo)
+          </div>
+        )}
+      </div>
+      {scan && (
+        <div style={{ fontSize:11.5, color:'#8A837B', marginTop:9 }}>
+          {scan.amount != null ? `Auto-scan read RM ${money(scan.amount)} · ${scan.at}` : `Auto-scan couldn't read an amount · ${scan.at}`}
+        </div>
+      )}
+      <div style={{ display:'flex', gap:9, marginTop:14 }}>
+        <button onClick={()=>downloadPhoto(file, `${safeName(v.business)} - ${label} - ${safeName(ev.name)}.${photoExt(file)}`)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
+          <Icon name="download" size={14} color="#FAF8F5"/>Download
+        </button>
+        {editable && (
+          <>
+            <label style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
+              <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={onReplace}/>
+              <Icon name="upload" size={14} color="#A6364E"/>Replace
+            </label>
+            <button onClick={onRemove} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:13, fontWeight:600, borderRadius:11, padding:'12px 16px', cursor:'pointer' }}>
+              <Icon name="trash" size={14} color="#B03A2E"/>Remove
+            </button>
+          </>
+        )}
+      </div>
     </Sheet>
   );
 }

@@ -38,10 +38,16 @@ export const INITIAL_APPS = [
   { id:'a8', vendorId:'v3', eventId:'e1', status:'approved', shared:false, partners:[] },
 ];
 
+// Payment docs (advice/advice2/invoice/receipt) are file objects like photos.
+// `scans` holds auto-scan results per advice field: { amount, at }.
 export const INITIAL_PAYMENTS = {
-  'v2-e1': { status:'paid',    paid:556.50, advice:true,  invoice:true,  receipt:true  },
-  'v1-e1': { status:'partial', paid:300,    advice:true,  invoice:true,  receipt:false },
+  'v2-e1': { status:'paid',    paid:1054.00, advice:P('v2adv','payment-advice-borneo.jpg','#DCE8F5','#5B7FA6'), invoice:P('v2inv','invoice-INV-E1-002.jpg','#EDE5D8','#A08A5F'), receipt:P('v2rct','receipt-borneo.jpg','#E2EFE2','#5F9A6E'), scans:{ advice:{ amount:1054.00, at:'10 Jul' } } },
+  'v1-e1': { status:'partial', paid:300,     advice:P('v1adv','payment-advice-nutmeg.jpg','#DCE8F5','#5B7FA6'), invoice:P('v1inv','invoice-INV-E1-001.jpg','#EDE5D8','#A08A5F'), scans:{ advice:{ amount:300, at:'9 Jul' } } },
 };
+
+// Tracks which vendors' payment advices admin has bulk-downloaded,
+// keyed `${vendorId}-${eventId}` → date string.
+export const INITIAL_PAY_DOC_DOWNLOADS = {};
 
 export const INITIAL_REFUNDS = {};
 
