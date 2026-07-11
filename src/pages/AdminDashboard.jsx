@@ -165,7 +165,7 @@ export default function AdminDashboard() {
                 </div>
                 <div style={{ fontSize:11.5, color:'#A09890', marginTop:6 }}>Registered {v.regDate}</div>
                 <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                  <button onClick={()=>set({vendorDetailId:v.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                  <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
                     <Icon name="eye" size={14} color="#A6364E"/>View details
                   </button>
                   <div style={{ flex:1 }}/>
@@ -249,7 +249,7 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                    <button onClick={()=>set({vendorDetailId:v.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                    <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
                       <Icon name="eye" size={14} color="#A6364E"/>View details
                     </button>
                   </div>

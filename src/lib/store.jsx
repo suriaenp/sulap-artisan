@@ -35,6 +35,7 @@ const INIT = {
   settings: { autoApprove:false, publicEvents:true, emailAlerts:true },
   // modals / drawers
   vendorDetailId: null,
+  vendorDetailReturnAppId: null,
   appDetailId: null,
   eventDetailId: null,
   payModalKey: null,
@@ -111,7 +112,7 @@ export function StoreProvider({ children }) {
   }, []);
 
   const closeModals = useCallback(() => set({
-    vendorDetailId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
+    vendorDetailId: null, vendorDetailReturnAppId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
     depModalVendor: null, passModalVendor: null, showApplyModal: false,
     applyEventId: null,
   }), [set]);

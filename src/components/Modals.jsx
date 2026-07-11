@@ -33,11 +33,13 @@ function SheetHeader({ title, sub, onClose }) {
 // ── Vendor Application Detail ─────────────────────────────────────────────────
 export function VendorDetailModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { vendorDetailId, vendors, settings } = state;
+  const { vendorDetailId, vendorDetailReturnAppId, vendors, settings } = state;
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
   const tileColors = ['linear-gradient(135deg,#F0D8DD,#C75C84)','linear-gradient(135deg,#cdbBa0,#8B6F4E)','linear-gradient(135deg,#d8c0a8,#9c7a52)'];
-  const close = () => set({vendorDetailId:null});
+  const close = () => vendorDetailReturnAppId
+    ? set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId})
+    : set({vendorDetailId:null});
   return (
     <Sheet onClose={close} centered>
       <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close}/>
@@ -119,12 +121,13 @@ export function AppDetailModal() {
           <>
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:12 }}>
               {partners.map(p => (
-                <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, background:'#F8E9EE', borderRadius:11, padding:'9px 11px' }}>
+                <div key={p.id} onClick={()=>set({appDetailId:null, vendorDetailId:p.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F8E9EE', borderRadius:11, padding:'9px 11px', cursor:'pointer' }}>
                   <Icon name="users" size={15} color="#A6364E"/>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.business}</div>
                     <div style={{ fontSize:11, color:'#A09890' }}>{p.category}</div>
                   </div>
+                  <span style={{ fontSize:16, color:'#A09890' }}>›</span>
                 </div>
               ))}
             </div>
