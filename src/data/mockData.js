@@ -1,3 +1,12 @@
+export const EVENT_IMG_PALETTE = [
+  'linear-gradient(135deg,#C75C84,#A6364E)',
+  'linear-gradient(135deg,#F0D8DD,#C75C84)',
+  'linear-gradient(135deg,#9FC9B9,#2D6A4F)',
+  'linear-gradient(135deg,#F3D9A4,#C76A0D)',
+  'linear-gradient(135deg,#d8c0a8,#8B6F4E)',
+  'linear-gradient(135deg,#8C3A4E,#5C1F2E)',
+];
+
 export const INITIAL_EVENTS = [
   { id:'e1', name:'Tamu Weekend Bazaar', dateRange:'12 – 14 Jul 2026', location:'Gaya Street, KK', days:3, applied:48, fnb:300, nonfnb:250, startTime:'08:00', endTime:'16:00', lastApp:'2026-07-05', startDate:'2026-07-12', endDate:'2026-07-14', img:"url('/assets/event-tamu.png') center/cover no-repeat" },
   { id:'e2', name:'Borneo Makers Fair',  dateRange:'26 – 27 Jul 2026', location:'Likas Square',   days:2, applied:32, fnb:280, nonfnb:230, startTime:'10:00', endTime:'18:00', lastApp:'2026-06-21', startDate:'2026-07-26', endDate:'2026-07-27', img:"url('/assets/event-makers.png') center/cover no-repeat" },

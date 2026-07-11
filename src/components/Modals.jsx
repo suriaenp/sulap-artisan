@@ -1,7 +1,7 @@
 import Icon from './Icon';
 import Badge from './Badge';
 import { useStore } from '../lib/store';
-import { OFFENSE_TYPES, CURRENT_VENDOR_ID } from '../data/mockData';
+import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 import { dayCount, fmtShort, money } from '../lib/helpers';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
@@ -168,6 +168,7 @@ export function EventDetailModal() {
       lastApp:eef.lastApp,
       fnb:Number(eef.fnb)||0,
       nonfnb:Number(eef.nonfnb)||0,
+      img:eef.img||EVENT_IMG_PALETTE[0],
     } : x)});
     logActivity('Admin', `updated details for the ${eef.name} event.`, {icon:'tent', tint:'#E8F5F0'});
     showToast('Event updated','check');
@@ -179,6 +180,18 @@ export function EventDetailModal() {
       <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:13 }}>
         <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
         <div><div style={lbl}>Location</div><input value={eef.location} onChange={e=>upd('location',e.target.value)} placeholder="e.g. Suria Sabah Mall" style={inp}/></div>
+        <div>
+          <div style={lbl}>Event image</div>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:76, height:46, borderRadius:9, background:eef.img||EVENT_IMG_PALETTE[0], flexShrink:0 }}/>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {EVENT_IMG_PALETTE.map((g,i) => (
+                <button key={i} onClick={()=>upd('img',g)} style={{ width:28, height:28, borderRadius:8, background:g, border:(eef.img||EVENT_IMG_PALETTE[0])===g?'2px solid #1C1A17':'2px solid transparent', padding:0, cursor:'pointer' }}/>
+              ))}
+            </div>
+          </div>
+          <div style={{ fontSize:11, color:'#A09890', marginTop:7, lineHeight:1.4 }}>Pick a thumbnail color — shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
+        </div>
         <div style={{ display:'flex', gap:10 }}>
           <div style={{ flex:1 }}><div style={lbl}>Daily start time</div><input type="time" value={eef.startTime} onChange={e=>upd('startTime',e.target.value)} style={inp}/></div>
           <div style={{ flex:1 }}><div style={lbl}>Daily end time</div><input type="time" value={eef.endTime} onChange={e=>upd('endTime',e.target.value)} style={inp}/></div>

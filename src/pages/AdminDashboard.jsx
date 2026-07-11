@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount } from '../lib/helpers';
-import { OFFENSE_TYPES, CURRENT_VENDOR_ID } from '../data/mockData';
+import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 
 const ADMIN_TABS = [
   { id:'overview',   label:'Overview',            icon:'bars' },
@@ -270,11 +270,15 @@ export default function AdminDashboard() {
               <div><div style={lbl}>Event name</div><input value={state.ef.name} onChange={e=>set({ef:{...state.ef,name:e.target.value}})} placeholder="e.g. Harvest Night Market" style={inp}/></div>
               <div>
                 <div style={lbl}>Event image</div>
-                <div style={{ border:'2px dashed #d8c6b2', borderRadius:12, background:'#FBF7F1', padding:18, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
-                  <Icon name="image" size={22} color="#A6364E"/>
-                  <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginTop:6 }}>Upload event image</div>
-                  <div style={{ fontSize:11, color:'#A09890', marginTop:3, lineHeight:1.4 }}>Required size <b style={{ color:'#6B6560' }}>1200 × 720 px</b> (5:3) · JPG or PNG<br/>Displayed as a rectangle in every list</div>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:76, height:46, borderRadius:9, background:state.ef.img||EVENT_IMG_PALETTE[0], flexShrink:0 }}/>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                    {EVENT_IMG_PALETTE.map((g,i) => (
+                      <button key={i} onClick={()=>set({ef:{...state.ef,img:g}})} style={{ width:28, height:28, borderRadius:8, background:g, border:(state.ef.img||EVENT_IMG_PALETTE[0])===g?'2px solid #1C1A17':'2px solid transparent', padding:0, cursor:'pointer' }}/>
+                    ))}
+                  </div>
                 </div>
+                <div style={{ fontSize:11, color:'#A09890', marginTop:7, lineHeight:1.4 }}>Pick a thumbnail color — shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
               </div>
               <div style={{ display:'flex', gap:10 }}>
                 <div style={{ flex:1 }}><div style={lbl}>Daily start time</div><input type="time" value={state.ef.startTime} onChange={e=>set({ef:{...state.ef,startTime:e.target.value}})} style={inp}/></div>
@@ -304,9 +308,9 @@ export default function AdminDashboard() {
               <button onClick={() => {
                 if (!state.ef.name) { showToast('Add an event name first','info'); return; }
                 const d = dayCount(state.ef.start,state.ef.end)||1;
-                const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:d, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:'linear-gradient(135deg,#C75C84,#A6364E)' };
+                const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:d, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
                 dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
-                set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:''}});
+                set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
                 logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'#E8F5F0'});
                 showToast('Event created','tent');
               }} className="cta" style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Create event</button>
@@ -315,7 +319,7 @@ export default function AdminDashboard() {
           <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17', margin:'18px 2px 10px' }}>Existing events</div>
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {events.map(ev => (
-              <div key={ev.id} onClick={()=>set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||''}})} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'12px 13px', display:'flex', alignItems:'center', gap:12, cursor:'pointer' }}>
+              <div key={ev.id} onClick={()=>set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||'',img:ev.img||EVENT_IMG_PALETTE[0]}})} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'12px 13px', display:'flex', alignItems:'center', gap:12, cursor:'pointer' }}>
                 <div style={{ width:76, height:46, borderRadius:9, background:ev.img, flexShrink:0 }}/>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>

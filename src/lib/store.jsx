@@ -3,6 +3,7 @@ import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS,
   INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
+  EVENT_IMG_PALETTE,
 } from '../data/mockData';
 
 const INIT = {
@@ -49,8 +50,8 @@ const INIT = {
   payf: {},
   depf: {},
   rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 },
-  ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'' },
-  eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'' },
+  ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
+  eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   cf: null,
   newCat: '',
   // filters & pagination
