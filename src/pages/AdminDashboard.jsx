@@ -357,10 +357,13 @@ export default function AdminDashboard() {
                 <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17', display:'flex', alignItems:'center', gap:7 }}>
+                        {v.business}
+                        {a.status==='approved' && <span style={{ fontSize:11.5, fontWeight:600, color:'#8FB8A4' }}>Approved</span>}
+                        {a.status==='rejected' && <span style={{ fontSize:11.5, fontWeight:600, color:'#CB9A93' }}>Rejected</span>}
+                      </div>
                       <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
                     </div>
-                    <Badge status={a.status} label={a.status==='pending'?'Awaiting review':undefined}/>
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:7, marginTop:10 }}>
                     <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#6B6560', background:'#F2EDE6', borderRadius:999, padding:'4px 10px' }}>
@@ -376,8 +379,18 @@ export default function AdminDashboard() {
                       <Icon name="eye" size={14} color="#A6364E"/>View &amp; share booth
                     </button>
                     <div style={{ flex:1 }}/>
-                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'#F8E9EE'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
-                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'x', tint:'#FDEEEC'}); showToast('Application rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
+                    {a.status==='pending' && (
+                      <>
+                        <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'#F8E9EE'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
+                        <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'x', tint:'#FDEEEC'}); showToast('Application rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
+                      </>
+                    )}
+                    {a.status==='approved' && (
+                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `removed ${v.business} from ${eById(a.eventId).name} — application moved back to awaiting review.`, {icon:'info', tint:'#FEF8EC'}); showToast('Vendor removed — application back to awaiting review','info'); }} style={{ background:'#FEF8EC', border:'none', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Remove</button>
+                    )}
+                    {a.status==='rejected' && (
+                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `reconsidered ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'info', tint:'#FEF8EC'}); showToast('Application moved back to awaiting review','info'); }} style={{ background:'#FEF8EC', border:'none', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reconsider</button>
+                    )}
                   </div>
                 </div>
               );

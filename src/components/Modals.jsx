@@ -106,7 +106,9 @@ export function AppDetailModal() {
   return (
     <Sheet onClose={close} centered>
       <SheetHeader title={v.business} sub={`${ev.name} · ${v.category}`} onClose={close}/>
-      <span style={{ display:'inline-block', marginTop:8 }}><Badge status={a.status} label={a.status==='pending'?'Awaiting review':undefined}/></span>
+      <span style={{ display:'inline-block', marginTop:8, fontSize:12, fontWeight:600, color: a.status==='approved' ? '#8FB8A4' : a.status==='rejected' ? '#CB9A93' : '#B7770D' }}>
+        {a.status==='approved' ? 'Approved' : a.status==='rejected' ? 'Rejected' : 'Awaiting review'}
+      </span>
       <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:13 }}>{v.desc}</div>
       <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'15px 2px 8px' }}>Product photos</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:9 }}>
