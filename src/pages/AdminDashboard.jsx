@@ -349,7 +349,7 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export
             </button>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+          <div className="app-cards">
             {pagedApps.map(a => {
               const v = vById(a.vendorId);
               const vOffenses = offenses.filter(o=>o.vendorId===a.vendorId);

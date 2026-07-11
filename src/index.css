@@ -43,6 +43,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .event-cards { display: flex; flex-direction: column; gap: 14px; }
 .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-grid { display: flex; flex-direction: column; gap: 15px; }
+.app-cards { display: flex; flex-direction: column; gap: 11px; }
 
 @media (min-width: 768px) {
   .outer-wrap { justify-content: flex-start; }
@@ -51,6 +52,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
   .bottom-nav { display: none !important; }
   .vendor-tabs-bar, .admin-tabs-bar { display: none !important; }
   .event-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .app-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
   .overview-grid { grid-template-columns: repeat(3, 1fr); }
   .outer-wrap.home-wrap { justify-content: center; align-items: flex-start; padding: 36px 24px; }
   .app-shell.home-shell { max-width: 1080px; flex-direction: column; height: auto; max-height: calc(100dvh - 72px); border-radius: 24px; overflow: hidden; box-shadow: 0 1px 2px rgba(60,40,20,.16), 0 24px 70px rgba(60,40,20,.12); }

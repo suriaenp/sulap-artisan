@@ -58,7 +58,7 @@ const INIT = {
   // filters & pagination
   filterEvent: 'e1',
   page: 1,
-  PER_PAGE: 15,
+  PER_PAGE: 20,
   // compliance
   compTab: 'log',
   compSel: {},
