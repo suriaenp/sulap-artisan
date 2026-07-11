@@ -403,10 +403,17 @@ export default function AdminDashboard() {
       {/* ── Payments ── */}
       {aTab === 'payments' && (
         <div style={{ padding:'14px 16px 20px' }}>
-          <div style={lbl}>Filter by event</div>
-          <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:13 }}>
-            {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </select>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:13 }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={lbl}>Filter by event</div>
+              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none' }}>
+                {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+            </div>
+            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
+              <Icon name="download" size={14} color="#A6364E"/>Export
+            </button>
+          </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:14 }}>
             <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', background:'#FBF7F1', border:'1px solid #efe7dc', color:'#6B6560' }}>
               <Icon name="calendar" size={13} color="#A09890"/>Payment due by {curEv.lastApp ? fmtShort(curEv.lastApp) : 'TBC'}
@@ -440,7 +447,16 @@ export default function AdminDashboard() {
                     {isPartial && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginTop:6, color:'#C76A0D', fontWeight:600 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:11 }}>
-                    {[['advice','Payment advice'],['invoice','Invoice'],['receipt','Receipt']].map(([flag,label]) => {
+                    {rec.advice ? (
+                      <button onClick={()=>showToast(`Downloading ${v.business}'s payment advice…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <Icon name="download" size={13} color="#2D6A4F"/>Payment advice
+                      </button>
+                    ) : (
+                      <span title="Uploaded by the vendor, not admin" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#F2EDE6', border:'1px solid #e7ddd0', color:'#A09890', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px' }}>
+                        <Icon name="clock" size={13} color="#A09890"/>Payment advice — not yet uploaded by vendor
+                      </span>
+                    )}
+                    {[['invoice','Invoice'],['receipt','Receipt']].map(([flag,label]) => {
                       const has = rec[flag];
                       return (
                         <button key={flag} onClick={()=>{ const p={...payments}; const cur=p[`${a.vendorId}-${curEv.id}`]||{status:'unpaid',paid:0,advice:false,invoice:true,receipt:false}; p[`${a.vendorId}-${curEv.id}`]={...cur,[flag]:!cur[flag]}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast((has?'Removed ':'Uploaded ')+label,'file'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:has?'#E8F5F0':'#FAF8F5', border:`1px solid ${has?'#cfe9df':'#e3d8ca'}`, color:has?'#2D6A4F':'#6B6560', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
