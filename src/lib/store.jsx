@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useCallback, useRef } from 'react';
 import {
-  INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS,
+  INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS,
   INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
   EVENT_IMG_PALETTE,
@@ -24,6 +24,7 @@ const INIT = {
   vendors: INITIAL_VENDORS,
   apps: INITIAL_APPS,
   payments: INITIAL_PAYMENTS,
+  refunds: INITIAL_REFUNDS,
   deposits: INITIAL_DEPOSITS,
   offenses: INITIAL_OFFENSES,
   eventPhotos: INITIAL_EVENT_PHOTOS,
@@ -39,6 +40,7 @@ const INIT = {
   appDetailId: null,
   eventDetailId: null,
   payModalKey: null,
+  refundModalKey: null,
   depModalVendor: null,
   passModalVendor: null,
   showApplyModal: false,
@@ -49,6 +51,7 @@ const INIT = {
   // forms
   pf: {},
   payf: {},
+  reff: {},
   depf: {},
   rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 },
   ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
@@ -80,6 +83,7 @@ function reducer(state, action) {
     case 'MERGE_VENDORS': return { ...state, vendors: action.payload };
     case 'MERGE_APPS': return { ...state, apps: action.payload };
     case 'MERGE_PAYMENTS': return { ...state, payments: { ...state.payments, ...action.payload } };
+    case 'MERGE_REFUNDS': return { ...state, refunds: { ...state.refunds, ...action.payload } };
     case 'MERGE_DEPOSITS': return { ...state, deposits: { ...state.deposits, ...action.payload } };
     case 'MERGE_OFFENSES': return { ...state, offenses: action.payload };
     case 'MERGE_PASSES': return { ...state, passes: { ...state.passes, ...action.payload } };
@@ -113,7 +117,7 @@ export function StoreProvider({ children }) {
 
   const closeModals = useCallback(() => set({
     vendorDetailId: null, vendorDetailReturnAppId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
-    depModalVendor: null, passModalVendor: null, showApplyModal: false,
+    refundModalKey: null, depModalVendor: null, passModalVendor: null, showApplyModal: false,
     applyEventId: null,
   }), [set]);
 

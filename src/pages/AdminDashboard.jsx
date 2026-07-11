@@ -42,13 +42,14 @@ function Pager({ total, perPage, page, onPage }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { aTab, events, vendors, apps, payments, deposits, offenses, eventPhotos, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, eventPhotos, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
   const [showRejected, setShowRejected] = useState(false);
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
   const depRec = id => deposits[id]||{status:'unpaid',inv:'',payDate:'',refundDate:''};
-  const payRec = key => payments[key]||{status:'unpaid',paid:0,advice:false,invoice:true,receipt:false};
+  const payRec = key => payments[key]||{status:'unpaid',paid:0,advice:false,invoice:false,receipt:false};
+  const refundRec = key => refunds[key]||{status:'none'};
 
   const tabStyle = (active) => ({
     display:'inline-flex', alignItems:'center', gap:7, flexShrink:0,
@@ -427,8 +428,11 @@ export default function AdminDashboard() {
               const v = vById(a.vendorId);
               const dep = deposits[a.vendorId]||{status:'unpaid'};
               const calc = payCalc(v, curEv, dep.status);
-              const rec = payRec(`${a.vendorId}-${curEv.id}`);
+              const payKey = `${a.vendorId}-${curEv.id}`;
+              const rec = payRec(payKey);
+              const ref = refundRec(payKey);
               const isPartial = rec.status === 'partial';
+              const overpaidAmt = rec.paid - calc.total;
               const cardBorder = rec.status==='paid' ? '#cfe9df' : rec.status==='partial' ? '#f3e6c9' : '#efe7dc';
               return (
                 <div key={a.id} style={{ background:'#fff', border:`1px solid ${cardBorder}`, borderRadius:16, padding:15 }}>
@@ -444,8 +448,26 @@ export default function AdminDashboard() {
                     <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6560', marginTop:5 }}><span>SST (6%)</span><span>RM {money(calc.sst)}</span></div>
                     {calc.needsDeposit && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6560', marginTop:5 }}><span style={{ display:'inline-flex', alignItems:'center', gap:5 }}>Refundable deposit <span style={{ fontSize:9.5, fontWeight:700, background:'#FEF8EC', color:'#B7770D', borderRadius:5, padding:'1px 5px' }}>NOT YET HELD</span></span><span>RM 100.00</span></div>}
                     <div style={{ display:'flex', justifyContent:'space-between', fontSize:14, fontWeight:700, color:'#1C1A17', marginTop:8, paddingTop:8, borderTop:'1px solid #efe7dc' }}><span>Total due</span><span>RM {money(calc.total)}</span></div>
-                    {isPartial && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginTop:6, color:'#C76A0D', fontWeight:600 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
+                    {isPartial && overpaidAmt <= 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginTop:6, color:'#C76A0D', fontWeight:600 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
                   </div>
+                  {overpaidAmt > 0 && ref.status !== 'closed' && (
+                    <div style={{ background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:12, padding:'11px 13px', marginTop:11 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7, fontSize:12.5, fontWeight:700, color:'#B03A2E' }}>
+                        <Icon name="info" size={14} color="#B03A2E"/>Overpaid by RM {money(overpaidAmt)}
+                      </div>
+                      {ref.status === 'completed' ? (
+                        <>
+                          <div style={{ fontSize:11.5, color:'#8a4a3e', marginTop:6 }}>Refund completed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
+                          <button onClick={()=>{ dispatch({type:'MERGE_REFUNDS',payload:{[payKey]:{...ref,status:'closed'}}}); logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'#EEF1FB'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'#fff', border:'1px solid #f3d5d0', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
+                        </>
+                      ) : (
+                        <button onClick={()=>set({refundModalKey:payKey,reff:{refCode:'',date:'',time:''}})} style={{ marginTop:9, background:'#B03A2E', color:'#fff', border:'none', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Arrange refund</button>
+                      )}
+                    </div>
+                  )}
+                  {overpaidAmt > 0 && ref.status === 'closed' && (
+                    <div style={{ fontSize:11, color:'#A09890', marginTop:9 }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
+                  )}
                   <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:11 }}>
                     {rec.advice ? (
                       <button onClick={()=>showToast(`Downloading ${v.business}'s payment advice…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
@@ -456,10 +478,19 @@ export default function AdminDashboard() {
                         <Icon name="clock" size={13} color="#A09890"/>Payment advice — not yet uploaded by vendor
                       </span>
                     )}
+                    {isPartial && (rec.advice2 ? (
+                      <button onClick={()=>showToast(`Downloading ${v.business}'s second payment advice…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <Icon name="download" size={13} color="#2D6A4F"/>2nd payment advice
+                      </button>
+                    ) : (
+                      <span title="Uploaded by the vendor, not admin" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#F2EDE6', border:'1px solid #e7ddd0', color:'#A09890', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px' }}>
+                        <Icon name="clock" size={13} color="#A09890"/>2nd payment advice — not yet uploaded
+                      </span>
+                    ))}
                     {[['invoice','Invoice'],['receipt','Receipt']].map(([flag,label]) => {
                       const has = rec[flag];
                       return (
-                        <button key={flag} onClick={()=>{ const p={...payments}; const cur=p[`${a.vendorId}-${curEv.id}`]||{status:'unpaid',paid:0,advice:false,invoice:true,receipt:false}; p[`${a.vendorId}-${curEv.id}`]={...cur,[flag]:!cur[flag]}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast((has?'Removed ':'Uploaded ')+label,'file'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:has?'#E8F5F0':'#FAF8F5', border:`1px solid ${has?'#cfe9df':'#e3d8ca'}`, color:has?'#2D6A4F':'#6B6560', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <button key={flag} onClick={()=>{ const p={...payments}; const cur=p[payKey]||{status:'unpaid',paid:0,advice:false,invoice:false,receipt:false}; p[payKey]={...cur,[flag]:!cur[flag]}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast((has?'Removed ':'Uploaded ')+label,'file'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:has?'#E8F5F0':'#FAF8F5', border:`1px solid ${has?'#cfe9df':'#e3d8ca'}`, color:has?'#2D6A4F':'#6B6560', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
                           <Icon name={has?'check':'upload'} size={13} color={has?'#2D6A4F':'#6B6560'}/>{label}
                         </button>
                       );

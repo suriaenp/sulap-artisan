@@ -39,6 +39,8 @@ export const INITIAL_PAYMENTS = {
   'v1-e1': { status:'partial', paid:300,    advice:true,  invoice:true,  receipt:false },
 };
 
+export const INITIAL_REFUNDS = {};
+
 export const INITIAL_DEPOSITS = {
   v1: { status:'paid',     inv:'DEP-1042', payDate:'2026-06-18', refundDate:'' },
   v3: { status:'refunded', inv:'DEP-0991', payDate:'2026-05-02', refundDate:'2026-06-10' },

@@ -15,13 +15,14 @@ const TABS = [
 ];
 
 export default function VendorDashboard() {
-  const { state, set, showToast, closeModals } = useStore();
-  const { vTab, events, vendors, apps, payments, deposits, parking, passes } = state;
+  const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
+  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes } = state;
   const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
   const today = new Date(); today.setHours(0,0,0,0);
 
   const depRec = (id) => deposits[id] || { status:'unpaid', inv:'', payDate:'', refundDate:'' };
-  const payRec = (key) => payments[key] || { status:'unpaid', paid:0, advice:false, invoice:true, receipt:false };
+  const payRec = (key) => payments[key] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
+  const refundRec = (key) => refunds[key] || { status:'none' };
 
   const tabStyle = (active) => ({
     flex:1, border:active?'none':'1px solid #efe7dc', fontFamily:"'DM Sans'",
@@ -222,8 +223,20 @@ export default function VendorDashboard() {
             const ev = events.find(e => e.id === a.eventId) || {};
             const dep = depRec(CURRENT_VENDOR_ID);
             const calc = payCalc(me, ev, dep.status);
-            const rec = payRec(`${CURRENT_VENDOR_ID}-${ev.id}`);
+            const payKey = `${CURRENT_VENDOR_ID}-${ev.id}`;
+            const rec = payRec(payKey);
+            const ref = refundRec(payKey);
             const isPartial = rec.status === 'partial';
+            const overpaidAmt = rec.paid - calc.total;
+            const toggleAdvice = (field, label) => {
+              const p = {...payments};
+              const cur = p[payKey] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
+              const wasUploaded = cur[field];
+              p[payKey] = {...cur, [field]: !wasUploaded};
+              dispatch({type:'MERGE_PAYMENTS', payload:p});
+              logActivity(me.business, `${wasUploaded?'removed':'uploaded'} ${label} for ${ev.name}.`, {icon:'file', tint:'#F8E9EE', type:'vendor'});
+              showToast(wasUploaded?`${label} removed`:`${label} uploaded`,'file');
+            };
             return (
               <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
                 <div style={{ padding:'15px 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -242,7 +255,7 @@ export default function VendorDashboard() {
                       <span style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>Total due</span>
                       <span style={{ fontFamily:"'Playfair Display',serif", fontSize:21, fontWeight:600, color:'#1C1A17' }}>RM {money(calc.total)}</span>
                     </div>
-                    {isPartial && <div style={{ display:'flex', justifyContent:'space-between', fontSize:11.5, color:'#C76A0D', fontWeight:600, marginTop:5 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
+                    {isPartial && overpaidAmt <= 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:11.5, color:'#C76A0D', fontWeight:600, marginTop:5 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <div style={{ flex:1, display:'flex', alignItems:'center', gap:8, background:'#FAF8F5', border:'1px solid #efe7dc', borderRadius:10, padding:'9px 11px' }}>
@@ -252,6 +265,25 @@ export default function VendorDashboard() {
                       <Icon name="download" size={14} color="#FAF8F5"/>Invoice
                     </button>
                   </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:9 }}>
+                    <button onClick={()=>toggleAdvice('advice','Payment advice')} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:rec.advice?'#E8F5F0':'#FAF8F5', border:`1px solid ${rec.advice?'#cfe9df':'#e3d8ca'}`, color:rec.advice?'#2D6A4F':'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                      <Icon name={rec.advice?'check':'upload'} size={14} color={rec.advice?'#2D6A4F':'#6B6560'}/>{rec.advice?'Payment advice uploaded':'Upload payment advice'}
+                    </button>
+                    {isPartial && (
+                      <button onClick={()=>toggleAdvice('advice2','second payment advice')} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:rec.advice2?'#E8F5F0':'#FAF8F5', border:`1px solid ${rec.advice2?'#cfe9df':'#e3d8ca'}`, color:rec.advice2?'#2D6A4F':'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                        <Icon name={rec.advice2?'check':'upload'} size={14} color={rec.advice2?'#2D6A4F':'#6B6560'}/>{rec.advice2?'Second payment advice uploaded':'Upload second payment advice (remaining balance)'}
+                      </button>
+                    )}
+                  </div>
+                  {overpaidAmt > 0 && ref.status !== 'closed' && (
+                    <div style={{ display:'flex', alignItems:'flex-start', gap:8, background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:11, padding:'10px 12px', marginTop:11, fontSize:12, color:'#B03A2E', lineHeight:1.45 }}>
+                      <Icon name="info" size={14} color="#B03A2E" style={{ marginTop:1 }}/>
+                      <div>You've overpaid by RM {money(overpaidAmt)}. {ref.status==='completed' ? `Refund completed · Ref ${ref.refCode} · ${ref.date} ${fmtTime(ref.time)}.` : `We're arranging a refund — you'll be notified once it's processed.`}</div>
+                    </div>
+                  )}
+                  {overpaidAmt > 0 && ref.status === 'closed' && (
+                    <div style={{ fontSize:11, color:'#A09890', marginTop:9 }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
+                  )}
                 </div>
               </div>
             );

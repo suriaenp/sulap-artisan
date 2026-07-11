@@ -424,4 +424,37 @@ export function DepositModal() {
   );
 }
 
+// ── Refund Modal (overpayment) ──────────────────────────────────────────────
+export function RefundModal() {
+  const { state, dispatch, set, showToast, logActivity } = useStore();
+  const { refundModalKey, reff, vendors, events, payments } = state;
+  if (!refundModalKey) return null;
+  const [vid, eid] = refundModalKey.split('-');
+  const v = vendors.find(x=>x.id===vid)||{};
+  const ev = events.find(x=>x.id===eid)||{};
+  const rec = payments[refundModalKey]||{paid:0};
+  const close = () => set({refundModalKey:null});
+  const upd = (k,val) => set({reff:{...reff,[k]:val}});
+  const save = () => {
+    if (!reff.refCode || !reff.date || !reff.time) { showToast('Fill in reference code, date, and time first','info'); return; }
+    dispatch({type:'MERGE_REFUNDS',payload:{[refundModalKey]:{refCode:reff.refCode,date:reff.date,time:reff.time,status:'completed'}}});
+    logActivity('Admin', `marked ${v.business}'s refund for ${ev.name} as complete.`, {icon:'wallet', tint:'#EEF1FB'});
+    showToast('Refund marked complete','check');
+    close();
+  };
+  const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' };
+  return (
+    <Sheet onClose={close} maxW={440}>
+      <SheetHeader title="Arrange refund" sub={`${v.business} · ${ev.name}`} onClose={close}/>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#6B6560', background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:11, padding:'11px 13px', marginTop:14 }}>
+        <span>Amount paid</span><span style={{ fontWeight:700, color:'#B03A2E' }}>RM {money(rec.paid)}</span>
+      </div>
+      <div style={{ marginTop:14 }}><div style={lbl}>Reference code</div><input value={reff.refCode||''} onChange={e=>upd('refCode',e.target.value)} placeholder="REF-0000" style={inp}/></div>
+      <div style={{ marginTop:13 }}><div style={lbl}>Date of refund</div><input type="date" value={reff.date||''} onChange={e=>upd('date',e.target.value)} style={inp}/></div>
+      <div style={{ marginTop:13 }}><div style={lbl}>Time of refund</div><input type="time" value={reff.time||''} onChange={e=>upd('time',e.target.value)} style={inp}/></div>
+      <button onClick={save} style={{ marginTop:18, width:'100%', background:'#A6364E', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark refund complete</button>
+    </Sheet>
+  );
+}
+
 const lbl = { display:'block', fontSize:12, fontWeight:600, color:'#1C1A17', marginBottom:6 };
