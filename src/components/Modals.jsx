@@ -1,5 +1,6 @@
 import Icon from './Icon';
 import Badge from './Badge';
+import PhotoTile from './PhotoTile';
 import { useStore } from '../lib/store';
 import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 import { dayCount, fmtShort, money } from '../lib/helpers';
@@ -36,7 +37,6 @@ export function VendorDetailModal() {
   const { vendorDetailId, vendorDetailReturnAppId, vendors, settings } = state;
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
-  const tileColors = ['linear-gradient(135deg,#F0D8DD,#C75C84)','linear-gradient(135deg,#cdbBa0,#8B6F4E)','linear-gradient(135deg,#d8c0a8,#9c7a52)'];
   const close = () => vendorDetailReturnAppId
     ? set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId})
     : set({vendorDetailId:null});
@@ -57,9 +57,10 @@ export function VendorDetailModal() {
           <Icon name="info" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Power: {v.power}</span>
         </div>
       </div>
-      <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'16px 2px 8px' }}>Product photos</div>
+      <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'16px 2px 8px' }}>Product photos ({(v.productPhotos||[]).length})</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:9 }}>
-        {tileColors.slice(0,v.photos||2).map((bg,i)=><div key={i} style={{ width:96, height:96, borderRadius:12, background:bg }}/>)}
+        {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={96}/>)}
+        {!(v.productPhotos||[]).length && <div style={{ fontSize:12, color:'#A09890' }}>No photos uploaded yet.</div>}
       </div>
       {v.status === 'pending' && (
         <div style={{ display:'flex', gap:10, marginTop:20 }}>
@@ -101,7 +102,6 @@ export function AppDetailModal() {
   const v = vendors.find(x=>x.id===a.vendorId)||{};
   const ev = events.find(x=>x.id===a.eventId)||{};
   const partners = (a.partners||[]).map(pid=>vendors.find(x=>x.id===pid)).filter(Boolean);
-  const tileColors = ['linear-gradient(135deg,#F0D8DD,#C75C84)','linear-gradient(135deg,#cdbBa0,#8B6F4E)','linear-gradient(135deg,#d8c0a8,#9c7a52)'];
   const close = () => set({appDetailId:null});
   return (
     <Sheet onClose={close} centered>
@@ -110,9 +110,10 @@ export function AppDetailModal() {
         {a.status==='approved' ? 'Approved' : a.status==='rejected' ? 'Rejected' : 'Awaiting review'}
       </span>
       <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:13 }}>{v.desc}</div>
-      <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'15px 2px 8px' }}>Product photos</div>
+      <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'15px 2px 8px' }}>Product photos ({(v.productPhotos||[]).length})</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:9 }}>
-        {tileColors.slice(0,v.photos||2).map((bg,i)=><div key={i} style={{ width:88, height:88, borderRadius:12, background:bg }}/>)}
+        {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={88}/>)}
+        {!(v.productPhotos||[]).length && <div style={{ fontSize:12, color:'#A09890' }}>No photos uploaded yet.</div>}
       </div>
       <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:15, marginTop:18 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>

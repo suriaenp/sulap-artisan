@@ -1,12 +1,16 @@
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
+import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc } from '../lib/helpers';
 import { CURRENT_VENDOR_ID } from '../data/mockData';
+import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 
 const TABS = [
   { id:'events',   label:'Available Markets' },
   { id:'apps',     label:'My Applications' },
+  { id:'photos',   label:'Product Photos' },
+  { id:'eventPics',label:'Event Pictures' },
   { id:'docs',     label:'Documents' },
   { id:'payments', label:'Payments' },
   { id:'parking',  label:'Parking' },
@@ -16,7 +20,7 @@ const TABS = [
 
 export default function VendorDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes } = state;
+  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes, eventPhotos } = state;
   const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
   const today = new Date(); today.setHours(0,0,0,0);
 
@@ -159,6 +163,105 @@ export default function VendorDashboard() {
                         </div>
                       </div>
                       <Badge status={a.status} label={a.status==='pending'?'Awaiting review':undefined} />
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ── Product Photos ── */}
+      {vTab === 'photos' && (
+        <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
+          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Product photos</div>
+              <span style={{ fontSize:12, fontWeight:600, color:'#A6364E', background:'#F8E9EE', borderRadius:999, padding:'4px 11px' }}>{(me.productPhotos||[]).length} of 8</span>
+            </div>
+            <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginTop:7 }}>These photos represent your brand across every market you apply to. When you update them here, the Sulap team automatically sees your latest set.</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:14 }}>
+              {(me.productPhotos||[]).map(ph => (
+                <PhotoTile key={ph.id} photo={ph} size={90} onRemove={()=>{
+                  const next = (me.productPhotos||[]).filter(x=>x.id!==ph.id);
+                  dispatch({type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===me.id?{...x,productPhotos:next}:x)});
+                  logActivity(me.business, 'removed a product photo.', {icon:'image', tint:'#F8E9EE', type:'vendor'});
+                  showToast('Photo removed','image');
+                }}/>
+              ))}
+              <label style={{ width:90, height:90, borderRadius:10, border:'2px dashed #d8c6b2', background:'#FBF7F1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4, cursor:'pointer', flexShrink:0 }}>
+                <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e => {
+                  const files = [...e.target.files]; e.target.value = '';
+                  const cur = me.productPhotos||[];
+                  const room = 8 - cur.length;
+                  if (room <= 0) { showToast('Up to 8 photos — remove one first','info'); return; }
+                  if (files.length > room) showToast('Up to 8 photos — extra files were skipped','info');
+                  const added = await Promise.all(files.slice(0, room).map(fileToPhoto));
+                  if (!added.length) return;
+                  dispatch({type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===me.id?{...x,productPhotos:[...cur,...added]}:x)});
+                  logActivity(me.business, `uploaded ${added.length} new product photo(s).`, {icon:'image', tint:'#F8E9EE', type:'vendor'});
+                  showToast(`${added.length} photo(s) uploaded`,'check');
+                }}/>
+                <Icon name="upload" size={20} color="#A6364E"/><span style={{ fontSize:10, fontWeight:600, color:'#A6364E' }}>Add photos</span>
+              </label>
+            </div>
+          </div>
+          <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
+            <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }}/>
+            Keep your photos current — the Sulap team uses your latest set for every event you join, including printed and social media materials.
+          </div>
+        </div>
+      )}
+
+      {/* ── Event Pictures ── */}
+      {vTab === 'eventPics' && (
+        <div style={{ padding:'12px 16px 20px' }}>
+          {(() => {
+            const myApproved = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved');
+            if (!myApproved.length) return (
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <Icon name="camera" size={34} color="#bcae9c"/>
+                <div style={{ fontSize:14, fontWeight:600, color:'#6B6560', marginTop:13 }}>No event pictures yet</div>
+                <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Once you're approved for a market, photos taken by the Sulap team will appear here.</div>
+              </div>
+            );
+            return (
+              <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
+                {myApproved.map(a => {
+                  const ev = events.find(e => e.id === a.eventId) || {};
+                  const photos = eventPhotos[`${CURRENT_VENDOR_ID}-${ev.id}`] || [];
+                  return (
+                    <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>
+                          <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange} · {photos.length} photo(s) from the Sulap team</div>
+                        </div>
+                        {photos.length > 0 && (
+                          <button onClick={async ()=>{
+                            showToast('Preparing your download…','download');
+                            await downloadZip(
+                              photos.map((ph,i)=>({ filename:`${safeName(ev.name)} - ${String(i+1).padStart(3,'0')}.${photoExt(ph)}`, photo:ph })),
+                              `${safeName(ev.name)} - event photos.zip`
+                            );
+                            showToast('ZIP saved to your downloads','check');
+                          }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#A6364E', border:'none', color:'#FAF8F5', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer', flexShrink:0 }}>
+                            <Icon name="download" size={13} color="#FAF8F5"/>Download all
+                          </button>
+                        )}
+                      </div>
+                      {photos.length > 0 ? (
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:13 }}>
+                          {photos.map((ph,i) => (
+                            <PhotoTile key={ph.id} photo={ph} size={90} onDownload={()=>downloadPhoto(ph, `${safeName(ev.name)} - ${String(i+1).padStart(3,'0')}.${photoExt(ph)}`)}/>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ display:'flex', alignItems:'center', gap:8, background:'#FBF7F1', borderRadius:11, padding:'11px 13px', marginTop:12, fontSize:12.5, color:'#A09890' }}>
+                          <Icon name="clock" size={14} color="#A09890"/>The Sulap team hasn't uploaded photos for this market yet.
+                        </div>
+                      )}
                     </div>
                   );
                 })}

@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useCallback, useRef } from 'react';
 import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
-  INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS,
+  INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
   EVENT_IMG_PALETTE,
 } from '../data/mockData';
@@ -28,6 +28,7 @@ const INIT = {
   deposits: INITIAL_DEPOSITS,
   offenses: INITIAL_OFFENSES,
   eventPhotos: INITIAL_EVENT_PHOTOS,
+  photoDownloads: INITIAL_PHOTO_DOWNLOADS,
   parking: INITIAL_PARKING,
   passes: INITIAL_PASSES,
   cats: INITIAL_CATS,
@@ -53,7 +54,7 @@ const INIT = {
   payf: {},
   reff: {},
   depf: {},
-  rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 },
+  rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[] },
   ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   cf: null,
@@ -89,6 +90,7 @@ function reducer(state, action) {
     case 'MERGE_PASSES': return { ...state, passes: { ...state.passes, ...action.payload } };
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
+    case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };
     case 'MERGE_CATS': return { ...state, cats: action.payload };
     case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
     default: return state;

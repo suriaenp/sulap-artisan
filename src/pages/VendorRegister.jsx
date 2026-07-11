@@ -1,7 +1,9 @@
 import { useRef } from 'react';
 import Icon from '../components/Icon';
+import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
 import { fmtShort } from '../lib/helpers';
+import { fileToPhoto } from '../lib/photoFiles';
 
 const CATS = [
   { id:'fnb',      icon:'utensils', name:'Food & Beverage',                desc:'Coffee, drinks, cakes, cookies, desserts, snacks, meals, packaged food' },
@@ -34,6 +36,7 @@ export default function VendorRegister() {
       if (!selectedCat) { showToast('Please select a product category', 'info'); return; }
       if (!rf.password || rf.password.length < 8) { showToast('Password must be at least 8 characters', 'info'); return; }
     }
+    if (regStep === 3 && rf.photos.length === 0) { showToast('Please upload at least one product photo', 'info'); return; }
     if (regStep < 4) { set({ regStep: regStep + 1 }); return; }
     if (!tcAccepted) { showToast('Please accept the market terms first', 'info'); return; }
 
@@ -51,13 +54,13 @@ export default function VendorRegister() {
       regDate: fmtShort(new Date()),
       status: autoApproved ? 'approved' : 'pending',
       power: rf.power.trim() || 'None',
-      photos: rf.photos,
+      productPhotos: rf.photos,
       desc: rf.desc.trim(),
     };
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
     logActivity(newVendor.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
     if (autoApproved) logActivity('Admin', `auto-approved ${newVendor.business} as a vendor.`, { icon: 'check', tint: '#F8E9EE' });
-    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 } });
+    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[] } });
   };
 
   const handleTermsScroll = (e) => {
@@ -174,17 +177,22 @@ export default function VendorRegister() {
         <div style={{ padding:20 }}>
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Product photos</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Show your best work — this appears on your vendor profile.</div>
-          <div onClick={()=>{ if (rf.photos < 8) upd('photos', rf.photos + 1); else showToast('Up to 8 photos','info'); }} style={{ marginTop:20, border:'2px dashed #d8c6b2', borderRadius:18, background:'#FBF7F1', padding:'30px 20px', textAlign:'center', cursor:'pointer' }}>
+          <label style={{ display:'block', marginTop:20, border:'2px dashed #d8c6b2', borderRadius:18, background:'#FBF7F1', padding:'30px 20px', textAlign:'center', cursor:'pointer' }}>
+            <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e => {
+              const files = [...e.target.files]; e.target.value = '';
+              const room = 8 - rf.photos.length;
+              if (files.length > room) showToast('Up to 8 photos — extra files were skipped','info');
+              const added = await Promise.all(files.slice(0, Math.max(room,0)).map(fileToPhoto));
+              if (added.length) upd('photos', [...rf.photos, ...added]);
+            }}/>
             <Icon name="camera" size={32} color="#A6364E" />
             <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17', marginTop:11 }}>Tap to upload photos</div>
             <div style={{ fontSize:12, color:'#A09890', marginTop:4 }}>JPG or PNG · up to 8 images</div>
-          </div>
-          {rf.photos > 0 && (
+          </label>
+          {rf.photos.length > 0 && (
             <div style={{ display:'flex', gap:9, marginTop:16, flexWrap:'wrap' }}>
-              {Array.from({length:rf.photos}).map((_,i) => (
-                <div key={i} style={{ width:'calc(25% - 7px)', aspectRatio:'1', borderRadius:13, background:`linear-gradient(135deg,hsl(${i*35+340},50%,72%),hsl(${i*35+320},45%,52%))`, position:'relative' }}>
-                  <span onClick={e=>{ e.stopPropagation(); upd('photos', rf.photos - 1); }} style={{ position:'absolute', top:5, right:6, background:'rgba(28,26,23,0.45)', color:'#fff', width:20, height:20, borderRadius:'50%', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>×</span>
-                </div>
+              {rf.photos.map(ph => (
+                <PhotoTile key={ph.id} photo={ph} size={86} onRemove={()=>upd('photos', rf.photos.filter(x=>x.id!==ph.id))}/>
               ))}
             </div>
           )}

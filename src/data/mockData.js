@@ -1,3 +1,7 @@
+// Placeholder photo factory — { id, name, grad } renders as a gradient tile and
+// downloads as a real generated image. Real uploads replace these with data URLs.
+const P = (id, name, c1, c2) => ({ id, name, grad: [c1, c2] });
+
 export const EVENT_IMG_PALETTE = [
   'linear-gradient(135deg,#C75C84,#A6364E)',
   'linear-gradient(135deg,#F0D8DD,#C75C84)',
@@ -14,13 +18,13 @@ export const INITIAL_EVENTS = [
 ];
 
 export const INITIAL_VENDORS = [
-  { id:'v1', business:'Nutmeg & Clay',   owner:'Aisyah Rahman', category:'Handcraft / Art',          email:'aisyah@nutmegclay.my',  phone:'013-8842210', ig:'@nutmegclay',     fb:'Nutmeg & Clay',   tiktok:'@nutmegclay',  plate:'SAB 1842 K', regDate:'14 Jun', status:'approved', power:'1× kiln display light (240V), 1× LED string', photos:3, desc:'Hand-thrown stoneware ceramics and small-batch botanical homewares, made in Kota Kinabalu. Mugs, planters, tableware and gift sets.' },
-  { id:'v2', business:'Borneo Brews',    owner:'Daniel Lim',    category:'Food & Beverage',          email:'hello@borneobrews.co',   phone:'016-7720145', ig:'@borneobrews',    fb:'Borneo Brews Co', tiktok:'@borneobrews', plate:'SA 9021 P',  regDate:'15 Jun', status:'approved', power:'1× espresso machine (240V, 13A), 1× grinder, 1× chest freezer', photos:4, desc:'Specialty cold brew, single-origin pour-overs and Sabah-grown coffee beans. Cups, bottles and retail bags.' },
-  { id:'v3', business:'Rattan Republic', owner:'Nadia Yusof',   category:'Fashion',                  email:'nadia@rattanrepublic.my',phone:'011-23398871', ig:'@rattan.republic',fb:'Rattan Republic', tiktok:'@rattanrepublic',plate:'SAB 553 T', regDate:'16 Jun', status:'approved', power:'None', photos:5, desc:'Handwoven rattan bags, hats and accessories using traditional Sabahan weaving techniques.' },
-  { id:'v4', business:'Pulau Soap Co.',  owner:'Grace Wong',    category:'Beauty & Wellness',        email:'grace@pulausoap.my',     phone:'014-6650092', ig:'@pulausoap',      fb:'Pulau Soap Co',   tiktok:'@pulausoap',   plate:'SS 1180 A',  regDate:'17 Jun', status:'approved', power:'1× display fridge (240V)', photos:2, desc:'Cold-process artisan soaps, body scrubs and balms made with island botanicals. Plastic-free packaging.' },
-  { id:'v5', business:'Kinabalu Kopi',   owner:'Faiz Anuar',    category:'Food & Beverage',          email:'faiz@kkkopi.my',         phone:'012-3041188', ig:'@kinabalukopi',   fb:'Kinabalu Kopi',   tiktok:'@kkkopi',      plate:'SAB 700 G',  regDate:'18 Jun', status:'approved', power:'1× coffee machine (240V, 13A), 1× water boiler', photos:3, desc:'Traditional Sabah kopi, kaya toast and local kuih. Hot and iced drinks plus retail coffee packs.' },
-  { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  status:'pending',  power:'None', photos:3, desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.' },
-  { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', status:'pending',  power:'None', photos:4, desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.' },
+  { id:'v1', business:'Nutmeg & Clay',   owner:'Aisyah Rahman', category:'Handcraft / Art',          email:'aisyah@nutmegclay.my',  phone:'013-8842210', ig:'@nutmegclay',     fb:'Nutmeg & Clay',   tiktok:'@nutmegclay',  plate:'SAB 1842 K', regDate:'14 Jun', status:'approved', power:'1× kiln display light (240V), 1× LED string', productPhotos:[P('v1p1','stoneware-mugs.jpg','#E8C5B8','#A56548'),P('v1p2','botanical-planters.jpg','#D9C6A5','#8B6F4E'),P('v1p3','tableware-set.jpg','#C9A99B','#7A4A38')], desc:'Hand-thrown stoneware ceramics and small-batch botanical homewares, made in Kota Kinabalu. Mugs, planters, tableware and gift sets.' },
+  { id:'v2', business:'Borneo Brews',    owner:'Daniel Lim',    category:'Food & Beverage',          email:'hello@borneobrews.co',   phone:'016-7720145', ig:'@borneobrews',    fb:'Borneo Brews Co', tiktok:'@borneobrews', plate:'SA 9021 P',  regDate:'15 Jun', status:'approved', power:'1× espresso machine (240V, 13A), 1× grinder, 1× chest freezer', productPhotos:[P('v2p1','cold-brew-bottles.jpg','#D7B899','#6F4E37'),P('v2p2','pour-over-set.jpg','#C9AE8B','#4A3728'),P('v2p3','coffee-beans.jpg','#B58B5E','#3E2A1A'),P('v2p4','iced-latte.jpg','#E3CDB0','#8B5E3C')], desc:'Specialty cold brew, single-origin pour-overs and Sabah-grown coffee beans. Cups, bottles and retail bags.' },
+  { id:'v3', business:'Rattan Republic', owner:'Nadia Yusof',   category:'Fashion',                  email:'nadia@rattanrepublic.my',phone:'011-23398871', ig:'@rattan.republic',fb:'Rattan Republic', tiktok:'@rattanrepublic',plate:'SAB 553 T', regDate:'16 Jun', status:'approved', power:'None', productPhotos:[P('v3p1','rattan-tote.jpg','#E2CBA8','#9C7A52'),P('v3p2','woven-hat.jpg','#D9BE93','#8A6B42'),P('v3p3','clutch-bags.jpg','#CBB088','#7A5C38'),P('v3p4','market-basket.jpg','#E6D2B0','#A5824F'),P('v3p5','earrings-set.jpg','#D4B98F','#8F7046')], desc:'Handwoven rattan bags, hats and accessories using traditional Sabahan weaving techniques.' },
+  { id:'v4', business:'Pulau Soap Co.',  owner:'Grace Wong',    category:'Beauty & Wellness',        email:'grace@pulausoap.my',     phone:'014-6650092', ig:'@pulausoap',      fb:'Pulau Soap Co',   tiktok:'@pulausoap',   plate:'SS 1180 A',  regDate:'17 Jun', status:'approved', power:'1× display fridge (240V)', productPhotos:[P('v4p1','botanical-soaps.jpg','#F0D8DD','#C75C84'),P('v4p2','body-scrubs.jpg','#DCE8DD','#7FA88B')], desc:'Cold-process artisan soaps, body scrubs and balms made with island botanicals. Plastic-free packaging.' },
+  { id:'v5', business:'Kinabalu Kopi',   owner:'Faiz Anuar',    category:'Food & Beverage',          email:'faiz@kkkopi.my',         phone:'012-3041188', ig:'@kinabalukopi',   fb:'Kinabalu Kopi',   tiktok:'@kkkopi',      plate:'SAB 700 G',  regDate:'18 Jun', status:'approved', power:'1× coffee machine (240V, 13A), 1× water boiler', productPhotos:[P('v5p1','kopi-o-classic.jpg','#C8A176','#5C3A21'),P('v5p2','kaya-toast.jpg','#E8CFA3','#B07E3F'),P('v5p3','retail-packs.jpg','#B98F63','#4A2E18')], desc:'Traditional Sabah kopi, kaya toast and local kuih. Hot and iced drinks plus retail coffee packs.' },
+  { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  status:'pending',  power:'None', productPhotos:[P('v6p1','motif-rings.jpg','#D8D8DC','#8A8A94'),P('v6p2','pendants.jpg','#C9C9CF','#6E6E78'),P('v6p3','pattern-cuffs.jpg','#E2E2E6','#9A9AA4')], desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.' },
+  { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', status:'pending',  power:'None', productPhotos:[P('v7p1','pandan-baskets.jpg','#D9E3C9','#7C9153'),P('v7p2','placemats.jpg','#CBD8B5','#6B8046'),P('v7p3','storage-boxes.jpg','#E1E8D2','#8CA05E'),P('v7p4','bamboo-trays.jpg','#D2DFBE','#75894C')], desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.' },
 ];
 
 export const INITIAL_APPS = [
@@ -55,11 +59,15 @@ export const INITIAL_OFFENSES = [
   { id:'o5', vendorId:'v2', eventId:'e1', type:'cleanup'   },
 ];
 
+// Admin-uploaded event photos, keyed `${vendorId}-${eventId}`.
+// Vendors download these from their Event Pictures tab.
 export const INITIAL_EVENT_PHOTOS = {
-  'v1-e1': { vendor:3, admin:1 },
-  'v5-e1': { vendor:2, admin:0 },
-  'v3-e1': { vendor:0, admin:0 },
+  'v1-e1': [P('v1e1a','booth-opening.jpg','#C75C84','#5C1F2E'), P('v1e1b','crowd-evening.jpg','#8C3A4E','#2A1420')],
 };
+
+// Tracks which vendors' product photos admin has already bulk-downloaded,
+// keyed `${vendorId}-${eventId}` → date string.
+export const INITIAL_PHOTO_DOWNLOADS = {};
 
 export const INITIAL_PARKING = {
   'v1-e1-1':'P-A12', 'v1-e1-2':'P-A12', 'v1-e1-3':'P-A12',

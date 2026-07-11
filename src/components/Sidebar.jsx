@@ -4,6 +4,8 @@ import { useStore } from '../lib/store';
 const VENDOR_TABS = [
   { id:'events',   label:'Available Markets', icon:'calendar' },
   { id:'apps',     label:'My Applications',   icon:'clipboard' },
+  { id:'photos',   label:'Product Photos',    icon:'image' },
+  { id:'eventPics',label:'Event Pictures',    icon:'camera' },
   { id:'docs',     label:'Documents',         icon:'file' },
   { id:'payments', label:'Payments',          icon:'receipt' },
   { id:'parking',  label:'Parking',           icon:'car' },

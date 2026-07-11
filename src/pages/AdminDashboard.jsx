@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
+import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount } from '../lib/helpers';
 import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
+import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 
 const ADMIN_TABS = [
   { id:'overview',   label:'Overview',            icon:'bars' },
@@ -42,8 +44,12 @@ function Pager({ total, perPage, page, onPage }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, eventPhotos, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, eventPhotos, photoDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
   const [showRejected, setShowRejected] = useState(false);
+  const [photoSel, setPhotoSel] = useState({});        // booth-group selection for bulk download
+  const [photoFilter, setPhotoFilter] = useState('all'); // 'all' | 'new'
+  const [bulkUpMsg, setBulkUpMsg] = useState(null);      // bulk upload result summary
+  const [zipBusy, setZipBusy] = useState(false);
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
@@ -66,8 +72,24 @@ export default function AdminDashboard() {
   const pagedApps    = filteredApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPayments= approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPark    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const pagedPhotos  = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPass    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
+
+  // Booth groups for Event Pictures: main vendor + booth sharers together, de-duplicated
+  // (partners who also hold their own application row are not shown twice)
+  const boothGroups = (() => {
+    const seen = new Set(); const groups = [];
+    approvedApps.forEach(a => {
+      if (seen.has(a.vendorId)) return;
+      const members = [a.vendorId, ...(a.partners||[])].filter((id,i,arr) => arr.indexOf(id) === i);
+      members.forEach(id => seen.add(id));
+      groups.push({ id: a.id, members, shared: members.length > 1 });
+    });
+    return groups;
+  })();
+  const groupDownloaded = g => g.members.every(vid => photoDownloads[`${vid}-${filterEvent}`]);
+  const filteredGroups  = photoFilter === 'new' ? boothGroups.filter(g => !groupDownloaded(g)) : boothGroups;
+  const pagedGroups     = filteredGroups.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const selectedGroups  = filteredGroups.filter(g => photoSel[g.id]);
   const pendingVendors = vendors.filter(v => v.status === 'pending');
   const approvedVendors = vendors.filter(v => v.status === 'approved' || v.status === 'suspended');
   const rejectedVendors = vendors.filter(v => v.status === 'rejected');
@@ -76,6 +98,71 @@ export default function AdminDashboard() {
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
+
+  // ── Event Pictures handlers ──
+  const markDownloaded = (vids) => {
+    const marks = {};
+    vids.forEach(vid => { marks[`${vid}-${filterEvent}`] = fmtShort(new Date()); });
+    dispatch({ type:'MERGE_PHOTO_DOWNLOADS', payload:marks });
+  };
+
+  const downloadVendorZip = async (v) => {
+    const phs = v.productPhotos || [];
+    if (!phs.length) { showToast(`${v.business} has no product photos yet`,'info'); return; }
+    setZipBusy(true); showToast('Preparing ZIP…','download');
+    try {
+      await downloadZip(
+        phs.map((ph,i)=>({ folder:v.business, filename:renamedFile(v.business,i,curEv.name,photoExt(ph)), photo:ph })),
+        `${safeName(v.business)} - ${safeName(curEv.name)}.zip`
+      );
+      markDownloaded([v.id]);
+      logActivity('Admin', `downloaded ${v.business}'s product photos for ${curEv.name}.`, {icon:'download', tint:'#EEF1FB'});
+      showToast(`${phs.length} photo(s) saved`,'check');
+    } finally { setZipBusy(false); }
+  };
+
+  const bulkDownloadSel = async () => {
+    if (!selectedGroups.length) { showToast('Tick at least one booth first','info'); return; }
+    const entries = []; const vids = [];
+    selectedGroups.forEach(g => g.members.forEach(vid => {
+      const v = vById(vid); vids.push(vid);
+      (v.productPhotos||[]).forEach((ph,i)=>entries.push({ folder:v.business, filename:renamedFile(v.business,i,curEv.name,photoExt(ph)), photo:ph }));
+    }));
+    if (!entries.length) { showToast('Selected vendors have no photos yet','info'); return; }
+    setZipBusy(true); showToast('Preparing ZIP…','download');
+    try {
+      await downloadZip(entries, `${safeName(curEv.name)} - vendor photos.zip`);
+      markDownloaded(vids);
+      setPhotoSel({});
+      logActivity('Admin', `bulk downloaded product photos for ${vids.length} vendor(s) — ${curEv.name}.`, {icon:'download', tint:'#EEF1FB'});
+      showToast(`ZIP saved · ${entries.length} photos from ${vids.length} vendors`,'check');
+    } finally { setZipBusy(false); }
+  };
+
+  const handleBulkUpload = async (e) => {
+    const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
+    e.target.value = '';
+    if (!files.length) { showToast('No images found in that folder','info'); return; }
+    const nameMap = {};
+    boothGroups.forEach(g => g.members.forEach(vid => { const v = vById(vid); nameMap[(v.business||'').toLowerCase().trim()] = vid; }));
+    const adds = {}; const unmatched = new Set(); const matchedVendors = new Set(); let count = 0;
+    for (const f of files) {
+      const parts = (f.webkitRelativePath || f.name).split('/');
+      const folder = parts.length >= 2 ? parts[parts.length-2] : '';
+      const vid = nameMap[folder.toLowerCase().trim()];
+      if (!vid) { unmatched.add(folder || f.name); continue; }
+      const ph = await fileToPhoto(f);
+      const key = `${vid}-${filterEvent}`;
+      adds[key] = [...(adds[key] || eventPhotos[key] || []), ph];
+      matchedVendors.add(vid); count++;
+    }
+    if (count) {
+      dispatch({ type:'MERGE_PHOTOS', payload:adds });
+      logActivity('Admin', `bulk uploaded ${count} event photo(s) to ${matchedVendors.size} vendor(s) — ${curEv.name}.`, {icon:'upload', tint:'#E8F5F0'});
+    }
+    setBulkUpMsg({ count, vendors:matchedVendors.size, unmatched:[...unmatched] });
+    showToast(count ? `${count} photo(s) uploaded to ${matchedVendors.size} vendor(s)` : 'No folders matched vendor names', count ? 'check' : 'info');
+  };
 
   return (
     <div>
@@ -619,39 +706,115 @@ export default function AdminDashboard() {
       {aTab === 'photos' && (
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={lbl}>Select event</div>
-          <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:8 }}>
+          <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPhotoSel({}); setBulkUpMsg(null); }} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:8 }}>
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
-          <div style={{ fontSize:11.5, color:'#A09890', marginBottom:14 }}>Vendors submit product photos when applying. Download their uploads or upload event photos for them to download.</div>
+          <div style={{ fontSize:11.5, color:'#A09890', marginBottom:12, lineHeight:1.5 }}>Vendor product photos come from their profile — always their latest set. Booth sharers are grouped with the main vendor. Bulk downloads save one folder per business, renamed "Vendor - 001 - Event".</div>
+
+          {/* Toolbar */}
+          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
+            {[['all','All vendors'],['new',`New — not downloaded (${boothGroups.filter(g=>!groupDownloaded(g)).length})`]].map(([id,label]) => (
+              <button key={id} onClick={()=>{ setPhotoFilter(id); setPhotoSel({}); set({page:1}); }} style={{ background:photoFilter===id?'#A6364E':'#fff', border:`1px solid ${photoFilter===id?'#A6364E':'#e3d8ca'}`, color:photoFilter===id?'#FAF8F5':'#6B6560', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
+            ))}
+            <div style={{ flex:1 }}/>
+            <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:600, color:'#6B6560', cursor:'pointer', background:'#fff', border:'1px solid #e3d8ca', borderRadius:9, padding:'8px 12px' }}>
+              <input type="checkbox" style={{ accentColor:'#A6364E', width:15, height:15, cursor:'pointer' }}
+                checked={filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id])}
+                onChange={()=>{ const all = filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id]); setPhotoSel(all ? {} : Object.fromEntries(filteredGroups.map(g=>[g.id,true]))); }}/>
+              Select all
+            </label>
+            <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'#A6364E':'#F2EDE6', border:'none', color:selectedGroups.length?'#FAF8F5':'#A09890', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
+              <Icon name="download" size={14} color={selectedGroups.length?'#FAF8F5':'#A09890'}/>Bulk download{selectedGroups.length?` (${selectedGroups.length})`:''}
+            </button>
+            <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#fff', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+              <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={handleBulkUpload}/>
+              <Icon name="upload" size={14} color="#A6364E"/>Bulk upload
+            </label>
+          </div>
+
+          {bulkUpMsg && (
+            <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:bulkUpMsg.count?'#E8F5F0':'#FEF8EC', border:`1px solid ${bulkUpMsg.count?'#cfe9df':'#f3e6c9'}`, borderRadius:12, padding:'11px 13px', marginBottom:12, fontSize:12, color:bulkUpMsg.count?'#2D6A4F':'#B7770D', lineHeight:1.5 }}>
+              <Icon name={bulkUpMsg.count?'check':'info'} size={15} color={bulkUpMsg.count?'#2D6A4F':'#B7770D'} style={{ marginTop:1 }}/>
+              <div style={{ flex:1 }}>
+                {bulkUpMsg.count > 0 && <div><b>{bulkUpMsg.count} photo(s)</b> uploaded to <b>{bulkUpMsg.vendors} vendor(s)</b>. Vendors can now download them from their portal.</div>}
+                {bulkUpMsg.unmatched.length > 0 && <div style={{ marginTop:bulkUpMsg.count?4:0 }}>Folders that didn't match any vendor in this event: <b>{bulkUpMsg.unmatched.join(', ')}</b>. Rename them to the exact business name and try again.</div>}
+              </div>
+              <button onClick={()=>setBulkUpMsg(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}><Icon name="x" size={14} color={bulkUpMsg.count?'#2D6A4F':'#B7770D'}/></button>
+            </div>
+          )}
+
+          {filteredGroups.length === 0 && (
+            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13 }}>
+              {photoFilter==='new' ? 'All booths for this event have been downloaded — nothing new.' : 'No approved vendors for this event yet.'}
+            </div>
+          )}
+
           <div className="admin-cards">
-            {pagedPhotos.map(a => {
-              const v = vById(a.vendorId);
-              const key = `${a.vendorId}-${filterEvent}`;
-              const ep = eventPhotos[key]||{vendor:0,admin:0};
-              const vendorTiles = Array.from({length:ep.vendor||0},(_,i)=>`linear-gradient(135deg,hsl(${i*40+10},50%,70%),hsl(${i*40+30},50%,50%))`);
-              const adminTiles  = Array.from({length:ep.admin||0},(_,i)=>`linear-gradient(135deg,hsl(${i*50+200},40%,70%),hsl(${i*50+220},40%,50%))`);
+            {pagedGroups.map(g => {
+              const isSel = !!photoSel[g.id];
+              const mainV = vById(g.members[0]);
               return (
-                <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
-                    <button onClick={()=>showToast(`Downloading ${v.business} photos…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer', flexShrink:0 }}>
-                      <Icon name="download" size={13} color="#A6364E"/>Download
-                    </button>
-                  </div>
-                  <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:12 }}>Vendor uploads ({ep.vendor||0})</div>
-                  {vendorTiles.length > 0 && <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:7 }}>{vendorTiles.map((bg,i)=><div key={i} style={{ width:74, height:74, borderRadius:10, background:bg }}/>)}</div>}
-                  <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:13 }}>Admin uploads ({ep.admin||0})</div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:7, alignItems:'center' }}>
-                    {adminTiles.map((bg,i)=><div key={i} style={{ width:74, height:74, borderRadius:10, background:bg }}/>)}
-                    <button onClick={()=>{ const ep2={...eventPhotos}; const cur=ep2[key]||{vendor:0,admin:0}; ep2[key]={...cur,admin:(cur.admin||0)+1}; dispatch({type:'MERGE_PHOTOS',payload:ep2}); showToast(`Photo uploaded for ${v.business}`,'image'); }} style={{ width:74, height:74, borderRadius:10, border:'2px dashed #d8c6b2', background:'#FBF7F1', color:'#A6364E', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, cursor:'pointer', flexShrink:0 }}>
-                      <Icon name="upload" size={18} color="#A6364E"/><span style={{ fontSize:9, fontWeight:600 }}>Upload</span>
-                    </button>
-                  </div>
+                <div key={g.id} style={{ background:'#fff', border:`1.5px solid ${isSel?'#A6364E':'#efe7dc'}`, borderRadius:16, padding:14 }}>
+                  <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+                    <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#A6364E', width:16, height:16, cursor:'pointer', flexShrink:0 }}/>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{mainV.business}</div>
+                    </div>
+                    {g.shared && (
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', background:'#F8E9EE', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>
+                        <Icon name="users" size={12} color="#A6364E"/>Shared booth · {g.members.length} vendors
+                      </span>
+                    )}
+                  </label>
+                  {g.members.map((vid, mi) => {
+                    const v = vById(vid);
+                    const key = `${vid}-${filterEvent}`;
+                    const dl = photoDownloads[key];
+                    const adminPhotos = eventPhotos[key] || [];
+                    return (
+                      <div key={vid} style={{ marginTop:12, paddingTop:mi>0?12:0, borderTop:mi>0?'1px dashed #efe7dc':'none' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:13, fontWeight:700, color:'#1C1A17' }}>{v.business}</span>
+                          {mi>0 && <span style={{ fontSize:10.5, fontWeight:600, color:'#A09890', background:'#F2EDE6', borderRadius:6, padding:'2px 7px' }}>Booth sharer</span>}
+                          {dl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:600, color:'#2D6A4F', background:'#E8F5F0', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="#2D6A4F"/>Downloaded {dl}</span>}
+                          <div style={{ flex:1 }}/>
+                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
+                            <Icon name="download" size={12} color="#A6364E"/>Download ({(v.productPhotos||[]).length})
+                          </button>
+                        </div>
+                        <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:9 }}>Product photos ({(v.productPhotos||[]).length}) — from vendor profile</div>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:6 }}>
+                          {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={64}/>)}
+                          {!(v.productPhotos||[]).length && <span style={{ fontSize:11.5, color:'#A09890' }}>None uploaded yet.</span>}
+                        </div>
+                        <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:11 }}>Event photos for vendor ({adminPhotos.length}) — vendor downloads these</div>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:6, alignItems:'center' }}>
+                          {adminPhotos.map(ph => (
+                            <PhotoTile key={ph.id} photo={ph} size={64} onRemove={()=>{
+                              dispatch({type:'MERGE_PHOTOS', payload:{ [key]: adminPhotos.filter(x=>x.id!==ph.id) }});
+                              showToast('Photo removed','x');
+                            }}/>
+                          ))}
+                          <label style={{ width:64, height:64, borderRadius:10, border:'2px dashed #d8c6b2', background:'#FBF7F1', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, cursor:'pointer', flexShrink:0 }}>
+                            <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e => {
+                              const files = [...e.target.files]; e.target.value = '';
+                              if (!files.length) return;
+                              const added = await Promise.all(files.map(fileToPhoto));
+                              dispatch({type:'MERGE_PHOTOS', payload:{ [key]: [...adminPhotos, ...added] }});
+                              logActivity('Admin', `uploaded ${added.length} event photo(s) for ${v.business} — ${curEv.name}.`, {icon:'upload', tint:'#E8F5F0'});
+                              showToast(`${added.length} photo(s) uploaded for ${v.business}`,'image');
+                            }}/>
+                            <Icon name="upload" size={16} color="#A6364E"/><span style={{ fontSize:8.5, fontWeight:600, color:'#A6364E' }}>Upload</span>
+                          </label>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
-          <Pager total={approvedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          <Pager total={filteredGroups.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
         </div>
       )}
 
