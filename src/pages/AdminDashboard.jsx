@@ -304,7 +304,7 @@ export default function AdminDashboard() {
               <button onClick={() => {
                 if (!state.ef.name) { showToast('Add an event name first','info'); return; }
                 const d = dayCount(state.ef.start,state.ef.end)||1;
-                const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:d, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', img:'linear-gradient(135deg,#C75C84,#A6364E)' };
+                const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:d, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:'linear-gradient(135deg,#C75C84,#A6364E)' };
                 dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
                 set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:''}});
                 logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'#E8F5F0'});
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
           <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17', margin:'18px 2px 10px' }}>Existing events</div>
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
             {events.map(ev => (
-              <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'12px 13px', display:'flex', alignItems:'center', gap:12 }}>
+              <div key={ev.id} onClick={()=>set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||''}})} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'12px 13px', display:'flex', alignItems:'center', gap:12, cursor:'pointer' }}>
                 <div style={{ width:76, height:46, borderRadius:9, background:ev.img, flexShrink:0 }}/>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>

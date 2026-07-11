@@ -47,7 +47,7 @@ When a vendor applies to an event, they choose solo or shared booth:
 | Overview | Stat tiles (total vendors, pending review, active events, payments confirmed) + quick actions |
 | **Vendor Applications** | **New sign-ups only** (`status === 'pending'`). Approve/Reject here. Once decided, the vendor drops off this list. |
 | **Vendor Listing** | Master list of vendors that have been decided on — `status === 'approved'` or `'suspended'`. Shows each vendor's **compliance tags** (offense counts by type, or "No offences on record"). This is the vendor base eligible to apply for events. |
-| Events | Create events (name, image, dates, times, F&B/Non-F&B daily rate + auto 6% SST, last-apply-by date), view existing events with applicant counts |
+| Events | Create events (name, image, dates, times, F&B/Non-F&B daily rate + auto 6% SST, last-apply-by date), view existing events with applicant counts. **Editing wired (as of 2026-07-11):** clicking an existing event row opens a centered "Edit event" modal (name, location, dates, times, last-apply date, rates) prefilled from that event, with a live duration + rental-total preview matching the create form. Saving recomputes `dateRange`/`days` and updates the event in place. Image upload remains decorative/non-functional in both create and edit (no file is ever stored) — a known gap, not addressed here. |
 | Event Applications | Vendors applying to a specific event (filtered by event dropdown) — approve/reject, view shared-booth partners, see up to 3 of the vendor's compliance tags inline |
 | Payments | Per approved event application: rental subtotal + 6% SST + RM100 refundable deposit (only added **if that vendor's deposit isn't already paid** — see Deposit Record rule below) = total due. Mark Paid/Partial/Unpaid, toggle payment-advice/invoice/receipt docs, send a payment reminder, or remove a vendor from the event (releases their slot). |
 | Deposit Record | RM100 refundable deposit — **tracked once per vendor (not per event), and tied to event participation, not registration.** If unpaid, it's automatically folded into that vendor's *first* event invoice (see `payCalc` in `helpers.js`). Statuses: unpaid → paid → refunded. |
@@ -75,7 +75,7 @@ Fixed list admins tag vendors with: Late opening, Early closing, Late payment, P
 5. **Booth sharing** is capped at 3 vendors and restricted to same-tier (F&B/non-F&B) partners.
 6. **Parking ticket entry is time-locked** to the event's actual dates unless manually overridden by admin.
 7. **Suspend and Reject are both reversible.** Suspend only appears on already-approved vendors, is a small deliberately low-emphasis link (not a full button) behind a confirm dialog, and sets `status: 'suspended'` — vendor loses event-application access but stays visible in Vendor Listing with a "Reinstate vendor" option. Rejected vendors are hidden by default under a collapsed "Show N rejected applications" section at the bottom of Vendor Applications, with a "Reconsider" action that moves them back to `'pending'`.
-8. **All application-detail modals (vendor + event) are centered dialogs**, not bottom sheets.
+8. **All detail/edit modals (vendor, event application, and event edit) are centered dialogs**, not bottom sheets.
 9. **Events close to applications automatically** once today's date passes the event's `lastApp` date — enforced both on the public home page and inside the vendor dashboard's apply button.
 
 ## Vendor status lifecycle

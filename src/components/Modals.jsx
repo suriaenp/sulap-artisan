@@ -2,6 +2,7 @@ import Icon from './Icon';
 import Badge from './Badge';
 import { useStore } from '../lib/store';
 import { OFFENSE_TYPES, CURRENT_VENDOR_ID } from '../data/mockData';
+import { dayCount, fmtShort, money } from '../lib/helpers';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 function Sheet({ onClose, children, maxW = 560, centered = false }) {
@@ -134,6 +135,71 @@ export function AppDetailModal() {
             <Icon name="tent" size={15} color="#A09890"/>Solo booth — not sharing.
           </div>
         )}
+      </div>
+    </Sheet>
+  );
+}
+
+// ── Event Detail / Edit Modal ─────────────────────────────────────────────────
+export function EventDetailModal() {
+  const { state, dispatch, set, showToast, logActivity } = useStore();
+  const { eventDetailId, eef, events } = state;
+  if (!eventDetailId) return null;
+  const ev = events.find(x=>x.id===eventDetailId)||{};
+  const close = () => set({eventDetailId:null});
+  const upd = (k,val) => set({eef:{...eef,[k]:val}});
+  const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 12px', fontSize:14, outline:'none' };
+  const d = dayCount(eef.start,eef.end)||1;
+  const fnbTotal = Number(eef.fnb||0)*d*1.06;
+  const nfTotal  = Number(eef.nonfnb||0)*d*1.06;
+  const save = () => {
+    if (!eef.name) { showToast('Event name is required','info'); return; }
+    const dateRange = eef.start && eef.end ? `${fmtShort(eef.start)} – ${fmtShort(eef.end)} ${new Date(eef.end).getFullYear()}` : 'Dates TBC';
+    dispatch({type:'MERGE_EVENTS',payload:events.map(x=>x.id===eventDetailId ? {
+      ...x,
+      name:eef.name,
+      location:eef.location,
+      dateRange,
+      days:d,
+      startDate:eef.start,
+      endDate:eef.end,
+      startTime:eef.startTime,
+      endTime:eef.endTime,
+      lastApp:eef.lastApp,
+      fnb:Number(eef.fnb)||0,
+      nonfnb:Number(eef.nonfnb)||0,
+    } : x)});
+    logActivity('Admin', `updated details for the ${eef.name} event.`, {icon:'tent', tint:'#E8F5F0'});
+    showToast('Event updated','check');
+    close();
+  };
+  return (
+    <Sheet onClose={close} centered maxW={520}>
+      <SheetHeader title="Edit event" sub={ev.name} onClose={close}/>
+      <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:13 }}>
+        <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
+        <div><div style={lbl}>Location</div><input value={eef.location} onChange={e=>upd('location',e.target.value)} placeholder="e.g. Suria Sabah Mall" style={inp}/></div>
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ flex:1 }}><div style={lbl}>Daily start time</div><input type="time" value={eef.startTime} onChange={e=>upd('startTime',e.target.value)} style={inp}/></div>
+          <div style={{ flex:1 }}><div style={lbl}>Daily end time</div><input type="time" value={eef.endTime} onChange={e=>upd('endTime',e.target.value)} style={inp}/></div>
+        </div>
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ flex:1 }}><div style={lbl}>Start date</div><input type="date" value={eef.start} onChange={e=>upd('start',e.target.value)} style={inp}/></div>
+          <div style={{ flex:1 }}><div style={lbl}>End date</div><input type="date" value={eef.end} onChange={e=>upd('end',e.target.value)} style={inp}/></div>
+        </div>
+        {eef.start && eef.end && <div style={{ display:'flex', alignItems:'center', gap:7, background:'#F8E9EE', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#A6364E', fontWeight:600 }}><Icon name="calendar" size={15} color="#A6364E"/>Duration: {d} day(s)</div>}
+        <div><div style={lbl}>Last date to apply</div><input type="date" value={eef.lastApp} onChange={e=>upd('lastApp',e.target.value)} style={inp}/><div style={{ fontSize:11, color:'#A09890', marginTop:5 }}>Applications close automatically after this date.</div></div>
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ flex:1 }}><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.fnb} onChange={e=>upd('fnb',e.target.value)} placeholder="300" style={inp}/></div>
+          <div style={{ flex:1 }}><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.nonfnb} onChange={e=>upd('nonfnb',e.target.value)} placeholder="250" style={inp}/></div>
+        </div>
+        {(eef.fnb || eef.nonfnb) && (
+          <div style={{ display:'flex', gap:9 }}>
+            <div style={{ flex:1, background:'#E8F5F0', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#2D6A4F', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
+            <div style={{ flex:1, background:'#F8E9EE', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#A6364E', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#A6364E', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#bd7e95', marginTop:1 }}>inclusive of 6% SST</div></div>
+          </div>
+        )}
+        <button onClick={save} className="cta" style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Save changes</button>
       </div>
     </Sheet>
   );

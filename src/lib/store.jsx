@@ -35,6 +35,7 @@ const INIT = {
   // modals / drawers
   vendorDetailId: null,
   appDetailId: null,
+  eventDetailId: null,
   payModalKey: null,
   depModalVendor: null,
   passModalVendor: null,
@@ -49,6 +50,7 @@ const INIT = {
   depf: {},
   rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:0 },
   ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'' },
+  eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'' },
   cf: null,
   newCat: '',
   // filters & pagination
@@ -108,7 +110,7 @@ export function StoreProvider({ children }) {
   }, []);
 
   const closeModals = useCallback(() => set({
-    vendorDetailId: null, appDetailId: null, payModalKey: null,
+    vendorDetailId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
     depModalVendor: null, passModalVendor: null, showApplyModal: false,
     applyEventId: null,
   }), [set]);

@@ -2,7 +2,7 @@ import { StoreProvider, useStore } from './lib/store';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import Toast from './components/Toast';
-import { VendorDetailModal, AppDetailModal, ApplyModal, PassModal, DepositModal } from './components/Modals';
+import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, PassModal, DepositModal } from './components/Modals';
 import PublicHome from './pages/PublicHome';
 import VendorLogin from './pages/VendorLogin';
 import VendorRegister from './pages/VendorRegister';
@@ -70,6 +70,7 @@ function AppShell() {
           <Toast />
           <VendorDetailModal />
           <AppDetailModal />
+          <EventDetailModal />
           <ApplyModal />
           <PassModal />
           <PayModal />
