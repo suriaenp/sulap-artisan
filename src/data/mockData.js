@@ -57,12 +57,23 @@ export const INITIAL_DEPOSITS = {
   v5: { status:'paid',     inv:'DEP-1050', payDate:'2026-06-20', refundDate:'' },
 };
 
+// Offences may carry photo evidence (`photos`) that vendors can view in their portal.
 export const INITIAL_OFFENSES = [
-  { id:'o1', vendorId:'v2', eventId:'e1', type:'late_open' },
-  { id:'o2', vendorId:'v2', eventId:'e2', type:'late_open' },
-  { id:'o3', vendorId:'v4', eventId:'e1', type:'late_pay'  },
-  { id:'o4', vendorId:'v3', eventId:'e1', type:'no_show'   },
-  { id:'o5', vendorId:'v2', eventId:'e1', type:'cleanup'   },
+  { id:'o1', vendorId:'v2', eventId:'e1', type:'late_open', photos:[P('o1p1','booth-still-closed-9am.jpg','#C9B8A5','#6B5843')] },
+  { id:'o2', vendorId:'v2', eventId:'e2', type:'late_open', photos:[] },
+  { id:'o3', vendorId:'v4', eventId:'e1', type:'late_pay',  photos:[] },
+  { id:'o4', vendorId:'v3', eventId:'e1', type:'no_show',   photos:[] },
+  { id:'o5', vendorId:'v2', eventId:'e1', type:'cleanup',   photos:[P('o5p1','booth-cleanup-issue.jpg','#B5C4B1','#4F6B4A')] },
+];
+
+// Color pairs assigned to newly added offence types, cycled in order.
+export const OFFENSE_PALETTE = [
+  { color:'#0E7490', bg:'#E0F2FE' },
+  { color:'#BE185D', bg:'#FCE7F3' },
+  { color:'#4D7C0F', bg:'#ECFCCB' },
+  { color:'#B45309', bg:'#FEF3C7' },
+  { color:'#6D28D9', bg:'#EDE9FE' },
+  { color:'#B91C1C', bg:'#FEE2E2' },
 ];
 
 // Admin-uploaded event photos, keyed `${vendorId}-${eventId}`.

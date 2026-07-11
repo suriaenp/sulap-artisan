@@ -4,7 +4,7 @@ import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount } from '../lib/helpers';
-import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
+import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
 
@@ -45,7 +45,7 @@ function Pager({ total, perPage, page, onPage }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType } = state;
   const [showRejected, setShowRejected] = useState(false);
   const [photoSel, setPhotoSel] = useState({});        // booth-group selection for bulk download
   const [photoFilter, setPhotoFilter] = useState('all'); // 'all' | 'new'
@@ -106,6 +106,22 @@ export default function AdminDashboard() {
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
+
+  // ── Compliance hold ──
+  // A vendor with offences sits out the next `settings.skipMarkets` markets
+  // (by event start date) unless admin overrides for that vendor + event.
+  const eventIdx = (() => {
+    const sorted = [...events].sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||''));
+    return Object.fromEntries(sorted.map((e,i)=>[e.id,i]));
+  })();
+  const skipN = settings.skipMarkets ?? 1;
+  const complianceHold = (vendorId, eventId) => {
+    const target = eventIdx[eventId];
+    if (target == null) return [];
+    return offenses.filter(o => o.vendorId === vendorId
+      && eventIdx[o.eventId] != null && eventIdx[o.eventId] < target
+      && target - eventIdx[o.eventId] <= skipN);
+  };
 
   // ── Event Pictures handlers ──
   const markDownloaded = (vids) => {
@@ -293,11 +309,11 @@ export default function AdminDashboard() {
             </div>
           )}
           <div className="admin-cards">
-            {pagedVendors.map(v => (
+            {pagedVendors.map((v,idx) => (
               <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#1C1A17' }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                     <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
                   </div>
                   <Badge status={v.status}/>
@@ -360,7 +376,7 @@ export default function AdminDashboard() {
             </button>
           </div>
           <div className="admin-cards">
-            {pagedVendorList.map(v => {
+            {pagedVendorList.map((v,idx) => {
               const vOff = offenses.filter(o=>o.vendorId===v.id);
               const typeCounts = {};
               vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
@@ -368,7 +384,7 @@ export default function AdminDashboard() {
                 <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:15, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                      <div style={{ fontSize:15, fontWeight:700, color:'#1C1A17' }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                       <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
                     </div>
                     <Badge status={v.status}/>
@@ -387,7 +403,7 @@ export default function AdminDashboard() {
                   ) : (
                     <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                       {Object.entries(typeCounts).map(([type,count]) => {
-                        const ot = OFFENSE_TYPES[type]||{};
+                        const ot = offenseTypes[type]||{};
                         return <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label} ×{count}</span>;
                       })}
                     </div>
@@ -494,14 +510,18 @@ export default function AdminDashboard() {
             </button>
           </div>
           <div className="admin-cards">
-            {pagedApps.map(a => {
+            {pagedApps.map((a,idx) => {
               const v = vById(a.vendorId);
               const vOffenses = offenses.filter(o=>o.vendorId===a.vendorId);
+              const holdOffs = a.status==='pending' ? complianceHold(a.vendorId, a.eventId) : [];
+              const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
+              const onHold = holdOffs.length > 0 && !overridden;
               return (
-                <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
+                <div key={a.id} style={{ background:'#fff', border:`1px solid ${onHold?'#f3e6c9':'#efe7dc'}`, borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17', display:'flex', alignItems:'center', gap:7 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#A09890' }}>#{(page-1)*PER_PAGE+idx+1}</span>
                         {v.business}
                         {a.status==='approved' && <span style={{ fontSize:11.5, fontWeight:600, color:'#8FB8A4' }}>Approved</span>}
                         {a.status==='rejected' && <span style={{ fontSize:11.5, fontWeight:600, color:'#CB9A93' }}>Rejected</span>}
@@ -514,16 +534,39 @@ export default function AdminDashboard() {
                       <Icon name={a.shared?'users':'tent'} size={12} color="#A6364E"/>{a.shared?`Sharing · ${(a.partners||[]).length+1} vendors`:'Solo booth'}
                     </span>
                     {vOffenses.slice(0,3).map((o,i) => {
-                      const ot = OFFENSE_TYPES[o.type]||{};
+                      const ot = offenseTypes[o.type]||{};
                       return <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color, display:'inline-block' }}/>{ot.label}</span>;
                     })}
                   </div>
+                  {a.status==='pending' && holdOffs.length > 0 && (
+                    onHold ? (
+                      <div style={{ background:'#FDF9EE', border:'1px solid #F3EBD5', borderRadius:11, padding:'10px 12px', marginTop:11 }}>
+                        <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:11.5, color:'#A98B3D', lineHeight:1.5 }}>
+                          <Icon name="shield" size={14} color="#A98B3D" style={{ marginTop:1, flexShrink:0 }}/>
+                          <div style={{ flex:1 }}>
+                            <b>Compliance hold</b> — {v.business} logged {holdOffs.length} offence{holdOffs.length>1?'s':''} at {[...new Set(holdOffs.map(o=>eById(o.eventId).name))].join(', ')}. Policy: sit out the next {skipN} market{skipN>1?'s':''}, so approval is paused for this one.
+                          </div>
+                        </div>
+                        <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'#FEF8EC'}); showToast('Hold overridden — vendor may be approved','shield'); }} style={{ marginTop:9, background:'#fff', border:'1px solid #F3EBD5', color:'#A98B3D', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                          Override — allow them to join this market
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', alignItems:'center', gap:7, background:'#F7F4EF', border:'1px solid #EFEAE2', borderRadius:11, padding:'9px 12px', marginTop:11, fontSize:11.5, color:'#8A837B', lineHeight:1.45 }}>
+                        <Icon name="shield" size={13} color="#8A837B"/>Compliance hold overridden — this vendor may be approved despite recent offences.
+                        <button onClick={()=>{ const c={...compOverrides}; delete c[`${a.vendorId}-${a.eventId}`]; set({compOverrides:c}); showToast('Hold re-applied','shield'); }} style={{ marginLeft:'auto', background:'none', border:'none', color:'#8A837B', fontSize:11, fontWeight:600, textDecoration:'underline', textUnderlineOffset:2, cursor:'pointer', flexShrink:0 }}>Undo</button>
+                      </div>
+                    )
+                  )}
                   <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
                     <button onClick={()=>set({appDetailId:a.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
                       <Icon name="eye" size={14} color="#A6364E"/>View &amp; share booth
                     </button>
                     <div style={{ flex:1 }}/>
-                    {a.status==='pending' && (
+                    {a.status==='pending' && onHold && (
+                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s application for ${eById(a.eventId).name} (compliance hold).`, {icon:'x', tint:'#FDEEEC'}); showToast('Application rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
+                    )}
+                    {a.status==='pending' && !onHold && (
                       <>
                         <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'#F8E9EE'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
                         <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'x', tint:'#FDEEEC'}); showToast('Application rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
@@ -742,13 +785,13 @@ export default function AdminDashboard() {
           </div>
           <div style={{ fontSize:11.5, color:'#A09890', marginBottom:11, lineHeight:1.5 }}>The refundable RM100 deposit is tracked once per vendor. While unpaid, it is automatically added to that vendor's first event invoice.</div>
           <div className="admin-cards">
-            {vendors.map(v => {
+            {vendors.map((v,idx) => {
               const dep = depRec(v.id);
               return (
                 <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                     <div style={{ minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{idx+1}</span>{v.business}</div>
                       <div style={{ fontSize:11.5, color:'#6B6560', marginTop:2 }}>{v.owner}</div>
                     </div>
                     <Badge status={dep.status}/>
@@ -793,7 +836,7 @@ export default function AdminDashboard() {
                   </button>
                 </div>
                 <div className="admin-cards">
-                  {pagedPark.map(a => {
+                  {pagedPark.map((a,idx) => {
                     const v = vById(a.vendorId);
                     const cells = Array.from({length:ev.days||1},(_,i)=>({
                       dayLabel:`Day ${i+1}`, key:`${a.vendorId}-${ev.id}-${i+1}`,
@@ -803,7 +846,7 @@ export default function AdminDashboard() {
                       <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:13 }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                           <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                            <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                             <div style={{ fontSize:11, color:'#A09890', marginTop:1 }}>Vehicle owner on record</div>
                           </div>
                           <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, color:'#6B6560', background:'#F2EDE6', borderRadius:6, padding:'4px 9px', flexShrink:0 }}>
@@ -877,7 +920,7 @@ export default function AdminDashboard() {
           )}
 
           <div className="admin-cards">
-            {pagedGroups.map(g => {
+            {pagedGroups.map((g,idx) => {
               const isSel = !!photoSel[g.id];
               const mainV = vById(g.members[0]);
               return (
@@ -885,7 +928,7 @@ export default function AdminDashboard() {
                   <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
                     <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#A6364E', width:16, height:16, cursor:'pointer', flexShrink:0 }}/>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{mainV.business}</div>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
                     </div>
                     {g.shared && (
                       <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', background:'#F8E9EE', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>
@@ -953,14 +996,14 @@ export default function AdminDashboard() {
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
           <div className="admin-cards">
-            {pagedPass.map(a => {
+            {pagedPass.map((a,idx) => {
               const v = vById(a.vendorId);
               const p = passes[a.vendorId]||{status:'pending'};
               return (
                 <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}><span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                       <div style={{ fontSize:11.5, color:'#6B6560', marginTop:3 }}>
                         {p.issued ? `${p.issued} tags issued` : 'No tags yet'}
                         {p.collectDate ? ` · collected ${p.collectDate}` : ''}
@@ -1118,6 +1161,19 @@ export default function AdminDashboard() {
       {/* ── Compliance ── */}
       {aTab === 'compliance' && (
         <div style={{ padding:'14px 16px 20px' }}>
+          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginBottom:13, display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+            <div style={{ flex:1, minWidth:200 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#1C1A17' }}>Offence policy</div>
+              <div style={{ fontSize:11.5, color:'#A09890', marginTop:2, lineHeight:1.4 }}>Vendors with offences sit out this many upcoming markets. A reminder appears on their next applications, with an override option.</div>
+            </div>
+            <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+              {[1,2].map(n => (
+                <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'#A6364E':'#fff', border:`1px solid ${skipN===n?'#A6364E':'#e3d8ca'}`, color:skipN===n?'#FAF8F5':'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
+                  Skip {n} market{n>1?'s':''}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{ display:'flex', background:'#F2EDE6', borderRadius:12, padding:4, gap:4, marginBottom:14 }}>
             {[['log','Log offences'],['review','Vendor review']].map(([id,label]) => (
               <button key={id} onClick={()=>set({compTab:id})} style={{ flex:1, border:'none', fontSize:13, fontWeight:600, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:compTab===id?'#FAF8F5':'transparent', color:compTab===id?'#1C1A17':'#6B6560', boxShadow:compTab===id?'0 1px 4px rgba(0,0,0,0.08)':'none' }}>{label}</button>
@@ -1126,12 +1182,25 @@ export default function AdminDashboard() {
 
           {compTab === 'log' && (
             <>
+              <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:14, display:'flex', gap:9, marginBottom:14 }}>
+                <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid #e3d8ca', background:'#FAF8F5', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
+                <button onClick={()=>{
+                  const n = newOffType.trim();
+                  if (!n) return;
+                  if (Object.values(offenseTypes).some(t=>t.label.toLowerCase()===n.toLowerCase())) { showToast('That offence type already exists','info'); return; }
+                  const pal = OFFENSE_PALETTE[Object.keys(offenseTypes).length % OFFENSE_PALETTE.length];
+                  dispatch({type:'MERGE_OFFENSE_TYPES', payload:{ ...offenseTypes, ['ot'+Date.now()]: { label:n, color:pal.color, bg:pal.bg } }});
+                  set({newOffType:''});
+                  logActivity('Admin', `added the "${n}" offence type.`, {icon:'shield', tint:'#F8E9EE'});
+                  showToast('Offence type added','shield');
+                }} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
+              </div>
               <div style={lbl}>Event</div>
               <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:14 }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
               <div className="admin-cards">
-                {Object.entries(OFFENSE_TYPES).map(([type,ot]) => {
+                {Object.entries(offenseTypes).map(([type,ot]) => {
                   const sel = compSel[type]||[];
                   const eventVendors = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
                   return (
@@ -1141,6 +1210,11 @@ export default function AdminDashboard() {
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:13.5, fontWeight:700, color:'#1C1A17' }}>{ot.label}</div>
                         </div>
+                        {offenses.every(o=>o.type!==type) && (
+                          <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'#F2EDE6', border:'none', width:26, height:26, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                            <Icon name="x" size={13} color="#A09890"/>
+                          </button>
+                        )}
                       </div>
                       {sel.length > 0 && (
                         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
@@ -1179,7 +1253,7 @@ export default function AdminDashboard() {
               <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginBottom:13 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', marginBottom:9 }}>Offence legend</div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 16px' }}>
-                  {Object.entries(OFFENSE_TYPES).map(([type,ot]) => (
+                  {Object.entries(offenseTypes).map(([type,ot]) => (
                     <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, color:'#6B6560' }}>
                       <span style={{ width:8, height:8, borderRadius:'50%', background:ot.color }}/>
                       {ot.label}
@@ -1188,27 +1262,55 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="admin-cards">
-                {vendors.map(v => {
+                {vendors.map((v,idx) => {
                   const vOff = offenses.filter(o=>o.vendorId===v.id);
-                  const typeCounts = {};
-                  vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
                   return (
                     <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{v.business}</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                            <span style={{ fontSize:11, fontWeight:700, color:'#A09890' }}>#{idx+1}</span>
+                            <span style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{v.business}</span>
+                          </div>
                           <div style={{ fontSize:11.5, color:'#6B6560', marginTop:1 }}>{v.category}</div>
                         </div>
                         <span style={{ fontSize:11, fontWeight:700, color:'#6B6560', background:'#F2EDE6', borderRadius:999, padding:'5px 11px', flexShrink:0 }}>{vOff.length} total</span>
                       </div>
-                      {vOff.length > 0 && (
-                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
-                          {Object.entries(typeCounts).map(([type,count]) => {
-                            const ot = OFFENSE_TYPES[type]||{};
-                            return <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label} ×{count}</span>;
-                          })}
-                        </div>
+                      {vOff.length === 0 && (
+                        <div style={{ fontSize:11.5, color:'#A09890', marginTop:9 }}>No offences on record.</div>
                       )}
+                      {vOff.map(o => {
+                        const ot = offenseTypes[o.type]||{};
+                        const oPhotos = o.photos||[];
+                        const updOffense = (patch) => dispatch({type:'MERGE_OFFENSES', payload: offenses.map(x=>x.id===o.id?{...x,...patch}:x)});
+                        return (
+                          <div key={o.id} style={{ background:'#FBF7F1', borderRadius:11, padding:'10px 11px', marginTop:9 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>
+                              <span style={{ fontSize:11.5, color:'#6B6560' }}>{eById(o.eventId).name || 'Unknown event'}</span>
+                              <button title="Remove this offence" onClick={()=>{ if(!window.confirm(`Remove this ${ot.label||'offence'} record for ${v.business}?`)) return; dispatch({type:'MERGE_OFFENSES', payload: offenses.filter(x=>x.id!==o.id)}); logActivity('Admin', `removed a ${ot.label||'offence'} record for ${v.business}.`, {icon:'shield', tint:'#F2EDE6'}); showToast('Offence removed','x'); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', padding:2, flexShrink:0 }}>
+                                <Icon name="x" size={13} color="#A09890"/>
+                              </button>
+                            </div>
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:9, alignItems:'center' }}>
+                              {oPhotos.map(ph => (
+                                <PhotoTile key={ph.id} photo={ph} size={56} onRemove={()=>{ updOffense({photos: oPhotos.filter(x=>x.id!==ph.id)}); showToast('Evidence photo removed','x'); }}/>
+                              ))}
+                              <label title="Upload evidence photos the vendor can see" style={{ width:56, height:56, borderRadius:10, border:'2px dashed #d8c6b2', background:'#fff', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1, cursor:'pointer', flexShrink:0 }}>
+                                <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e=>{
+                                  const files = [...e.target.files]; e.target.value='';
+                                  if (!files.length) return;
+                                  const added = await Promise.all(files.map(fileToPhoto));
+                                  updOffense({photos:[...oPhotos, ...added]});
+                                  logActivity('Admin', `added ${added.length} evidence photo(s) to ${v.business}'s ${ot.label||'offence'} record.`, {icon:'camera', tint:'#F8E9EE'});
+                                  showToast(`${added.length} photo(s) added — visible to the vendor`,'camera');
+                                }}/>
+                                <Icon name="upload" size={14} color="#A6364E"/><span style={{ fontSize:8, fontWeight:600, color:'#A6364E' }}>Photo</span>
+                              </label>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   );
                 })}

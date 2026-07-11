@@ -10,6 +10,7 @@ const VENDOR_TABS = [
   { id:'payments', label:'Payments',          icon:'receipt' },
   { id:'parking',  label:'Parking',           icon:'car' },
   { id:'pass',     label:'Vendor Pass',       icon:'badge' },
+  { id:'compliance', label:'Compliance',      icon:'shield' },
   { id:'profile',  label:'Profile',           icon:'users' },
 ];
 

@@ -2,7 +2,7 @@ import Icon from './Icon';
 import Badge from './Badge';
 import PhotoTile from './PhotoTile';
 import { useStore } from '../lib/store';
-import { OFFENSE_TYPES, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
+import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
 import { dayCount, fmtShort, money } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';

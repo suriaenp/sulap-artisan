@@ -3,7 +3,7 @@ import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
-  EVENT_IMG_PALETTE,
+  EVENT_IMG_PALETTE, OFFENSE_TYPES,
 } from '../data/mockData';
 
 const INIT = {
@@ -27,6 +27,8 @@ const INIT = {
   refunds: INITIAL_REFUNDS,
   deposits: INITIAL_DEPOSITS,
   offenses: INITIAL_OFFENSES,
+  offenseTypes: OFFENSE_TYPES,
+  compOverrides: {},      // `${vendorId}-${eventId}` → true when admin overrides a compliance hold
   eventPhotos: INITIAL_EVENT_PHOTOS,
   photoDownloads: INITIAL_PHOTO_DOWNLOADS,
   payDocDownloads: INITIAL_PAY_DOC_DOWNLOADS,
@@ -35,7 +37,7 @@ const INIT = {
   cats: INITIAL_CATS,
   content: INITIAL_CONTENT,
   activity: INITIAL_ACTIVITY,
-  settings: { autoApprove:false, publicEvents:true, emailAlerts:true },
+  settings: { autoApprove:false, publicEvents:true, emailAlerts:true, skipMarkets:1 },
   // modals / drawers
   vendorDetailId: null,
   vendorDetailReturnAppId: null,
@@ -61,6 +63,7 @@ const INIT = {
   eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   cf: null,
   newCat: '',
+  newOffType: '',
   // filters & pagination
   filterEvent: 'e1',
   page: 1,
@@ -89,6 +92,7 @@ function reducer(state, action) {
     case 'MERGE_REFUNDS': return { ...state, refunds: { ...state.refunds, ...action.payload } };
     case 'MERGE_DEPOSITS': return { ...state, deposits: { ...state.deposits, ...action.payload } };
     case 'MERGE_OFFENSES': return { ...state, offenses: action.payload };
+    case 'MERGE_OFFENSE_TYPES': return { ...state, offenseTypes: action.payload };
     case 'MERGE_PASSES': return { ...state, passes: { ...state.passes, ...action.payload } };
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
