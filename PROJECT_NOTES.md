@@ -9,9 +9,16 @@ Living reference for what's built, what each screen does, and the business rules
 ---
 
 ## Public site (`src/pages/PublicHome.jsx`)
-- Browse upcoming markets/events: pricing (F&B vs Non-F&B rate/day), dates, and application status
-- **Rule: an event's applications are "open" only if `lastApp` (last date to apply) is unset or still in the future** (`open = !ev.lastApp || new Date(ev.lastApp) >= today`). Once past that date, the event shows "Applications closed" everywhere (public home, vendor dashboard).
-- Entry points to Vendor Portal and Admin Console
+- **Rebuilt 2026-07-12** from a Claude Design handoff (`Sulap Artisan Landing Page Design-handoff.zip`) into a full-bleed marketing page (sticky header, hero, "Coming Soon" carousel, "Why Join", CTA banner, footer). Renders standalone — `App.jsx`'s `AppShell` returns `<PublicHome/>` directly when `view==='public'`, bypassing the `.outer-wrap`/`.app-shell` phone-frame container, `Sidebar`, and `BottomNav` used by every other view.
+- **"Coming Soon" carousel is static placeholder content** (4 hardcoded sample events with poster-gradient tiles, dates, names) — intentionally **not** wired to the live `events` store. If the app's event calendar should drive this section instead, that's a follow-up, not the current behavior.
+- Header/CTA/footer buttons ("Apply as a Vendor", "Vendor Log In") still call the same `useStore()` navigation actions (`set({view:'vendor', vScreen:'register', ...})` etc.) as before — only the visuals changed. Footer adds a small "Admin" link (`goAdmin`) since the new header design has none.
+- The old data-driven event-listing cards (pricing, open/closed-by-date badges) that used to live on this page were removed with the redesign; that logic (`open = !ev.lastApp || new Date(ev.lastApp) >= today`) still lives on and gates applying in the Vendor Dashboard's "Available Markets" tab.
+
+## Design & theme
+- **Site-wide re-theme 2026-07-12**, driven by the same Claude Design handoff: rose (`#A6364E`) + `Playfair Display`/`DM Sans` → warm amber/gold (`#9A5B26`/`#B97434`/`#7A431A`) + `Marcellus`/`Karla`, across every screen (public site, vendor portal, admin dashboard incl. dark/night mode, PDF exports).
+- `Marcellus` only ships a single (400) weight — headings that used to be bold Playfair are now `fontWeight: 400` Marcellus, matching the design's own convention.
+- CSS custom properties in `src/index.css` (`--bg-*`, `--text-*`, `--border-*`) were remapped to warmer equivalents; the semantic status-tint variables (`--tint-green-*`, `--tint-red-*`, `--tint-amber-*`, `--tint-blue-*` — used for approved/rejected/pending/etc. badges) were left untouched on purpose, since they encode status, not brand color, and happen to not collide with the new brand hex values.
+- `App.css` (an unused create-vite scaffolding leftover, never imported) was deleted as part of this pass.
 
 ## Vendor side
 
