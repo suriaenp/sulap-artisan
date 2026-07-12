@@ -1527,7 +1527,7 @@ export default function AdminDashboard() {
           {compTab === 'log' && (
             <>
               <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:14, display:'flex', gap:9, marginBottom:14 }}>
-                <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
+                <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
                 <button onClick={()=>{
                   const n = newOffType.trim();
                   if (!n) return;
@@ -2010,8 +2010,8 @@ export default function AdminDashboard() {
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Create admin ID</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3, lineHeight:1.5 }}>New admins start with the default password <b style={{ color:'var(--text-secondary)' }}>{DEFAULT_ADMIN_PASSWORD}</b> and must set their own the first time they sign in.</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginTop:14 }}>
-                <input value={newAdmin.id} onChange={e=>setNewAdmin(s=>({...s,id:e.target.value}))} placeholder="Admin ID, e.g. staff02" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
-                <input value={newAdmin.name} onChange={e=>setNewAdmin(s=>({...s,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&createAdmin()} placeholder="Full name" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
+                <input value={newAdmin.id} onChange={e=>setNewAdmin(s=>({...s,id:e.target.value}))} placeholder="Admin ID, e.g. staff02" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
+                <input value={newAdmin.name} onChange={e=>setNewAdmin(s=>({...s,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&createAdmin()} placeholder="Full name" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
                 <button onClick={createAdmin} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Create</button>
               </div>
             </div>
@@ -2156,4 +2156,4 @@ export default function AdminDashboard() {
 }
 
 const lbl = { display:'block', fontSize:12, fontWeight:600, color:'var(--text-primary)', marginBottom:6 };
-const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, outline:'none', display:'block' };
+const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', display:'block' };

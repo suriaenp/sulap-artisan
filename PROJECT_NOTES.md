@@ -25,7 +25,7 @@ Living reference for what's built, what each screen does, and the business rules
 - `Marcellus` only ships a single (400) weight — headings that used to be bold Playfair are now `fontWeight: 400` Marcellus, matching the design's own convention.
 - CSS custom properties in `src/index.css` (`--bg-*`, `--text-*`, `--border-*`) were remapped to warmer equivalents; the semantic status-tint variables (`--tint-green-*`, `--tint-red-*`, `--tint-amber-*`, `--tint-blue-*` — used for approved/rejected/pending/etc. badges) were left untouched on purpose, since they encode status, not brand color, and happen to not collide with the new brand hex values.
 - `App.css` (an unused create-vite scaffolding leftover, never imported) was deleted as part of this pass.
-
+- **Dark-mode input text fix (2026-07-13).** Browsers don't inherit `color` into `<input>`/`<textarea>` by default, so every text field in the admin console rendered with the default black text — invisible against the dark `--bg-card` in night mode, even though the field's border and background did switch correctly. Fixed by adding `color:'var(--text-primary)'` to the shared `inp` style constant (`AdminDashboard.jsx`, used by ~27 fields across Content, Events, and other tabs) plus the handful of one-off styled inputs that had the same gap (Compliance's "new offence type" field, Admin Roles' "create admin" fields). **Deliberately left unfixed:** inputs inside popup/modal dialogs (e.g. the Categories "Add/Edit Category" modal) — out of scope per this pass, modals may need their own separate pass later.
 ## Vendor side
 
 ### Vendor Registration (`VendorRegister.jsx`)
