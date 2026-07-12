@@ -131,7 +131,8 @@ export default function AdminDashboard() {
   const logout = () => { set({ aScreen:'login', currentAdminId:null }); showToast('Signed out','leaf'); };
 
   // Derived filtered data for paginated tabs
-  const filteredApps = searchApps(apps.filter(a => a.eventId === filterEvent));
+  // Event Applications = pending only now; shortlisted/approved live in the Shortlist tab.
+  const filteredApps = searchApps(apps.filter(a => a.eventId === filterEvent && a.status === 'pending'));
   const approvedApps = apps.filter(a => a.eventId === filterEvent && a.status === 'approved');
   const searchedApprovedApps = searchApps(approvedApps);
   const pagedApps    = filteredApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
@@ -585,19 +586,25 @@ export default function AdminDashboard() {
             </button>
           </div>
           <div style={{ display:'flex', background:'#F2EDE6', borderRadius:12, padding:4, gap:4, marginBottom:14 }}>
-            {[['apps','Applications'],['shortlist',`Shortlist${apps.filter(a=>a.eventId===filterEvent&&a.status==='shortlisted').length ? ` (${apps.filter(a=>a.eventId===filterEvent&&a.status==='shortlisted').length})` : ''}`]].map(([id,label]) => (
+            {[['apps','Applications'],['shortlist',`Shortlist${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length ? ` (${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length})` : ''}`]].map(([id,label]) => (
               <button key={id} onClick={()=>set({appsTab:id,page:1})} style={{ flex:1, border:'none', fontSize:13, fontWeight:600, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:appsTab===id?'#FAF8F5':'transparent', color:appsTab===id?'#1C1A17':'#6B6560', boxShadow:appsTab===id?'0 1px 4px rgba(0,0,0,0.08)':'none' }}>{label}</button>
             ))}
           </div>
           {appsTab === 'apps' && (
           <>
+          <div style={{ fontSize:11.5, color:'#A09890', marginBottom:12, lineHeight:1.5 }}>Awaiting a decision for <b style={{ color:'#6B6560' }}>{curEv.name}</b>. Shortlist a vendor to move them for review — once approved they'll only appear in the Shortlist tab.</div>
           <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {apps.filter(a=>a.eventId===filterEvent).length > 0 && filteredApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
+          {apps.filter(a=>a.eventId===filterEvent && a.status==='pending').length > 0 && filteredApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
+          {apps.filter(a=>a.eventId===filterEvent && a.status==='pending').length === 0 && !searchQ && (
+            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13 }}>
+              No applications awaiting a decision for this market.
+            </div>
+          )}
           <div className="admin-cards">
             {pagedApps.map((a,idx) => {
               const v = vById(a.vendorId);
               const vOffenses = offenses.filter(o=>o.vendorId===a.vendorId);
-              const holdOffs = a.status==='pending' ? complianceHold(a.vendorId, a.eventId) : [];
+              const holdOffs = complianceHold(a.vendorId, a.eventId);
               const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
               const onHold = holdOffs.length > 0 && !overridden;
               return (
@@ -607,9 +614,6 @@ export default function AdminDashboard() {
                       <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17', display:'flex', alignItems:'center', gap:7 }}>
                         <span style={{ fontSize:11, fontWeight:700, color:'#A09890' }}>#{(page-1)*PER_PAGE+idx+1}</span>
                         {v.business}
-                        {a.status==='approved' && <span style={{ fontSize:11.5, fontWeight:600, color:'#8FB8A4' }}>Approved</span>}
-                        {a.status==='shortlisted' && <span style={{ fontSize:11.5, fontWeight:600, color:'#B7770D' }}>Shortlisted</span>}
-                        {a.status==='rejected' && <span style={{ fontSize:11.5, fontWeight:600, color:'#CB9A93' }}>Rejected</span>}
                       </div>
                       <div style={{ fontSize:12, color:'#6B6560', marginTop:2 }}>{v.owner} · {v.category}</div>
                       {(() => { const h = vendorHistory(a.vendorId); return (
@@ -628,12 +632,12 @@ export default function AdminDashboard() {
                       return <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color, display:'inline-block' }}/>{ot.label}</span>;
                     })}
                   </div>
-                  {a.status==='pending' && holdOffs.length > 0 && (
+                  {holdOffs.length > 0 && (
                     onHold ? (
                       <div style={{ display:'flex', alignItems:'flex-start', gap:8, background:'#FDF9EE', border:'1px solid #F3EBD5', borderRadius:11, padding:'10px 12px', marginTop:11, fontSize:11.5, color:'#A98B3D', lineHeight:1.5 }}>
                         <Icon name="shield" size={14} color="#A98B3D" style={{ marginTop:1, flexShrink:0 }}/>
                         <div style={{ flex:1 }}>
-                          <b>Compliance hold</b> — {v.business} logged {holdOffs.length} offence{holdOffs.length>1?'s':''} at {[...new Set(holdOffs.map(o=>eById(o.eventId).name))].join(', ')}. Policy: sit out the next {skipN} market{skipN>1?'s':''} — this can still be shortlisted, but approval will need an override in the {`Shortlist`} tab.
+                          <b>Compliance hold</b> — {v.business} logged {holdOffs.length} offence{holdOffs.length>1?'s':''} at {[...new Set(holdOffs.map(o=>eById(o.eventId).name))].join(', ')}. Policy: sit out the next {skipN} market{skipN>1?'s':''} — this can still be shortlisted, but approval will need an override in the Shortlist tab.
                         </div>
                       </div>
                     ) : (
@@ -647,18 +651,7 @@ export default function AdminDashboard() {
                       <Icon name="eye" size={14} color="#A6364E"/>View &amp; share booth
                     </button>
                     <div style={{ flex:1 }}/>
-                    {a.status==='pending' && (
-                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'#FEF8EC'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'#FEF8EC', border:'none', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Shortlist</button>
-                    )}
-                    {a.status==='shortlisted' && (
-                      <button onClick={()=>set({appsTab:'shortlist',page:1})} style={{ background:'#FEF8EC', border:'1px solid #f3e6c9', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Review in Shortlist ›</button>
-                    )}
-                    {a.status==='approved' && (
-                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `removed ${v.business} from ${eById(a.eventId).name} — application moved back to awaiting review.`, {icon:'info', tint:'#FEF8EC'}); showToast('Vendor removed — application back to awaiting review','info'); }} style={{ background:'#FEF8EC', border:'none', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Remove</button>
-                    )}
-                    {a.status==='rejected' && (
-                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `reconsidered ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'info', tint:'#FEF8EC'}); showToast('Application moved back to awaiting review','info'); }} style={{ background:'#FEF8EC', border:'none', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reconsider</button>
-                    )}
+                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'#FEF8EC'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'#FEF8EC', border:'none', color:'#B7770D', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Shortlist</button>
                   </div>
                 </div>
               );
@@ -669,20 +662,27 @@ export default function AdminDashboard() {
           )}
 
           {appsTab === 'shortlist' && (() => {
-            const shortlistApps = apps.filter(a => a.eventId===filterEvent && a.status==='shortlisted');
+            // Shortlist tab is the final roster for this event: shortlisted (awaiting a decision)
+            // and approved (already confirmed) vendors both stay here, grouped by category.
+            const rosterApps = apps.filter(a => a.eventId===filterEvent && (a.status==='shortlisted' || a.status==='approved'));
             const groups = cats
-              .map(c => ({
-                cat: c,
-                totalVendors: vendors.filter(v=>v.category===c.name).length,
-                shortlisted: shortlistApps.filter(a => vById(a.vendorId).category===c.name),
-              }))
-              .filter(g => g.totalVendors > 0 || g.shortlisted.length > 0);
+              .map(c => {
+                const inCat = rosterApps.filter(a => vById(a.vendorId).category===c.name);
+                return {
+                  cat: c,
+                  totalVendors: vendors.filter(v=>v.category===c.name).length,
+                  roster: [...inCat].sort((a,b) => a.status===b.status ? 0 : a.status==='shortlisted' ? -1 : 1),
+                  approvedCount: inCat.filter(a=>a.status==='approved').length,
+                  shortlistedCount: inCat.filter(a=>a.status==='shortlisted').length,
+                };
+              })
+              .filter(g => g.totalVendors > 0 || g.roster.length > 0);
             return (
               <>
-                <div style={{ fontSize:11.5, color:'#A09890', marginBottom:14, lineHeight:1.5 }}>Shortlisted vendors for <b style={{ color:'#6B6560' }}>{curEv.name}</b>, grouped by category. Approve or reject here — rejected vendors move back to Event Applications.</div>
-                {shortlistApps.length === 0 && (
+                <div style={{ fontSize:11.5, color:'#A09890', marginBottom:14, lineHeight:1.5 }}>The final roster for <b style={{ color:'#6B6560' }}>{curEv.name}</b>, grouped by category. Approve or reject shortlisted vendors here — rejected vendors move back to Event Applications. Approved vendors stay here as the record for this market.</div>
+                {rosterApps.length === 0 && (
                   <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13, marginBottom:14 }}>
-                    No vendors shortlisted yet — shortlist pending applications from the Applications tab.
+                    No vendors shortlisted or approved yet — shortlist pending applications from the Applications tab.
                   </div>
                 )}
                 <div className="admin-cards">
@@ -690,23 +690,29 @@ export default function AdminDashboard() {
                     <div key={g.cat.id} style={{ gridColumn:'1 / -1', background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:9, flexWrap:'wrap' }}>
                         <span style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{g.cat.name}</span>
-                        <span style={{ fontSize:11, fontWeight:600, color: g.shortlisted.length ? '#B7770D' : '#A09890', background: g.shortlisted.length ? '#FEF8EC' : '#F2EDE6', borderRadius:999, padding:'3px 10px' }}>
-                          {g.shortlisted.length} of {g.totalVendors} vendor{g.totalVendors!==1?'s':''} shortlisted
+                        <span style={{ fontSize:11, fontWeight:600, color: g.roster.length ? '#B7770D' : '#A09890', background: g.roster.length ? '#FEF8EC' : '#F2EDE6', borderRadius:999, padding:'3px 10px' }}>
+                          {g.roster.length} of {g.totalVendors} vendor{g.totalVendors!==1?'s':''}
                         </span>
+                        {g.roster.length > 0 && (
+                          <span style={{ fontSize:11, color:'#A09890' }}>{g.approvedCount} approved · {g.shortlistedCount} shortlisted</span>
+                        )}
                       </div>
-                      {g.shortlisted.length === 0 ? (
-                        <div style={{ fontSize:11.5, color:'#A09890', marginTop:10 }}>No vendors shortlisted yet in this category.</div>
+                      {g.roster.length === 0 ? (
+                        <div style={{ fontSize:11.5, color:'#A09890', marginTop:10 }}>No vendors shortlisted or approved yet in this category.</div>
                       ) : (
                         <div className="admin-cards" style={{ marginTop:11 }}>
-                          {g.shortlisted.map((a,idx) => {
+                          {g.roster.map((a,idx) => {
                             const v = vById(a.vendorId);
                             const holdOffs = complianceHold(a.vendorId, a.eventId);
                             const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
-                            const onHold = holdOffs.length > 0 && !overridden;
+                            const onHold = a.status==='shortlisted' && holdOffs.length > 0 && !overridden;
                             return (
-                              <div key={a.id} style={{ background:'#FBF7F1', border:`1px solid ${onHold?'#f3e6c9':'#efe7dc'}`, borderRadius:14, padding:13 }}>
-                                <div style={{ fontSize:13.5, fontWeight:700, color:'#1C1A17' }}>
-                                  <span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{idx+1}</span>{v.business}
+                              <div key={a.id} style={{ background: a.status==='approved' ? '#F1F7F3' : '#FBF7F1', border:`1px solid ${onHold?'#f3e6c9':a.status==='approved'?'#cfe9df':'#efe7dc'}`, borderRadius:14, padding:13 }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+                                  <div style={{ fontSize:13.5, fontWeight:700, color:'#1C1A17' }}>
+                                    <span style={{ fontSize:11, fontWeight:700, color:'#A09890', marginRight:7 }}>#{idx+1}</span>{v.business}
+                                  </div>
+                                  {a.status==='approved' && <span style={{ fontSize:11, fontWeight:600, color:'#2D6A4F' }}>Approved</span>}
                                 </div>
                                 <div style={{ fontSize:11.5, color:'#6B6560', marginTop:2 }}>{v.owner}</div>
                                 {a.shared && (
@@ -725,12 +731,14 @@ export default function AdminDashboard() {
                                     <Icon name="eye" size={14} color="#A6364E"/>
                                   </button>
                                   <div style={{ flex:1 }}/>
-                                  {onHold ? (
+                                  {a.status==='shortlisted' && (onHold ? (
                                     <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'#FEF8EC'}); showToast('Hold overridden — you can now approve this vendor','shield'); }} style={{ background:'#fff', border:'1px solid #F3EBD5', color:'#A98B3D', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Override hold</button>
                                   ) : (
                                     <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'#F8E9EE'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'#E8F5F0', border:'none', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
+                                  ))}
+                                  {a.status==='shortlisted' && (
+                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `rejected ${v.business} from the shortlist for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor moved back to Event Applications','x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
                                   )}
-                                  <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `rejected ${v.business} from the shortlist for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor moved back to Event Applications','x'); }} style={{ background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
                                 </div>
                               </div>
                             );
