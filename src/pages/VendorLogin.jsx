@@ -26,7 +26,7 @@ export default function VendorLogin() {
   return (
     <div style={{ padding:'28px 22px', minHeight:740, display:'flex', flexDirection:'column' }}>
       <img src="/assets/sulap-lockup.png" alt="Sulap Artisan" style={{ width:208, height:'auto', display:'block', marginBottom:6 }} />
-      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:27, fontWeight:600, color:'#1C1A17', marginTop:26 }}>Welcome Back!</div>
+      <div style={{ fontFamily:"'Marcellus',serif", fontSize:27, fontWeight:400, color:'#1C1A17', marginTop:26 }}>Welcome Back!</div>
       <div style={{ fontSize:14, color:'#6B6560', marginTop:6, lineHeight:1.5 }}>Sign in with your email address and password to reach your vendor portal.</div>
       <div style={{ marginTop:26, display:'flex', flexDirection:'column', gap:16 }}>
         <div>
@@ -42,10 +42,10 @@ export default function VendorLogin() {
           Use the email and password you registered with.
         </div>
       </div>
-      <button onClick={login} className="cta" style={{ marginTop:22, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(166,54,78,0.22)', width:'100%' }}>Sign in</button>
+      <button onClick={login} className="cta" style={{ marginTop:22, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(154,91,38,0.22)', width:'100%' }}>Sign in</button>
       <div style={{ textAlign:'center', fontSize:13, color:'#6B6560', marginTop:20 }}>
         New here?{' '}
-        <span onClick={() => set({ vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false })} style={{ color:'#A6364E', fontWeight:600, cursor:'pointer' }}>Register as a vendor</span>
+        <span onClick={() => set({ vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false })} style={{ color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Register as a vendor</span>
       </div>
     </div>
   );

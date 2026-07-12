@@ -2,7 +2,7 @@ import Icon from './Icon';
 
 // Renders a photo thumbnail — real uploaded image (data URL) or gradient placeholder.
 export default function PhotoTile({ photo, size = 74, onRemove, onDownload }) {
-  const grad = `linear-gradient(135deg,${photo.grad?.[0] || '#F0D8DD'},${photo.grad?.[1] || '#C75C84'})`;
+  const grad = `linear-gradient(135deg,${photo.grad?.[0] || '#F0D8DD'},${photo.grad?.[1] || '#B97434'})`;
   return (
     <div title={photo.name} style={{ width:size, height:size, borderRadius:10, background:photo.url ? '#F2EDE6' : grad, position:'relative', overflow:'hidden', flexShrink:0 }}>
       {photo.url && <img src={photo.url} alt={photo.name} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>}

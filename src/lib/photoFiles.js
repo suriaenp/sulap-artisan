@@ -34,7 +34,7 @@ export async function photoToBlob(photo) {
     const res = await fetch(photo.url);
     return res.blob();
   }
-  const [c1, c2] = photo.grad || ['#F0D8DD', '#C75C84'];
+  const [c1, c2] = photo.grad || ['#F0D8DD', '#B97434'];
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 900;
   const ctx = canvas.getContext('2d');

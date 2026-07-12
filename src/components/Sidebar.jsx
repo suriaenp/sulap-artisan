@@ -23,21 +23,21 @@ export default function Sidebar() {
   const isSuperActing = !acting || acting.role === 'super';
   const adminTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
 
-  const bg    = isAdmin ? '#2A1C1E' : '#FAF8F5';
-  const borderC = isAdmin ? '#3d2528' : 'var(--border-light)';
+  const bg    = isAdmin ? '#2A1708' : '#FAF8F5';
+  const borderC = isAdmin ? '#4A2A0F' : 'var(--border-light)';
   const headC   = isAdmin ? '#FAF8F5' : 'var(--text-primary)';
   const subC    = isAdmin ? 'rgba(250,248,245,0.45)' : 'var(--text-muted)';
 
   const sideNavStyle = (active) => ({
     width: '100%', display: 'flex', alignItems: 'center', gap: 9,
     padding: '9px 12px', borderRadius: 11,
-    fontFamily: "'DM Sans'", fontSize: 13.5, cursor: 'pointer',
+    fontFamily: "'Karla'", fontSize: 13.5, cursor: 'pointer',
     border: 'none', textAlign: 'left',
     background: active
       ? (isAdmin ? 'rgba(250,248,245,0.13)' : 'var(--tint-pink-bg)')
       : 'transparent',
     color: active
-      ? (isAdmin ? '#FAF8F5' : '#A6364E')
+      ? (isAdmin ? '#FAF8F5' : '#9A5B26')
       : (isAdmin ? 'rgba(250,248,245,0.55)' : 'var(--text-secondary)'),
     fontWeight: active ? 600 : 500,
   });
@@ -49,7 +49,7 @@ export default function Sidebar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img src="/assets/sulap-mark.png" alt="Sulap" style={{ height: 32, width: 'auto' }} />
           <div>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 600, color: headC, lineHeight: 1.1 }}>Sulap Artisan</div>
+            <div style={{ fontFamily: "'Marcellus',serif", fontSize: 15, fontWeight: 400, color: headC, lineHeight: 1.1 }}>Sulap Artisan</div>
             <div style={{ fontSize: 10, letterSpacing: '0.04em', color: subC, marginTop: 2 }}>
               {isAdmin ? 'Admin Console' : 'Vendor Registration'}
             </div>
@@ -68,7 +68,7 @@ export default function Sidebar() {
           { label:'Admin Console', icon:'settings', action:() => { closeModals(); set({ view:'admin' }); },  active: isAdmin },
         ].map(n => (
           <button key={n.label} style={sideNavStyle(n.active)} onClick={n.action}>
-            <Icon name={n.icon} size={16} color={n.active ? (isAdmin?'#FAF8F5':'#A6364E') : (isAdmin?'rgba(250,248,245,0.55)':'var(--text-muted)')} />
+            <Icon name={n.icon} size={16} color={n.active ? (isAdmin?'#FAF8F5':'#9A5B26') : (isAdmin?'rgba(250,248,245,0.55)':'var(--text-muted)')} />
             <span>{n.label}</span>
           </button>
         ))}
@@ -79,7 +79,7 @@ export default function Sidebar() {
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', padding: '4px 12px 6px' }}>MY PORTAL</div>
             {VENDOR_TABS.map(t => (
               <button key={t.id} style={sideNavStyle(vTab===t.id)} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }}>
-                <Icon name={t.icon} size={16} color={vTab===t.id ? '#A6364E' : 'var(--text-muted)'} />
+                <Icon name={t.icon} size={16} color={vTab===t.id ? '#9A5B26' : 'var(--text-muted)'} />
                 <span>{t.label}</span>
               </button>
             ))}
@@ -88,7 +88,7 @@ export default function Sidebar() {
 
         {/* Admin tabs */}
         {isAdmin && (
-          <div style={{ borderTop: '1px solid #3d2528', marginTop: 10, paddingTop: 10 }}>
+          <div style={{ borderTop: '1px solid #4A2A0F', marginTop: 10, paddingTop: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(250,248,245,0.45)', padding: '4px 12px 6px' }}>CONSOLE</div>
             {adminTabs.map(t => (
               <button key={t.id} style={sideNavStyle(aTab===t.id)} onClick={() => { closeModals(); set({ aTab:t.id, page:1 }); }}>

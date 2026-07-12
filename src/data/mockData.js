@@ -3,8 +3,8 @@
 const P = (id, name, c1, c2) => ({ id, name, grad: [c1, c2] });
 
 export const EVENT_IMG_PALETTE = [
-  'linear-gradient(135deg,#C75C84,#A6364E)',
-  'linear-gradient(135deg,#F0D8DD,#C75C84)',
+  'linear-gradient(135deg,#B97434,#9A5B26)',
+  'linear-gradient(135deg,#F0D8DD,#B97434)',
   'linear-gradient(135deg,#9FC9B9,#2D6A4F)',
   'linear-gradient(135deg,#F3D9A4,#C76A0D)',
   'linear-gradient(135deg,#d8c0a8,#8B6F4E)',
@@ -30,7 +30,7 @@ export const INITIAL_VENDORS = [
   { id:'v1', business:'Nutmeg & Clay',   owner:'Aisyah Rahman', category:'Handcraft / Art',          email:'aisyah@nutmegclay.my',  phone:'013-8842210', ig:'@nutmegclay',     fb:'Nutmeg & Clay',   tiktok:'@nutmegclay',  plate:'SAB 1842 K', regDate:'14 Jun', tcAcceptedAt:'14 Jun 2026, 10:24 AM', status:'approved', power:'1× kiln display light (240V), 1× LED string', productPhotos:[P('v1p1','stoneware-mugs.jpg','#E8C5B8','#A56548'),P('v1p2','botanical-planters.jpg','#D9C6A5','#8B6F4E'),P('v1p3','tableware-set.jpg','#C9A99B','#7A4A38')], desc:'Hand-thrown stoneware ceramics and small-batch botanical homewares, made in Kota Kinabalu. Mugs, planters, tableware and gift sets.', einvoice:EI('Aisyah Rahman','202301112233','IG88112233445','N/A','No. 21, Jalan Kelawat, 88300 Kota Kinabalu, Sabah','Maybank','156209988771','Aisyah Rahman') },
   { id:'v2', business:'Borneo Brews',    owner:'Daniel Lim',    category:'Food & Beverage',          email:'hello@borneobrews.co',   phone:'016-7720145', ig:'@borneobrews',    fb:'Borneo Brews Co', tiktok:'@borneobrews', plate:'SA 9021 P',  regDate:'15 Jun', tcAcceptedAt:'15 Jun 2026, 2:03 PM', status:'approved', power:'1× espresso machine (240V, 13A), 1× grinder, 1× chest freezer', productPhotos:[P('v2p1','cold-brew-bottles.jpg','#D7B899','#6F4E37'),P('v2p2','pour-over-set.jpg','#C9AE8B','#4A3728'),P('v2p3','coffee-beans.jpg','#B58B5E','#3E2A1A'),P('v2p4','iced-latte.jpg','#E3CDB0','#8B5E3C')], desc:'Specialty cold brew, single-origin pour-overs and Sabah-grown coffee beans. Cups, bottles and retail bags.', einvoice:EI('Borneo Brews Sdn Bhd','202401123456','C2345678901','S01-2345-67891012','Lot 12, Jalan Gaya, 88000 Kota Kinabalu, Sabah','Maybank','156201234567','Borneo Brews Sdn Bhd') },
   { id:'v3', business:'Rattan Republic', owner:'Nadia Yusof',   category:'Fashion',                  email:'nadia@rattanrepublic.my',phone:'011-23398871', ig:'@rattan.republic',fb:'Rattan Republic', tiktok:'@rattanrepublic',plate:'SAB 553 T', regDate:'16 Jun', tcAcceptedAt:'16 Jun 2026, 9:47 AM', status:'approved', power:'None', productPhotos:[P('v3p1','rattan-tote.jpg','#E2CBA8','#9C7A52'),P('v3p2','woven-hat.jpg','#D9BE93','#8A6B42'),P('v3p3','clutch-bags.jpg','#CBB088','#7A5C38'),P('v3p4','market-basket.jpg','#E6D2B0','#A5824F'),P('v3p5','earrings-set.jpg','#D4B98F','#8F7046')], desc:'Handwoven rattan bags, hats and accessories using traditional Sabahan weaving techniques.', einvoice:EI() },
-  { id:'v4', business:'Pulau Soap Co.',  owner:'Grace Wong',    category:'Beauty & Wellness',        email:'grace@pulausoap.my',     phone:'014-6650092', ig:'@pulausoap',      fb:'Pulau Soap Co',   tiktok:'@pulausoap',   plate:'SS 1180 A',  regDate:'17 Jun', tcAcceptedAt:'17 Jun 2026, 8:31 PM', status:'approved', power:'1× display fridge (240V)', productPhotos:[P('v4p1','botanical-soaps.jpg','#F0D8DD','#C75C84'),P('v4p2','body-scrubs.jpg','#DCE8DD','#7FA88B')], desc:'Cold-process artisan soaps, body scrubs and balms made with island botanicals. Plastic-free packaging.', einvoice:EI('Grace Wong','IG12345678901','','N/A','No. 8, Jalan Pulau, 88100 Kota Kinabalu, Sabah','CIMB Bank','7012345678','Grace Wong') },
+  { id:'v4', business:'Pulau Soap Co.',  owner:'Grace Wong',    category:'Beauty & Wellness',        email:'grace@pulausoap.my',     phone:'014-6650092', ig:'@pulausoap',      fb:'Pulau Soap Co',   tiktok:'@pulausoap',   plate:'SS 1180 A',  regDate:'17 Jun', tcAcceptedAt:'17 Jun 2026, 8:31 PM', status:'approved', power:'1× display fridge (240V)', productPhotos:[P('v4p1','botanical-soaps.jpg','#F0D8DD','#B97434'),P('v4p2','body-scrubs.jpg','#DCE8DD','#7FA88B')], desc:'Cold-process artisan soaps, body scrubs and balms made with island botanicals. Plastic-free packaging.', einvoice:EI('Grace Wong','IG12345678901','','N/A','No. 8, Jalan Pulau, 88100 Kota Kinabalu, Sabah','CIMB Bank','7012345678','Grace Wong') },
   { id:'v5', business:'Kinabalu Kopi',   owner:'Faiz Anuar',    category:'Food & Beverage',          email:'faiz@kkkopi.my',         phone:'012-3041188', ig:'@kinabalukopi',   fb:'Kinabalu Kopi',   tiktok:'@kkkopi',      plate:'SAB 700 G',  regDate:'18 Jun', tcAcceptedAt:'18 Jun 2026, 11:15 AM', status:'approved', power:'1× coffee machine (240V, 13A), 1× water boiler', productPhotos:[P('v5p1','kopi-o-classic.jpg','#C8A176','#5C3A21'),P('v5p2','kaya-toast.jpg','#E8CFA3','#B07E3F'),P('v5p3','retail-packs.jpg','#B98F63','#4A2E18')], desc:'Traditional Sabah kopi, kaya toast and local kuih. Hot and iced drinks plus retail coffee packs.', einvoice:EI() },
   { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  tcAcceptedAt:'9 Jul 2026, 4:56 PM', status:'pending',  power:'None', productPhotos:[P('v6p1','motif-rings.jpg','#D8D8DC','#8A8A94'),P('v6p2','pendants.jpg','#C9C9CF','#6E6E78'),P('v6p3','pattern-cuffs.jpg','#E2E2E6','#9A9AA4')], desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.', einvoice:EI() },
   { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', tcAcceptedAt:'10 Jul 2026, 1:12 PM', status:'pending',  power:'None', productPhotos:[P('v7p1','pandan-baskets.jpg','#D9E3C9','#7C9153'),P('v7p2','placemats.jpg','#CBD8B5','#6B8046'),P('v7p3','storage-boxes.jpg','#E1E8D2','#8CA05E'),P('v7p4','bamboo-trays.jpg','#D2DFBE','#75894C')], desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.', einvoice:EI() },
@@ -88,7 +88,7 @@ export const OFFENSE_PALETTE = [
 // Admin-uploaded event photos, keyed `${vendorId}-${eventId}`.
 // Vendors download these from their Event Pictures tab.
 export const INITIAL_EVENT_PHOTOS = {
-  'v1-e1': [P('v1e1a','booth-opening.jpg','#C75C84','#5C1F2E'), P('v1e1b','crowd-evening.jpg','#8C3A4E','#2A1420')],
+  'v1-e1': [P('v1e1a','booth-opening.jpg','#B97434','#5C1F2E'), P('v1e1b','crowd-evening.jpg','#8C3A4E','#2A1420')],
 };
 
 // Tracks which vendors' product photos admin has already bulk-downloaded,
@@ -145,7 +145,7 @@ export const OFFENSE_TYPES = {
   early_close:{ label:'Early closing',                  color:'#B03A2E', bg:'#FDEEEC' },
   late_pay:   { label:'Late payment',                   color:'#7C3AED', bg:'#EDE9FE' },
   cleanup:    { label:'Poor booth cleanup',             color:'#2D6A4F', bg:'#E8F5F0' },
-  no_show:    { label:'No-show / last-minute withdraw', color:'#A6364E', bg:'#F8E9EE' },
+  no_show:    { label:'No-show / last-minute withdraw', color:'#9A5B26', bg:'#F3E4CC' },
   unsanctioned:{ label:'Unsanctioned selling',          color:'#1D4ED8', bg:'#DBEAFE' },
 };
 
@@ -164,9 +164,9 @@ export const INITIAL_ADMINS = [
 ];
 
 export const INITIAL_ACTIVITY = [
-  { who:'Admin',        what:'approved Nutmeg & Clay as a vendor.',           when:'28 Jun 10:42 AM', tint:'#F8E9EE', icon:'check',    type:'admin' },
+  { who:'Admin',        what:'approved Nutmeg & Clay as a vendor.',           when:'28 Jun 10:42 AM', tint:'#F3E4CC', icon:'check',    type:'admin' },
   { who:'Borneo Brews', what:'submitted a vendor application.',                when:'28 Jun 9:15 AM',  tint:'#FEF8EC', icon:'pen',      type:'vendor' },
   { who:'Admin',        what:'created the Harvest Night Market event.',        when:'27 Jun 4:30 PM', tint:'#E8F5F0', icon:'tent',  type:'admin' },
-  { who:'Rattan Republic',what:'applied for Borneo Makers Fair.',             when:'27 Jun 2:18 PM', tint:'#F8E9EE', icon:'clipboard', type:'vendor' },
+  { who:'Rattan Republic',what:'applied for Borneo Makers Fair.',             when:'27 Jun 2:18 PM', tint:'#F3E4CC', icon:'clipboard', type:'vendor' },
   { who:'Admin',        what:'updated deposit record for Kinabalu Kopi.',      when:'28 Jun 11:00 AM', tint:'#EEF1FB', icon:'wallet',  type:'admin' },
 ];

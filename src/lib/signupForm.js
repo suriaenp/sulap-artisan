@@ -60,12 +60,12 @@ export async function buildSignupFormHtml(vendor, terms) {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Georgia, 'Times New Roman', serif; color:#1C1A17; background:#fff; padding:48px 56px; max-width:820px; margin:0 auto; }
-  .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #A6364E; padding-bottom:18px; }
+  .head { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #9A5B26; padding-bottom:18px; }
   .head img { width:190px; height:auto; }
   .head .doc { text-align:right; font-size:12px; color:#6B6560; line-height:1.6; }
   h1 { font-size:22px; font-weight:600; margin:26px 0 4px; }
   .sub { font-size:13px; color:#6B6560; margin-bottom:22px; }
-  h2 { font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:#A6364E; margin:26px 0 8px; }
+  h2 { font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:#9A5B26; margin:26px 0 8px; }
   table { width:100%; border-collapse:collapse; }
   td { border:1px solid #ddd2c4; padding:8px 12px; font-size:13px; vertical-align:top; }
   td.lbl { width:240px; background:#FBF7F1; color:#6B6560; }

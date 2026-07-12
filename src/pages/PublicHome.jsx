@@ -1,93 +1,179 @@
-import Icon from '../components/Icon';
+import { useRef } from 'react';
 import { useStore } from '../lib/store';
-import { fmtShort, fmtTime } from '../lib/helpers';
+
+const comingSoonEvents = [
+  { day: '12', month: 'JUL', name: 'Tamu Weekend Bazaar' },
+  { day: '26', month: 'JUL', name: 'Borneo Makers Fair' },
+  { day: '02', month: 'AUG', name: 'Harvest Night Market' },
+  { day: '29', month: 'AUG', name: 'Merdeka Craft Fest' },
+];
+
+const whyJoin = [
+  { title: 'Prime mall location', body: 'Trade in the heart of Kota Kinabalu with steady daily footfall.' },
+  { title: 'Simple online application', body: 'Apply in minutes and track your application from the vendor portal.' },
+  { title: 'Curated maker community', body: 'Stand alongside quality Sabahan crafts, food, and design.' },
+  { title: 'Flexible booth rates', body: 'Daily rates for F&B and non-F&B booths — pay only for the days you trade.' },
+];
 
 export default function PublicHome() {
-  const { state, set, showToast, closeModals } = useStore();
-  const { events, content } = state;
+  const { closeModals, set } = useStore();
+  const railRef = useRef(null);
 
-  const today = new Date(); today.setHours(0,0,0,0);
   const goRegister = () => { closeModals(); set({ view:'vendor', vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false }); };
   const goVendor   = () => { closeModals(); set({ view:'vendor' }); };
   const goAdmin    = () => { closeModals(); set({ view:'admin' }); };
 
+  const scrollRail = (dir, wrap) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const step = 344;
+    if (wrap && rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 8) {
+      rail.scrollTo({ left: 0, behavior: 'smooth' });
+      return;
+    }
+    rail.scrollBy({ left: dir * step, behavior: 'smooth' });
+  };
+
+  const navLink = { fontSize: 15, fontWeight: 600, color: '#5C3A1E' };
+  const outlineBtn = { padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#9A5B26', border: '1.5px solid #9A5B26', cursor: 'pointer', background: 'transparent' };
+  const solidBtn = { padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#FFF8EE', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow: '0 6px 20px rgba(122,67,26,0.4)', border: 'none', cursor: 'pointer' };
+
   return (
-    <div>
-      {/* Sticky nav */}
-      <div style={{
-        position:'sticky', top:0, zIndex:5,
-        display:'flex', justifyContent:'space-between', alignItems:'center', gap:16,
-        padding:'13px 22px',
-        background:'rgba(250,248,245,0.92)', backdropFilter:'blur(8px)',
-        borderBottom:'1px solid #f0e9df',
-      }}>
-        <img className="home-logo" src="/assets/sulap-lockup.png" alt="Sulap Artisan" style={{ height:40, width:'auto', display:'block' }} />
-        <div className="home-topnav" style={{ display:'none', alignItems:'center', gap:4, flexShrink:0 }}>
-          <button onClick={goVendor} style={{ background:'none', border:'none', fontSize:13.5, fontWeight:600, color:'#6B6560', borderRadius:9, padding:'8px 13px', cursor:'pointer' }}>Vendor Portal</button>
-          <button onClick={goAdmin}  style={{ background:'none', border:'none', fontSize:13.5, fontWeight:600, color:'#6B6560', borderRadius:9, padding:'8px 13px', cursor:'pointer' }}>Admin</button>
-          <button onClick={goRegister} style={{ background:'#A6364E', border:'none', fontSize:13.5, fontWeight:600, color:'#FAF8F5', borderRadius:10, padding:'9px 16px', cursor:'pointer', whiteSpace:'nowrap', boxShadow:'0 3px 10px rgba(166,54,78,0.2)' }}>Apply as a Vendor</button>
+    <div style={{ background: '#F7EFE3', fontFamily: "'Karla', sans-serif", color: '#3A2210' }}>
+      {/* Header */}
+      <section style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(247,239,227,0.92)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(154,91,38,0.15)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+          <a href="#hero" style={{ display: 'flex', alignItems: 'center' }}>
+            <img src="/assets/sulap-lockup.png" alt="Sulap Artisan by Suria Sabah Shopping Mall" style={{ height: 46, width: 'auto', display: 'block' }} />
+          </a>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
+            <a href="#coming-soon" style={navLink}>Coming Soon</a>
+            <a href="#why-join" style={navLink}>Why Join</a>
+            <a href="#contact" style={navLink}>Contact</a>
+          </nav>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button onClick={goVendor} style={{ padding: '10px 20px', border: '1.5px solid #9A5B26', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#9A5B26', background: 'transparent', cursor: 'pointer' }}>Vendor Log In</button>
+            <button onClick={goRegister} style={{ padding: '10px 22px', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#FFF8EE', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow: '0 4px 14px rgba(122,67,26,0.35)', cursor: 'pointer' }}>Apply as a Vendor</button>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Hero */}
-      <div style={{ margin:'0 16px', borderRadius:24, background:'linear-gradient(160deg,#F8E9EE,#F2EDE6)', padding:'24px 22px 26px', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', right:-30, top:-30, width:130, height:130, borderRadius:'50%', background:'rgba(199,92,132,0.10)' }}/>
-        <div style={{ position:'absolute', right:24, bottom:-40, width:90, height:90, borderRadius:'50%', background:'rgba(166,54,78,0.07)' }}/>
-        <span style={{ display:'inline-flex', alignItems:'center', gap:7, background:'#FAF8F5', border:'1px solid #ecdfd0', color:'#2D6A4F', fontSize:12, fontWeight:600, borderRadius:999, padding:'6px 13px' }}>
-          <Icon name="leaf" size={14} color="#2D6A4F" />{content.purpose}
-        </span>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:30, lineHeight:1.12, fontWeight:600, color:'#1C1A17', marginTop:16 }}>{content.title}</div>
-        <div style={{ fontSize:14, lineHeight:1.5, color:'#6B6560', marginTop:12 }}>{content.subtitle}</div>
-        <div style={{ display:'flex', gap:10, marginTop:20 }}>
-          <button onClick={goRegister} className="home-cta-primary" style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:13, padding:'13px 22px', cursor:'pointer', whiteSpace:'nowrap', boxShadow:'0 4px 12px rgba(166,54,78,0.22)' }}>Apply as a Vendor</button>
-          <button onClick={goVendor}   style={{ flexShrink:0, background:'#FAF8F5', color:'#A6364E', border:'1px solid #e3d3c1', fontSize:14, fontWeight:600, borderRadius:13, padding:'13px 16px', cursor:'pointer' }}>Portal</button>
-        </div>
-      </div>
-
-      {/* Upcoming events */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', padding:'16px 20px 4px' }}>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:600, color:'#1C1A17' }}>Upcoming Markets</div>
-        <span style={{ fontSize:12, color:'#6B6560' }}>{events.length} events</span>
-      </div>
-
-      <div className="event-cards" style={{ padding:'6px 16px 20px' }}>
-        {events.map(ev => {
-          const open = !ev.lastApp || new Date(ev.lastApp) >= today;
-          const timeLabel = ev.startTime && ev.endTime ? `${fmtTime(ev.startTime)} – ${fmtTime(ev.endTime)} daily` : 'Time TBC';
-          const totalNonFnb = ev.nonfnb * ev.days;
-          return (
-            <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:20, overflow:'hidden', boxShadow:'0 4px 14px rgba(120,80,40,0.06)' }}>
-              <div style={{ height:140, background:ev.img, position:'relative', display:'flex', alignItems:'flex-end' }}>
-                <span style={{ position:'absolute', top:10, right:12, display:'inline-flex', alignItems:'center', gap:5, background:'rgba(250,248,245,0.94)', color:open?'#2D6A4F':'#8a6d2e', fontSize:11, fontWeight:600, borderRadius:999, padding:'5px 10px' }}>
-                  <Icon name={open?'clock':'lock'} size={13} color={open?'#2D6A4F':'#8a6d2e'} />
-                  {open ? (ev.lastApp ? `Apply by ${fmtShort(ev.lastApp)}` : 'Open for applications') : 'Applications closed'}
-                </span>
-                <div style={{ position:'absolute', inset:0, background:'linear-gradient(rgba(0,0,0,0) 55%,rgba(0,0,0,0.22))', pointerEvents:'none' }}/>
-              </div>
-              <div style={{ padding:'14px 16px 16px' }}>
-                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:600, color:'#1C1A17', lineHeight:1.15 }}>{ev.name}</div>
-                <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#6B6560', marginTop:7 }}>
-                  <Icon name="calendar" size={14} color="#A09890" />{ev.dateRange}
-                </div>
-                <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, color:'#6B6560', marginTop:3 }}>
-                  <Icon name="clock" size={14} color="#A09890" />{timeLabel}
-                </div>
-                <div style={{ display:'flex', gap:7, flexWrap:'wrap', marginTop:12 }}>
-                  <span style={{ background:'#E8F5F0', color:'#2D6A4F', fontSize:11.5, fontWeight:600, borderRadius:8, padding:'5px 9px' }}>F&B · RM {ev.fnb}/day</span>
-                  <span style={{ background:'#F8E9EE', color:'#A6364E', fontSize:11.5, fontWeight:600, borderRadius:8, padding:'5px 9px' }}>Non-F&B · RM {ev.nonfnb}/day</span>
-                </div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:13, paddingTop:13, borderTop:'1px solid #f1ece4' }}>
-                  <span style={{ fontSize:12, color:'#A09890' }}>Total {ev.days} days · <span style={{ color:'#1C1A17', fontWeight:600 }}>from RM {totalNonFnb}</span></span>
-                  <button
-                    onClick={open ? goRegister : () => showToast('Applications closed for this market', 'lock')}
-                    style={{ background:open?'#A6364E':'#F2EDE6', color:open?'#FAF8F5':'#A09890', border:'none', fontSize:13, fontWeight:600, borderRadius:10, padding:'8px 16px', cursor:open?'pointer':'not-allowed' }}
-                  >{open ? 'Apply' : 'Closed'}</button>
-                </div>
-              </div>
+      <section id="hero" style={{ background: 'linear-gradient(180deg, #F7EFE3 0%, #F1E2CC 100%)', overflow: 'hidden' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px 80px', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 420px', minWidth: 300 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, background: 'rgba(154,91,38,0.1)', border: '1px solid rgba(154,91,38,0.25)', fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A5B26', marginBottom: 24 }}>Now accepting vendor applications</div>
+            <h1 style={{ fontFamily: "'Marcellus', serif", fontSize: 'clamp(38px, 5.2vw, 60px)', lineHeight: 1.1, margin: '0 0 20px', color: '#3A2210', fontWeight: 400 }}>
+              Showcase your craft at <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Sulap Artisan</span> markets
+            </h1>
+            <p style={{ fontSize: 17, lineHeight: 1.65, color: '#6B4E33', margin: '0 0 32px', maxWidth: 480 }}>Join a curated community of Sabahan makers at Suria Sabah Shopping Mall. Apply online, book your booth, and bring your craft to thousands of visitors.</p>
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              <button onClick={goRegister} style={solidBtn}>Apply as a Vendor</button>
+              <button onClick={goVendor} style={outlineBtn}>Vendor Log In</button>
             </div>
-          );
-        })}
-      </div>
+          </div>
+          <div style={{ flex: '1 1 360px', minWidth: 300, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ position: 'relative', width: 'min(400px, 88vw)', height: 'min(400px, 88vw)' }}>
+              <div style={{ position: 'absolute', inset: -14, border: '2px dashed rgba(154,91,38,0.5)', borderRadius: '50%' }} />
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #E8D3B4, #D9BB8E)' }} />
+              <div style={{ position: 'absolute', top: '8%', right: '-4%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>40+ Artisan Vendors</div>
+              <div style={{ position: 'absolute', bottom: '10%', left: '-6%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>Monthly Markets</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Coming Soon */}
+      <section id="coming-soon" style={{ position: 'relative', background: '#1D1006', overflow: 'hidden', padding: '72px 0 64px' }}>
+        <div style={{ position: 'absolute', top: -60, left: -80, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.55, filter: 'blur(2px)' }} />
+        <div style={{ position: 'absolute', bottom: -70, right: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.5, filter: 'blur(2px)' }} />
+        <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>COMING SOON</h2>
+        <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
+          <button onClick={() => scrollRail(-1)} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8249;</button>
+          <div ref={railRef} style={{ flex: 1, display: 'flex', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '8px 4px 20px', scrollbarWidth: 'none' }}>
+            {comingSoonEvents.map(ev => (
+              <div key={ev.name} style={{ position: 'relative', flex: '0 0 320px', height: 440, borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'start', background: 'linear-gradient(180deg, #8A5322, #3A2210)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)', pointerEvents: 'none' }} />
+                <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
+                  <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1 }}>{ev.day}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em' }}>{ev.month}</div>
+                </div>
+                <div style={{ position: 'absolute', left: 20, bottom: 40, color: '#FFF8EE', fontSize: 16, fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.5, textTransform: 'uppercase', pointerEvents: 'none' }}>
+                  {ev.name.split(' ').map((w, i, arr) => i === arr.length - 1 ? w : <span key={i}>{w} </span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => scrollRail(1, true)} aria-label="Next" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8250;</button>
+        </div>
+      </section>
+
+      {/* Why Join */}
+      <section id="why-join" style={{ background: '#F7EFE3' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px', display: 'flex', alignItems: 'center', gap: 56, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 380px', minWidth: 300, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ height: 220, borderRadius: '28px 80px 28px 28px', background: '#E8D3B4' }} />
+            <div style={{ height: 220, borderRadius: '80px 28px 28px 28px', background: '#DCC49C' }} />
+            <div style={{ height: 220, borderRadius: '28px 28px 28px 80px', background: '#DCC49C' }} />
+            <div style={{ height: 220, borderRadius: '28px 28px 80px 28px', background: '#E8D3B4' }} />
+          </div>
+          <div style={{ flex: '1 1 420px', minWidth: 300 }}>
+            <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 3.6vw, 40px)', margin: '0 0 12px', color: '#3A2210' }}>
+              <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Why join</span> Sulap Artisan?
+            </h2>
+            <p style={{ fontSize: 16, lineHeight: 1.6, color: '#6B4E33', margin: '0 0 32px' }}>A market platform built for local makers, run by Suria Sabah Shopping Mall.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+              {whyJoin.map((item, i) => (
+                <div key={item.title} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <div style={{ flex: '0 0 48px', width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #B97434, #7A431A)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF8EE', fontFamily: "'Marcellus', serif", fontSize: 20 }}>{i + 1}</div>
+                  <div>
+                    <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{item.title}</div>
+                    <div style={{ fontSize: 15, lineHeight: 1.55, color: '#6B4E33' }}>{item.body}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ background: '#F1E2CC', padding: '0 24px 80px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', borderRadius: 28, padding: 'clamp(40px, 6vw, 64px)', textAlign: 'center', boxShadow: '0 16px 40px rgba(122,67,26,0.35)' }}>
+          <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 4vw, 42px)', color: '#FFF8EE', margin: '0 0 14px' }}>Ready to showcase your craft?</h2>
+          <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(255,248,238,0.85)', margin: '0 auto 32px', maxWidth: 520 }}>Applications for upcoming markets are open now. Join the Sulap Artisan vendor community today.</p>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button onClick={goRegister} style={{ padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#7A431A', background: '#FFF8EE', border: 'none', cursor: 'pointer' }}>Apply as a Vendor</button>
+            <button onClick={goVendor} style={{ padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#FFF8EE', border: '1.5px solid rgba(255,248,238,0.7)', background: 'transparent', cursor: 'pointer' }}>Vendor Log In</button>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <section id="contact" style={{ background: '#2A1708', color: '#E9D5B8', padding: '56px 24px 32px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+          <div style={{ flex: '1 1 300px', minWidth: 260 }}>
+            <div style={{ display: 'inline-block', background: '#FFF8EE', borderRadius: 16, padding: '14px 18px', marginBottom: 18 }}>
+              <img src="/assets/sulap-lockup.png" alt="Sulap Artisan" style={{ height: 44, width: 'auto', display: 'block' }} />
+            </div>
+            <p style={{ fontSize: 14, lineHeight: 1.65, color: 'rgba(233,213,184,0.8)', margin: 0, maxWidth: 340 }}>Sulap Artisan is a curated artisan market series by Suria Sabah Shopping Mall, celebrating Sabahan craft, food, and culture.</p>
+          </div>
+          <div style={{ flex: '0 1 200px', minWidth: 160 }}>
+            <div style={{ fontFamily: "'Marcellus', serif", fontSize: 17, color: '#FFF3E2', marginBottom: 16 }}>Vendors</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <a href="#" onClick={e => { e.preventDefault(); goRegister(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer' }}>Apply as a Vendor</a>
+              <a href="#" onClick={e => { e.preventDefault(); goVendor(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer' }}>Vendor Log In</a>
+              <a href="#coming-soon" style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)' }}>Coming Soon</a>
+              <a href="#" onClick={e => { e.preventDefault(); goAdmin(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer' }}>Admin</a>
+            </div>
+          </div>
+          <div style={{ flex: '0 1 280px', minWidth: 220 }}>
+            <div style={{ fontFamily: "'Marcellus', serif", fontSize: 17, color: '#FFF3E2', marginBottom: 16 }}>Visit Us</div>
+            <div style={{ fontSize: 14, lineHeight: 1.7, color: 'rgba(233,213,184,0.85)' }}>Suria Sabah Shopping Mall<br />1, Jalan Tun Fuad Stephens<br />88000 Kota Kinabalu, Sabah</div>
+          </div>
+        </div>
+        <div style={{ maxWidth: 1200, margin: '40px auto 0', paddingTop: 20, borderTop: '1px solid rgba(233,213,184,0.2)', fontSize: 13, color: 'rgba(233,213,184,0.6)', textAlign: 'center' }}>© 2026 Sulap Artisan · Suria Sabah Shopping Mall. All rights reserved.</div>
+      </section>
     </div>
   );
 }

@@ -37,7 +37,7 @@ function Pager({ total, perPage, page, onPage }) {
   const pages = Math.ceil(total / perPage);
   if (pages <= 1) return null;
   const start = (page-1)*perPage+1, end = Math.min(page*perPage, total);
-  const btnStyle = (dis) => ({ background:dis?'var(--bg-subtle)':'var(--bg-card)', border:'1px solid var(--border-medium)', color:dis?'var(--text-muted)':'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 14px', cursor:dis?'not-allowed':'pointer' });
+  const btnStyle = (dis) => ({ background:dis?'var(--bg-subtle)':'var(--bg-card)', border:'1px solid var(--border-medium)', color:dis?'var(--text-muted)':'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 14px', cursor:dis?'not-allowed':'pointer' });
   return (
     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:14 }}>
       <div style={{ fontSize:12, color:'var(--text-muted)' }}>{start}–{end} of {total}</div>
@@ -126,9 +126,9 @@ export default function AdminDashboard() {
 
   const tabStyle = (active) => ({
     display:'inline-flex', alignItems:'center', gap:7, flexShrink:0,
-    border:active?'none':'1px solid #e7ddd0', fontFamily:"'DM Sans'",
+    border:active?'none':'1px solid #e7ddd0', fontFamily:"'Karla'",
     fontSize:13, fontWeight:600, borderRadius:999, padding:'9px 16px', cursor:'pointer',
-    background:active?'#A6364E':'var(--bg-card)', color:active?'#FAF8F5':'var(--text-secondary)',
+    background:active?'#9A5B26':'var(--bg-card)', color:active?'#FAF8F5':'var(--text-secondary)',
   });
 
   const logout = () => { set({ aScreen:'login', currentAdminId:null }); showToast('Signed out','leaf'); };
@@ -307,16 +307,16 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <div style={{ background:'#3A1622', padding:'15px 20px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ background:'#3A2210', padding:'15px 20px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#FAF8F5' }}>Admin Console</div>
-          <div style={{ fontSize:11, color:'#C99AAA', marginTop:1 }}>Sulap Artisan{acting ? ` · ${acting.name}${isSuperActing ? ' (Super admin)' : ''}` : ''}</div>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#FAF8F5' }}>Admin Console</div>
+          <div style={{ fontSize:11, color:'#DCA265', marginTop:1 }}>Sulap Artisan{acting ? ` · ${acting.name}${isSuperActing ? ' (Super admin)' : ''}` : ''}</div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <button onClick={()=>set({darkMode:!darkMode})} title={darkMode ? 'Switch to day mode' : 'Switch to night mode'} style={{ background:'#54222f', border:'none', width:34, height:34, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
-            <Icon name={darkMode ? 'sun' : 'moon'} size={16} color="#f0d9e0"/>
+          <button onClick={()=>set({darkMode:!darkMode})} title={darkMode ? 'Switch to day mode' : 'Switch to night mode'} style={{ background:'#4A2A0F', border:'none', width:34, height:34, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+            <Icon name={darkMode ? 'sun' : 'moon'} size={16} color="#FFF3E2"/>
           </button>
-          <button onClick={logout} style={{ background:'#54222f', border:'none', color:'#f0d9e0', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
+          <button onClick={logout} style={{ background:'#4A2A0F', border:'none', color:'#FFF3E2', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
         </div>
       </div>
 
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
         <div style={{ padding:'14px 16px 20px' }}>
           <div className="overview-grid">
             {[
-              { icon:'users',   tint:'var(--tint-pink-bg)', iconColor:'#A6364E', value:vendors.length,                        label:'Total vendors',     sub:'registered' },
+              { icon:'users',   tint:'var(--tint-pink-bg)', iconColor:'#9A5B26', value:vendors.length,                        label:'Total vendors',     sub:'registered' },
               { icon:'clock',   tint:'var(--tint-amber-bg)', iconColor:'var(--tint-amber-text)', value:vendors.filter(v=>v.status==='pending').length, label:'Pending review', sub:'awaiting approval' },
               { icon:'tent',    tint:'var(--tint-green-bg)', iconColor:'var(--tint-green-text)', value:events.length,                         label:'Active events',     sub:'this season' },
               { icon:'receipt', tint:'var(--tint-blue-bg)', iconColor:'var(--tint-blue-text)', value:Object.values(payments).filter(p=>p.status==='paid').length, label:'Payments confirmed', sub:'this event' },
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
                 <div style={{ width:34, height:34, borderRadius:10, background:c.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <Icon name={c.icon} size={17} color={c.iconColor}/>
                 </div>
-                <div style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:600, color:'var(--text-primary)', marginTop:10, lineHeight:1 }}>{c.value}</div>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:26, fontWeight:400, color:'var(--text-primary)', marginTop:10, lineHeight:1 }}>{c.value}</div>
                 <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', marginTop:5 }}>{c.label}</div>
                 <div style={{ fontSize:10.5, color:'var(--text-muted)', marginTop:2 }}>{c.sub}</div>
               </div>
@@ -362,9 +362,9 @@ export default function AdminDashboard() {
               { icon:'receipt', label:'Manage payments',            tab:'payments'},
               { icon:'shield',  label:'Log vendor offences',        tab:'compliance'},
             ].map(a => (
-              <button key={a.label} onClick={()=>set({aTab:a.tab,page:1})} style={{ display:'flex', alignItems:'center', gap:12, background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans'" }}>
+              <button key={a.label} onClick={()=>set({aTab:a.tab,page:1})} style={{ display:'flex', alignItems:'center', gap:12, background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', cursor:'pointer', textAlign:'left', fontFamily:"'Karla'" }}>
                 <div style={{ width:34, height:34, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon name={a.icon} size={17} color="#A6364E"/>
+                  <Icon name={a.icon} size={17} color="#9A5B26"/>
                 </div>
                 <span style={{ flex:1, fontSize:13.5, fontWeight:600, color:'var(--text-primary)' }}>{a.label}</span>
                 <span style={{ fontSize:17, color:'var(--text-muted)' }}>›</span>
@@ -378,9 +378,9 @@ export default function AdminDashboard() {
       {aTab === 'vendors' && (
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-            <div style={{ fontSize:13, color:'var(--text-secondary)' }}><b style={{ color:'#A6364E' }}>{pendingVendors.length}</b> awaiting review</div>
-            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-              <Icon name="download" size={14} color="#A6364E"/>Export CSV
+            <div style={{ fontSize:13, color:'var(--text-secondary)' }}><b style={{ color:'#9A5B26' }}>{pendingVendors.length}</b> awaiting review</div>
+            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+              <Icon name="download" size={14} color="#9A5B26"/>Export CSV
             </button>
           </div>
           <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
@@ -403,12 +403,12 @@ export default function AdminDashboard() {
                 <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 14px', marginTop:11, fontSize:11.5, color:'var(--text-secondary)' }}>
                   <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="mail" size={13} color="var(--text-muted)"/>{v.email}</span>
                   <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="phone" size={13} color="var(--text-muted)"/>{v.phone}</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5, color:'#A6364E' }}><Icon name="instagram" size={13} color="#A6364E"/>{v.ig}</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:5, color:'#9A5B26' }}><Icon name="instagram" size={13} color="#9A5B26"/>{v.ig}</span>
                 </div>
                 <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>Registered {v.regDate}</div>
                 <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                  <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                    <Icon name="eye" size={14} color="#A6364E"/>View details
+                  <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                    <Icon name="eye" size={14} color="#9A5B26"/>View details
                   </button>
                   <div style={{ flex:1 }}/>
                   <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
@@ -436,8 +436,8 @@ export default function AdminDashboard() {
                         <Badge status={v.status}/>
                       </div>
                       <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>Registered {v.regDate}</div>
-                      <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                        <Icon name="pencil" size={13} color="#A6364E"/>Reconsider — move back to pending
+                      <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                        <Icon name="pencil" size={13} color="#9A5B26"/>Reconsider — move back to pending
                       </button>
                     </div>
                   ))}
@@ -461,11 +461,11 @@ export default function AdminDashboard() {
                   await downloadSignupFormsZip(list, content.terms);
                   logActivity('Admin', `bulk-downloaded ${list.length} vendor sign-up forms.`, {icon:'download', tint:'var(--tint-pink-bg)'});
                 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-                <Icon name="file" size={14} color="#A6364E"/>Download all forms
+                style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+                <Icon name="file" size={14} color="#9A5B26"/>Download all forms
               </button>
-              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-                <Icon name="download" size={14} color="#A6364E"/>Export CSV
+              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+                <Icon name="download" size={14} color="#9A5B26"/>Export CSV
               </button>
             </div>
           </div>
@@ -488,7 +488,7 @@ export default function AdminDashboard() {
                   <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 14px', marginTop:11, fontSize:11.5, color:'var(--text-secondary)' }}>
                     <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="mail" size={13} color="var(--text-muted)"/>{v.email}</span>
                     <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="phone" size={13} color="var(--text-muted)"/>{v.phone}</span>
-                    <span style={{ display:'flex', alignItems:'center', gap:5, color:'#A6364E' }}><Icon name="instagram" size={13} color="#A6364E"/>{v.ig}</span>
+                    <span style={{ display:'flex', alignItems:'center', gap:5, color:'#9A5B26' }}><Icon name="instagram" size={13} color="#9A5B26"/>{v.ig}</span>
                   </div>
                   <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>Registered {v.regDate}</div>
                   <div style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)', marginTop:12, marginBottom:6 }}>Compliance</div>
@@ -505,8 +505,8 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                    <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                      <Icon name="eye" size={14} color="#A6364E"/>View details
+                    <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                      <Icon name="eye" size={14} color="#9A5B26"/>View details
                     </button>
                     <button
                       onClick={async ()=>{
@@ -514,8 +514,8 @@ export default function AdminDashboard() {
                         showToast(`Downloaded ${v.business}'s sign-up form`,'download');
                         logActivity('Admin', `downloaded ${v.business}'s sign-up form.`, {icon:'download', tint:'var(--tint-pink-bg)'});
                       }}
-                      style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                      <Icon name="file" size={14} color="#A6364E"/>Sign-up form
+                      style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                      <Icon name="file" size={14} color="#9A5B26"/>Sign-up form
                     </button>
                   </div>
                 </div>
@@ -542,7 +542,7 @@ export default function AdminDashboard() {
         };
         return (
           <div style={{ padding:'14px 16px 20px' }}>
-            <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}><b style={{ color:'#A6364E' }}>{pending.length}</b> pending change request{pending.length!==1?'s':''}</div>
+            <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}><b style={{ color:'#9A5B26' }}>{pending.length}</b> pending change request{pending.length!==1?'s':''}</div>
             {pending.length === 0 && (
               <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
                 No pending profile change requests.
@@ -577,7 +577,7 @@ export default function AdminDashboard() {
                     <div style={{ display:'flex', gap:9, marginTop:13 }}>
                       <button onClick={()=>decide(req,'approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Approve</button>
                       <button onClick={()=>decide(req,'rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Reject</button>
-                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>View vendor</button>
+                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>View vendor</button>
                     </div>
                   </div>
                 );
@@ -615,7 +615,7 @@ export default function AdminDashboard() {
       {aTab === 'events' && (
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:16 }}>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'var(--text-primary)' }}>Create event</div>
+            <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Create event</div>
             <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:13 }}>
               <div><div style={lbl}>Event name</div><input value={state.ef.name} onChange={e=>set({ef:{...state.ef,name:e.target.value}})} placeholder="e.g. Harvest Night Market" style={inp}/></div>
               <div>
@@ -638,7 +638,7 @@ export default function AdminDashboard() {
                 <div style={{ flex:1 }}><div style={lbl}>Start date</div><input type="date" value={state.ef.start} onChange={e=>set({ef:{...state.ef,start:e.target.value}})} style={inp}/></div>
                 <div style={{ flex:1 }}><div style={lbl}>End date</div><input type="date" value={state.ef.end} onChange={e=>set({ef:{...state.ef,end:e.target.value}})} style={inp}/></div>
               </div>
-              {state.ef.start && state.ef.end && <div style={{ display:'flex', alignItems:'center', gap:7, background:'var(--tint-pink-bg)', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#A6364E', fontWeight:600 }}><Icon name="calendar" size={15} color="#A6364E"/>Duration: {dayCount(state.ef.start,state.ef.end)} day(s)</div>}
+              {state.ef.start && state.ef.end && <div style={{ display:'flex', alignItems:'center', gap:7, background:'var(--tint-pink-bg)', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#9A5B26', fontWeight:600 }}><Icon name="calendar" size={15} color="#9A5B26"/>Duration: {dayCount(state.ef.start,state.ef.end)} day(s)</div>}
               <div><div style={lbl}>Last date to apply</div><input type="date" value={state.ef.lastApp} onChange={e=>set({ef:{...state.ef,lastApp:e.target.value}})} style={inp}/><div style={{ fontSize:11, color:'var(--text-muted)', marginTop:5 }}>Applications close automatically after this date.</div></div>
               <div style={{ display:'flex', gap:10 }}>
                 <div style={{ flex:1 }}><div style={lbl}>F&B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.fnb} onChange={e=>set({ef:{...state.ef,fnb:e.target.value}})} placeholder="300" style={inp}/></div>
@@ -651,7 +651,7 @@ export default function AdminDashboard() {
                 return (
                   <div style={{ display:'flex', gap:9 }}>
                     <div style={{ flex:1, background:'var(--tint-green-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'var(--tint-green-text)', fontWeight:600 }}>F&B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'var(--tint-green-text)', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
-                    <div style={{ flex:1, background:'var(--tint-pink-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#A6364E', fontWeight:600 }}>Non-F&B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#A6364E', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#bd7e95', marginTop:1 }}>inclusive of 6% SST</div></div>
+                    <div style={{ flex:1, background:'var(--tint-pink-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
                   </div>
                 );
               })()}
@@ -663,7 +663,7 @@ export default function AdminDashboard() {
                 set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
                 logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'var(--tint-green-bg)'});
                 showToast('Event created','tent');
-              }} className="cta" style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Create event</button>
+              }} className="cta" style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Create event</button>
             </div>
           </div>
           <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', margin:'18px 2px 10px' }}>Existing events</div>
@@ -695,8 +695,8 @@ export default function AdminDashboard() {
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
-            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
-              <Icon name="download" size={14} color="#A6364E"/>Export
+            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
+              <Icon name="download" size={14} color="#9A5B26"/>Export
             </button>
           </div>
           <div style={{ display:'flex', background:'var(--bg-subtle)', borderRadius:12, padding:4, gap:4, marginBottom:14 }}>
@@ -739,7 +739,7 @@ export default function AdminDashboard() {
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:7, marginTop:10 }}>
                     <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'4px 10px' }}>
-                      <Icon name={a.shared?'users':'tent'} size={12} color="#A6364E"/>{a.shared?`Sharing · ${(a.partners||[]).length+1} vendors`:'Solo booth'}
+                      <Icon name={a.shared?'users':'tent'} size={12} color="#9A5B26"/>{a.shared?`Sharing · ${(a.partners||[]).length+1} vendors`:'Solo booth'}
                     </span>
                     {vOffenses.slice(0,3).map((o,i) => {
                       const ot = offenseTypes[o.type]||{};
@@ -761,8 +761,8 @@ export default function AdminDashboard() {
                     )
                   )}
                   <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                    <button onClick={()=>set({appDetailId:a.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                      <Icon name="eye" size={14} color="#A6364E"/>View &amp; share booth
+                    <button onClick={()=>set({appDetailId:a.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                      <Icon name="eye" size={14} color="#9A5B26"/>View &amp; share booth
                     </button>
                     <div style={{ flex:1 }}/>
                     <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'var(--tint-amber-bg)', border:'none', color:'var(--tint-amber-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Shortlist</button>
@@ -831,7 +831,7 @@ export default function AdminDashboard() {
                                 <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
                                 {a.shared && (
                                   <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'4px 10px', marginTop:8 }}>
-                                    <Icon name="users" size={12} color="#A6364E"/>Sharing · {(a.partners||[]).length+1} vendors
+                                    <Icon name="users" size={12} color="#9A5B26"/>Sharing · {(a.partners||[]).length+1} vendors
                                   </span>
                                 )}
                                 {onHold && (
@@ -842,7 +842,7 @@ export default function AdminDashboard() {
                                 )}
                                 <div style={{ display:'flex', gap:8, marginTop:11 }}>
                                   <button onClick={()=>set({appDetailId:a.id})} title="View & share booth" style={{ display:'flex', alignItems:'center', justifyContent:'center', width:34, height:34, background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:9, cursor:'pointer', flexShrink:0 }}>
-                                    <Icon name="eye" size={14} color="#A6364E"/>
+                                    <Icon name="eye" size={14} color="#9A5B26"/>
                                   </button>
                                   {a.status==='approved' && (
                                     <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }} style={{ display:'flex', alignItems:'center', background:'none', border:'none', color:'var(--tint-red-text)', fontSize:11, fontWeight:600, padding:'0 4px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3, flexShrink:0 }}>Release vendor</button>
@@ -881,8 +881,8 @@ export default function AdminDashboard() {
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
-            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
-              <Icon name="download" size={14} color="#A6364E"/>Export
+            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
+              <Icon name="download" size={14} color="#9A5B26"/>Export
             </button>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:12 }}>
@@ -899,25 +899,25 @@ export default function AdminDashboard() {
           {/* Bulk toolbar */}
           <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
             {[['all','All vendors'],['new',`New advices — not downloaded (${approvedApps.filter(a=>{ const r=payRec(`${a.vendorId}-${a.eventId}`); return (r.advice||r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; }).length})`]].map(([id,label]) => (
-              <button key={id} onClick={()=>{ setPayFilter(id); setPaySel({}); set({page:1}); }} style={{ background:payFilter===id?'#A6364E':'var(--bg-card)', border:`1px solid ${payFilter===id?'#A6364E':'var(--border-medium)'}`, color:payFilter===id?'#FAF8F5':'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
+              <button key={id} onClick={()=>{ setPayFilter(id); setPaySel({}); set({page:1}); }} style={{ background:payFilter===id?'#9A5B26':'var(--bg-card)', border:`1px solid ${payFilter===id?'#9A5B26':'var(--border-medium)'}`, color:payFilter===id?'#FAF8F5':'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
             ))}
             <div style={{ flex:1 }}/>
             <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer', background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:9, padding:'8px 12px' }}>
-              <input type="checkbox" style={{ accentColor:'#A6364E', width:15, height:15, cursor:'pointer' }}
+              <input type="checkbox" style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}
                 checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
                 onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}/>
               Select all
             </label>
-            <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'#A6364E':'var(--bg-subtle)', border:'none', color:selectedPayApps.length?'#FAF8F5':'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
+            <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'#9A5B26':'var(--bg-subtle)', border:'none', color:selectedPayApps.length?'#FAF8F5':'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
               <Icon name="download" size={14} color={selectedPayApps.length?'#FAF8F5':'var(--text-muted)'}/>Bulk download advices{selectedPayApps.length?` (${selectedPayApps.length})`:''}
             </button>
-            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
               <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('invoice','Invoice')}/>
-              <Icon name="upload" size={14} color="#A6364E"/>Bulk upload invoices
+              <Icon name="upload" size={14} color="#9A5B26"/>Bulk upload invoices
             </label>
-            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
               <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('receipt','Receipt')}/>
-              <Icon name="upload" size={14} color="#A6364E"/>Bulk upload receipts
+              <Icon name="upload" size={14} color="#9A5B26"/>Bulk upload receipts
             </label>
           </div>
 
@@ -941,13 +941,13 @@ export default function AdminDashboard() {
               const ref = refundRec(payKey);
               const isPartial = rec.status === 'partial';
               const overpaidAmt = rec.paid - calc.total;
-              const cardBorder = paySel[a.id] ? '#A6364E' : rec.status==='paid' ? 'var(--tint-green-border)' : rec.status==='partial' ? 'var(--tint-amber-border)' : 'var(--border-light)';
+              const cardBorder = paySel[a.id] ? '#9A5B26' : rec.status==='paid' ? 'var(--tint-green-border)' : rec.status==='partial' ? 'var(--tint-amber-border)' : 'var(--border-light)';
               const notice = scanNotice(rec, calc);
               const advDl = payDocDownloads[payKey];
               return (
                 <div key={a.id} style={{ background:'var(--bg-card)', border:`1px solid ${cardBorder}`, borderRadius:16, padding:15 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
-                    <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#A6364E', width:16, height:16, cursor:'pointer', flexShrink:0, marginTop:2 }}/>
+                    <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#9A5B26', width:16, height:16, cursor:'pointer', flexShrink:0, marginTop:2 }}/>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                         <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{(page-1)*PER_PAGE+idx+1}</span>
@@ -1043,7 +1043,7 @@ export default function AdminDashboard() {
                     <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Record payment</button>
                     <button onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Reset to unpaid</button>
                     <div style={{ flex:1 }}/>
-                    <button onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} title="Send payment reminder" style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:34, height:34, border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#A6364E', borderRadius:9, cursor:'pointer', flexShrink:0 }}><Icon name="bell" size={15} color="#A6364E"/></button>
+                    <button onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} title="Send payment reminder" style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:34, height:34, border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', borderRadius:9, cursor:'pointer', flexShrink:0 }}><Icon name="bell" size={15} color="#9A5B26"/></button>
                     <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)}); showToast(`${v.business} removed — slot released`,'info'); }} title="Remove from event" style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:34, height:34, border:'1px solid var(--tint-red-border)', background:'var(--tint-red-bg)', color:'var(--tint-red-text)', borderRadius:9, cursor:'pointer', flexShrink:0 }}><Icon name="trash" size={15} color="var(--tint-red-text)"/></button>
                   </div>
                 </div>
@@ -1060,12 +1060,12 @@ export default function AdminDashboard() {
           <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:14 }}>
             <div style={{ flex:1, minWidth:120, background:'var(--tint-green-bg)', borderRadius:13, padding:'12px 14px' }}>
               <div style={{ fontSize:11, fontWeight:600, color:'var(--tint-green-text)' }}>Deposits held</div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:600, color:'var(--tint-green-text)', marginTop:3, lineHeight:1 }}>RM {money(Object.values(deposits).filter(d=>d.status==='paid').length*100)}</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, color:'var(--tint-green-text)', marginTop:3, lineHeight:1 }}>RM {money(Object.values(deposits).filter(d=>d.status==='paid').length*100)}</div>
               <div style={{ fontSize:10.5, color:'#6f9d8a', marginTop:3 }}>{Object.values(deposits).filter(d=>d.status==='paid').length} vendors · RM100 each</div>
             </div>
             <div style={{ flex:1, minWidth:120, background:'var(--tint-blue-bg)', borderRadius:13, padding:'12px 14px' }}>
               <div style={{ fontSize:11, fontWeight:600, color:'var(--tint-blue-text)' }}>Refunded</div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:600, color:'var(--tint-blue-text)', marginTop:3, lineHeight:1 }}>{Object.values(deposits).filter(d=>d.status==='refunded').length}</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, color:'var(--tint-blue-text)', marginTop:3, lineHeight:1 }}>{Object.values(deposits).filter(d=>d.status==='refunded').length}</div>
               <div style={{ fontSize:10.5, color:'#7184c9', marginTop:3 }}>returned after market</div>
             </div>
           </div>
@@ -1089,8 +1089,8 @@ export default function AdminDashboard() {
                     <span>Paid <b style={{ color:'var(--text-primary)' }}>{dep.payDate||'—'}</b></span>
                     <span>Refunded <b style={{ color:'var(--text-primary)' }}>{dep.refundDate||'—'}</b></span>
                   </div>
-                  <button onClick={()=>{ const d=depRec(v.id); set({depModalVendor:v.id,depf:{...d}}); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:13, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                    <Icon name="pencil" size={14} color="#A6364E"/>Update deposit status
+                  <button onClick={()=>{ const d=depRec(v.id); set({depModalVendor:v.id,depf:{...d}}); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:13, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                    <Icon name="pencil" size={14} color="#9A5B26"/>Update deposit status
                   </button>
                 </div>
               );
@@ -1140,7 +1140,7 @@ export default function AdminDashboard() {
                             <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>Vehicle owner on record</div>
                           </div>
                           <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:6, padding:'4px 9px', flexShrink:0 }}>
-                            <Icon name="car" size={13} color="#A6364E"/>{v.plate}
+                            <Icon name="car" size={13} color="#9A5B26"/>{v.plate}
                           </span>
                         </div>
                         <div style={{ display:'flex', gap:8, marginTop:11 }}>
@@ -1175,21 +1175,21 @@ export default function AdminDashboard() {
           {/* Toolbar */}
           <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
             {[['all','All vendors'],['new',`New — not downloaded (${boothGroups.filter(g=>!groupDownloaded(g)).length})`]].map(([id,label]) => (
-              <button key={id} onClick={()=>{ setPhotoFilter(id); setPhotoSel({}); set({page:1}); }} style={{ background:photoFilter===id?'#A6364E':'var(--bg-card)', border:`1px solid ${photoFilter===id?'#A6364E':'var(--border-medium)'}`, color:photoFilter===id?'#FAF8F5':'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
+              <button key={id} onClick={()=>{ setPhotoFilter(id); setPhotoSel({}); set({page:1}); }} style={{ background:photoFilter===id?'#9A5B26':'var(--bg-card)', border:`1px solid ${photoFilter===id?'#9A5B26':'var(--border-medium)'}`, color:photoFilter===id?'#FAF8F5':'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
             ))}
             <div style={{ flex:1 }}/>
             <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer', background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:9, padding:'8px 12px' }}>
-              <input type="checkbox" style={{ accentColor:'#A6364E', width:15, height:15, cursor:'pointer' }}
+              <input type="checkbox" style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}
                 checked={filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id])}
                 onChange={()=>{ const all = filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id]); setPhotoSel(all ? {} : Object.fromEntries(filteredGroups.map(g=>[g.id,true]))); }}/>
               Select all
             </label>
-            <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'#A6364E':'var(--bg-subtle)', border:'none', color:selectedGroups.length?'#FAF8F5':'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
+            <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'#9A5B26':'var(--bg-subtle)', border:'none', color:selectedGroups.length?'#FAF8F5':'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
               <Icon name="download" size={14} color={selectedGroups.length?'#FAF8F5':'var(--text-muted)'}/>Bulk download{selectedGroups.length?` (${selectedGroups.length})`:''}
             </button>
-            <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+            <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
               <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={handleBulkUpload}/>
-              <Icon name="upload" size={14} color="#A6364E"/>Bulk upload
+              <Icon name="upload" size={14} color="#9A5B26"/>Bulk upload
             </label>
           </div>
 
@@ -1215,15 +1215,15 @@ export default function AdminDashboard() {
               const isSel = !!photoSel[g.id];
               const mainV = vById(g.members[0]);
               return (
-                <div key={g.id} style={{ background:'var(--bg-card)', border:`1.5px solid ${isSel?'#A6364E':'var(--border-light)'}`, borderRadius:16, padding:14 }}>
+                <div key={g.id} style={{ background:'var(--bg-card)', border:`1.5px solid ${isSel?'#9A5B26':'var(--border-light)'}`, borderRadius:16, padding:14 }}>
                   <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
-                    <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#A6364E', width:16, height:16, cursor:'pointer', flexShrink:0 }}/>
+                    <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#9A5B26', width:16, height:16, cursor:'pointer', flexShrink:0 }}/>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
                     </div>
                     {g.shared && (
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>
-                        <Icon name="users" size={12} color="#A6364E"/>Shared booth · {g.members.length} vendors
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>
+                        <Icon name="users" size={12} color="#9A5B26"/>Shared booth · {g.members.length} vendors
                       </span>
                     )}
                   </label>
@@ -1239,8 +1239,8 @@ export default function AdminDashboard() {
                           {mi>0 && <span style={{ fontSize:10.5, fontWeight:600, color:'var(--text-muted)', background:'var(--bg-subtle)', borderRadius:6, padding:'2px 7px' }}>Booth sharer</span>}
                           {dl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:600, color:'var(--tint-green-text)', background:'var(--tint-green-bg)', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="var(--tint-green-text)"/>Downloaded {dl}</span>}
                           <div style={{ flex:1 }}/>
-                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
-                            <Icon name="download" size={12} color="#A6364E"/>Download ({(v.productPhotos||[]).length})
+                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
+                            <Icon name="download" size={12} color="#9A5B26"/>Download ({(v.productPhotos||[]).length})
                           </button>
                         </div>
                         <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', marginTop:9 }}>Product photos ({(v.productPhotos||[]).length}) — from vendor profile</div>
@@ -1265,7 +1265,7 @@ export default function AdminDashboard() {
                               logActivity('Admin', `uploaded ${added.length} event photo(s) for ${v.business} — ${curEv.name}.`, {icon:'upload', tint:'var(--tint-green-bg)'});
                               showToast(`${added.length} photo(s) uploaded for ${v.business}`,'image');
                             }}/>
-                            <Icon name="upload" size={16} color="#A6364E"/><span style={{ fontSize:8.5, fontWeight:600, color:'#A6364E' }}>Upload</span>
+                            <Icon name="upload" size={16} color="#9A5B26"/><span style={{ fontSize:8.5, fontWeight:600, color:'#9A5B26' }}>Upload</span>
                           </label>
                         </div>
                       </div>
@@ -1304,8 +1304,8 @@ export default function AdminDashboard() {
                     </div>
                     <Badge status={p.status}/>
                   </div>
-                  <button onClick={()=>{ const ex=passes[a.vendorId]||{}; set({passModalVendor:a.vendorId,pf:{collector:ex.collector||'',phone:ex.phone||'',issued:ex.issued||'',collectDate:ex.collectDate||'',returned:ex.returned||'',returnDate:ex.returnDate||''}}); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:13, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                    <Icon name="pencil" size={14} color="#A6364E"/>Record collection / return
+                  <button onClick={()=>{ const ex=passes[a.vendorId]||{}; set({passModalVendor:a.vendorId,pf:{collector:ex.collector||'',phone:ex.phone||'',issued:ex.issued||'',collectDate:ex.collectDate||'',returned:ex.returned||'',returnDate:ex.returnDate||''}}); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:13, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                    <Icon name="pencil" size={14} color="#9A5B26"/>Record collection / return
                   </button>
                 </div>
               );
@@ -1318,7 +1318,7 @@ export default function AdminDashboard() {
       {/* ── Categories ── */}
       {aTab === 'categories' && (
         <div style={{ padding:'14px 16px 20px' }}>
-          <button onClick={()=>set({catEditId:'new'})} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 24px', cursor:'pointer', marginBottom:16 }}>+ Add Category</button>
+          <button onClick={()=>set({catEditId:'new'})} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 24px', cursor:'pointer', marginBottom:16 }}>+ Add Category</button>
 
           <SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search vendors by name"/>
 
@@ -1342,8 +1342,8 @@ export default function AdminDashboard() {
                     <label style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)', marginBottom:9, display:'block' }}>Icon</label>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8 }}>
                       {['utensils','palette','shopbag','sparkles','droplet','home','pen','file','folder','settings','heart','star'].map(ic => (
-                        <button key={ic} onClick={()=>set({cf:{...state.cf,icon:ic}})} style={{ width:'100%', aspectRatio:'1/1', border:`2px solid ${state.cf?.icon===ic?'#A6364E':'var(--border-medium)'}`, background:state.cf?.icon===ic?'var(--tint-pink-bg)':'var(--bg-card)', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
-                          <Icon name={ic} size={18} color={state.cf?.icon===ic?'#A6364E':'var(--text-secondary)'}/>
+                        <button key={ic} onClick={()=>set({cf:{...state.cf,icon:ic}})} style={{ width:'100%', aspectRatio:'1/1', border:`2px solid ${state.cf?.icon===ic?'#9A5B26':'var(--border-medium)'}`, background:state.cf?.icon===ic?'var(--tint-pink-bg)':'var(--bg-card)', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                          <Icon name={ic} size={18} color={state.cf?.icon===ic?'#9A5B26':'var(--text-secondary)'}/>
                         </button>
                       ))}
                     </div>
@@ -1359,7 +1359,7 @@ export default function AdminDashboard() {
                         showToast('Category added','check');
                       }
                       set({catEditId:null,cf:null});
-                    }} style={{ flex:1, background:'#A6364E', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer', color:'#FAF8F5' }}>Save</button>
+                    }} style={{ flex:1, background:'#9A5B26', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer', color:'#FAF8F5' }}>Save</button>
                   </div>
                 </div>
               </div>
@@ -1376,13 +1376,13 @@ export default function AdminDashboard() {
                 <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, overflow:'hidden' }}>
                   <div onClick={()=>set({expandedCats:{...state.expandedCats,[c.id]:!isExpanded}})} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px', cursor:'pointer' }}>
                     <div style={{ width:40, height:40, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <Icon name={c.icon} size={18} color="#A6364E"/>
+                      <Icon name={c.icon} size={18} color="#9A5B26"/>
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{c.name}</div>
                       {c.desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{c.desc}</div>}
                     </div>
-                    <span style={{ fontSize:11, fontWeight:600, color:'#A6364E', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px', flexShrink:0 }}>{members.length}</span>
+                    <span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px', flexShrink:0 }}>{members.length}</span>
                     <Icon name={isExpanded?'chevron-down':'chevron-right'} size={16} color="var(--text-muted)" style={{flexShrink:0}}/>
                     <button onClick={e=>{ e.stopPropagation(); if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'var(--tint-red-bg)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
                       <Icon name="x" size={15} color="var(--tint-red-text)"/>
@@ -1419,7 +1419,7 @@ export default function AdminDashboard() {
         <div style={{ padding:'16px 18px 20px' }}>
           <div style={{ display:'flex', gap:8, marginBottom:16 }}>
             {[['all','All'],['admin','Admin'],['vendor','Vendor']].map(([id,label]) => (
-              <button key={id} onClick={()=>set({actTab:id})} style={{ background:actTab===id?'#A6364E':'var(--bg-card)', border:`1px solid ${actTab===id?'#A6364E':'var(--border-medium)'}`, color:actTab===id?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:999, padding:'8px 16px', cursor:'pointer' }}>{label}</button>
+              <button key={id} onClick={()=>set({actTab:id})} style={{ background:actTab===id?'#9A5B26':'var(--bg-card)', border:`1px solid ${actTab===id?'#9A5B26':'var(--border-medium)'}`, color:actTab===id?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:999, padding:'8px 16px', cursor:'pointer' }}>{label}</button>
             ))}
           </div>
           <div style={{ display:'flex', flexDirection:'column' }}>
@@ -1430,7 +1430,7 @@ export default function AdminDashboard() {
               <div key={i} style={{ display:'flex', gap:13 }}>
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
                   <div style={{ width:32, height:32, borderRadius:'50%', background:a.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <Icon name={a.icon} size={15} color="#A6364E"/>
+                    <Icon name={a.icon} size={15} color="#9A5B26"/>
                   </div>
                   {i < arr.length-1 && <div style={{ width:2, flex:1, background:'var(--border-light)', margin:'4px 0' }}/>}
                 </div>
@@ -1456,14 +1456,14 @@ export default function AdminDashboard() {
             const shownSorted = searchQ ? sorted.filter(([vid])=>vendorMatches(vById(vid))) : sorted;
             return (
               <>
-                <div style={{ background:'linear-gradient(135deg,#A6364E,#7A2438)', borderRadius:18, padding:18, color:'#FAF8F5' }}>
+                <div style={{ background:'linear-gradient(135deg,#9A5B26,#7A2438)', borderRadius:18, padding:18, color:'#FAF8F5' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, fontWeight:600, opacity:0.85 }}><Icon name="trophy" size={15} color="#FAF8F5"/>Most active vendor</div>
-                  <div style={{ fontFamily:"'Playfair Display',serif", fontSize:24, fontWeight:600, marginTop:7, lineHeight:1.1 }}>{top.business||'—'}</div>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, marginTop:7, lineHeight:1.1 }}>{top.business||'—'}</div>
                   <div style={{ fontSize:12.5, opacity:0.85, marginTop:3 }}>{sorted[0]?.[1]||0} markets joined</div>
                 </div>
                 <div style={{ display:'flex', gap:8, margin:'15px 0 13px', flexWrap:'wrap' }}>
                   {['all','2026','last3'].map(p => (
-                    <button key={p} onClick={()=>set({chartPeriod:p})} style={{ background:chartPeriod===p?'#A6364E':'var(--bg-card)', border:`1px solid ${chartPeriod===p?'#A6364E':'var(--border-medium)'}`, color:chartPeriod===p?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>
+                    <button key={p} onClick={()=>set({chartPeriod:p})} style={{ background:chartPeriod===p?'#9A5B26':'var(--bg-card)', border:`1px solid ${chartPeriod===p?'#9A5B26':'var(--border-medium)'}`, color:chartPeriod===p?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>
                       {p==='all'?'All time':p==='2026'?'2026':'Last 3 events'}
                     </button>
                   ))}
@@ -1485,10 +1485,10 @@ export default function AdminDashboard() {
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:5 }}>
                               <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{v.business}</span>
-                              <span style={{ fontSize:11.5, fontWeight:600, color:'#A6364E' }}>{count} market{count!==1?'s':''}</span>
+                              <span style={{ fontSize:11.5, fontWeight:600, color:'#9A5B26' }}>{count} market{count!==1?'s':''}</span>
                             </div>
                             <div style={{ height:6, borderRadius:3, background:'var(--bg-subtle)', overflow:'hidden' }}>
-                              <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#C75C84,#A6364E)', width:`${pct}%` }}/>
+                              <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#B97434,#9A5B26)', width:`${pct}%` }}/>
                             </div>
                           </div>
                         </div>
@@ -1512,7 +1512,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
               {[1,2].map(n => (
-                <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'#A6364E':'var(--bg-card)', border:`1px solid ${skipN===n?'#A6364E':'var(--border-medium)'}`, color:skipN===n?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
+                <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'#9A5B26':'var(--bg-card)', border:`1px solid ${skipN===n?'#9A5B26':'var(--border-medium)'}`, color:skipN===n?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
                   Skip {n} market{n>1?'s':''}
                 </button>
               ))}
@@ -1537,7 +1537,7 @@ export default function AdminDashboard() {
                   set({newOffType:''});
                   logActivity('Admin', `added the "${n}" offence type.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
                   showToast('Offence type added','shield');
-                }} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
+                }} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
               </div>
               <div style={lbl}>Event</div>
               <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:14 }}>
@@ -1563,8 +1563,8 @@ export default function AdminDashboard() {
                       {sel.length > 0 && (
                         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
                           {sel.map(vid => (
-                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--tint-pink-bg)', border:'1px solid #eccdd6', color:'#A6364E', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
-                              {vById(vid).business}<Icon name="x" size={13} color="#A6364E"/>
+                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--tint-pink-bg)', border:'1px solid #E3CBA0', color:'#9A5B26', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
+                              {vById(vid).business}<Icon name="x" size={13} color="#9A5B26"/>
                             </button>
                           ))}
                         </div>
@@ -1586,7 +1586,7 @@ export default function AdminDashboard() {
                 set({compSel:{}});
                 logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${curEv.name}.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
                 showToast(`${added.length} offence${added.length>1?'s':''} logged`,'shield');
-              }} className="cta" style={{ marginTop:14, width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>
+              }} className="cta" style={{ marginTop:14, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>
                 Log selected offences for {curEv.name}
               </button>
             </>
@@ -1651,7 +1651,7 @@ export default function AdminDashboard() {
                                   logActivity('Admin', `added ${added.length} evidence photo(s) to ${v.business}'s ${ot.label||'offence'} record.`, {icon:'camera', tint:'var(--tint-pink-bg)'});
                                   showToast(`${added.length} photo(s) added — visible to the vendor`,'camera');
                                 }}/>
-                                <Icon name="upload" size={14} color="#A6364E"/><span style={{ fontSize:8, fontWeight:600, color:'#A6364E' }}>Photo</span>
+                                <Icon name="upload" size={14} color="#9A5B26"/><span style={{ fontSize:8, fontWeight:600, color:'#9A5B26' }}>Photo</span>
                               </label>
                             </div>
                           </div>
@@ -1670,7 +1670,7 @@ export default function AdminDashboard() {
       {aTab === 'content' && (
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:16 }}>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'var(--text-primary)' }}>Homepage content</div>
+            <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Homepage content</div>
             <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Update public-facing branding without code.</div>
             <div style={{ marginTop:16 }}>
               <div style={lbl}>Badge / status text</div>
@@ -1679,11 +1679,11 @@ export default function AdminDashboard() {
             <div style={{ marginTop:14 }}><div style={lbl}>Homepage title</div><textarea value={state.cf?.title ?? content.title} onChange={e=>set({cf:{...(state.cf||content),title:e.target.value}})} style={{ ...inp, minHeight:64, resize:'none' }}/></div>
             <div style={{ marginTop:14 }}><div style={lbl}>Intro / purpose</div><textarea value={state.cf?.subtitle ?? content.subtitle} onChange={e=>set({cf:{...(state.cf||content),subtitle:e.target.value}})} style={{ ...inp, minHeight:84, resize:'none' }}/></div>
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'var(--text-primary)' }}>Application — market terms</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Application — market terms</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
               <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>
             </div>
-            <button onClick={()=>{ set({content:{...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
+            <button onClick={()=>{ set({content:{...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
           </div>
         </div>
       )}
@@ -1703,7 +1703,7 @@ export default function AdminDashboard() {
                   <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)' }}>{s.title}</div>
                   <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2, lineHeight:1.4 }}>{s.desc}</div>
                 </div>
-                <div onClick={()=>set({settings:{...settings,[s.key]:!on}})} style={{ width:48, height:28, borderRadius:14, background:on?'#A6364E':'var(--border-dashed)', position:'relative', cursor:'pointer', flexShrink:0, transition:'background .2s' }}>
+                <div onClick={()=>set({settings:{...settings,[s.key]:!on}})} style={{ width:48, height:28, borderRadius:14, background:on?'#9A5B26':'var(--border-dashed)', position:'relative', cursor:'pointer', flexShrink:0, transition:'background .2s' }}>
                   <div style={{ position:'absolute', top:3, left:on?22:3, width:22, height:22, borderRadius:'50%', background:'var(--bg-card)', transition:'left .2s', boxShadow:'0 1px 4px rgba(0,0,0,0.15)' }}/>
                 </div>
               </div>
@@ -1773,12 +1773,12 @@ export default function AdminDashboard() {
           <div style={{ padding:'14px 16px 20px' }}>
             {/* Create admin */}
             <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:16 }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'var(--text-primary)' }}>Create admin ID</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Create admin ID</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3, lineHeight:1.5 }}>New admins start with the default password <b style={{ color:'var(--text-secondary)' }}>{DEFAULT_ADMIN_PASSWORD}</b> and must set their own the first time they sign in.</div>
               <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginTop:14 }}>
                 <input value={newAdmin.id} onChange={e=>setNewAdmin(s=>({...s,id:e.target.value}))} placeholder="Admin ID, e.g. staff02" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
                 <input value={newAdmin.name} onChange={e=>setNewAdmin(s=>({...s,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&createAdmin()} placeholder="Full name" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
-                <button onClick={createAdmin} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Create</button>
+                <button onClick={createAdmin} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Create</button>
               </div>
             </div>
             <div style={{ display:'flex', gap:9, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', margin:'13px 0', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.5 }}>
@@ -1800,7 +1800,7 @@ export default function AdminDashboard() {
                       onClick={()=> setExpandedAdmin(isOpen ? null : a.id)}
                       style={{ width:'100%', display:'flex', alignItems:'center', gap:11, padding:'12px 14px', background:'none', border:'none', cursor:'pointer', textAlign:'left' }}
                     >
-                      <div style={{ width:36, height:36, borderRadius:'50%', background: a.role==='super' ? '#3A1622' : 'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#A6364E', fontWeight:700, fontSize:13, flexShrink:0 }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background: a.role==='super' ? '#3A2210' : 'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#9A5B26', fontWeight:700, fontSize:13, flexShrink:0 }}>
                         {a.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
@@ -1808,7 +1808,7 @@ export default function AdminDashboard() {
                           <span style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{a.name}</span>
                           <span style={{ fontSize:11, color:'var(--text-muted)' }}>{a.id}</span>
                           {a.role === 'super' ? (
-                            <span style={{ fontSize:10, fontWeight:700, color:'#FAF8F5', background:'#3A1622', borderRadius:999, padding:'2px 8px' }}>Super admin</span>
+                            <span style={{ fontSize:10, fontWeight:700, color:'#FAF8F5', background:'#3A2210', borderRadius:999, padding:'2px 8px' }}>Super admin</span>
                           ) : a.mustReset ? (
                             <span style={{ fontSize:10, fontWeight:600, color:'var(--tint-amber-text)', background:'var(--tint-amber-bg)', borderRadius:999, padding:'2px 8px' }}>Awaiting first sign-in</span>
                           ) : (
@@ -1843,7 +1843,7 @@ export default function AdminDashboard() {
                                 <input value={transferConfirm} onChange={e=>setTransferConfirm(e.target.value)} placeholder={target.id} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:10, padding:'10px 12px', fontSize:13, color:'var(--text-primary)', outline:'none' }}/>
                               </div>
                             )}
-                            <button onClick={transferSuperAdmin} disabled={!transferReady} style={{ marginTop:12, width:'100%', background:transferReady?'#A6364E':'var(--bg-subtle)', color:transferReady?'#FAF8F5':'var(--text-muted)', border:'none', fontSize:13, fontWeight:600, borderRadius:10, padding:11, cursor:transferReady?'pointer':'not-allowed' }}>
+                            <button onClick={transferSuperAdmin} disabled={!transferReady} style={{ marginTop:12, width:'100%', background:transferReady?'#9A5B26':'var(--bg-subtle)', color:transferReady?'#FAF8F5':'var(--text-muted)', border:'none', fontSize:13, fontWeight:600, borderRadius:10, padding:11, cursor:transferReady?'pointer':'not-allowed' }}>
                               Transfer super admin role{target ? ` to ${target.name}` : ''}
                             </button>
                           </div>
@@ -1855,8 +1855,8 @@ export default function AdminDashboard() {
                         <div style={{ display:'flex', alignItems:'center', gap:8, paddingTop:2 }}>
                           <span style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)' }}>Tab access</span>
                           <div style={{ flex:1 }}/>
-                          <button onClick={()=>setAllPerms(a.id,'view')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All view</button>
-                          <button onClick={()=>setAllPerms(a.id,'edit')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All edit</button>
+                          <button onClick={()=>setAllPerms(a.id,'view')} style={{ background:'none', border:'none', color:'#9A5B26', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All view</button>
+                          <button onClick={()=>setAllPerms(a.id,'edit')} style={{ background:'none', border:'none', color:'#9A5B26', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All edit</button>
                           <button onClick={()=>setAllPerms(a.id,'none')} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>Clear</button>
                         </div>
                         <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:9 }}>
@@ -1865,7 +1865,7 @@ export default function AdminDashboard() {
                             return (
                               <div key={t.id} style={{ display:'flex', alignItems:'center', gap:9 }}>
                                 <span style={{ flex:1, fontSize:12, color: p==='none' ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: p==='none' ? 400 : 600, display:'flex', alignItems:'center', gap:7, minWidth:0 }}>
-                                  <Icon name={t.icon} size={13} color={p==='none' ? 'var(--text-faint)' : '#A6364E'}/>{t.label}
+                                  <Icon name={t.icon} size={13} color={p==='none' ? 'var(--text-faint)' : '#9A5B26'}/>{t.label}
                                 </span>
                                 <div style={{ display:'flex', background:'var(--bg-subtle)', borderRadius:9, padding:3, gap:2, width:186, flexShrink:0 }}>
                                   <button onClick={()=>setPerm(a.id,t.id,'none')} style={segStyle(p==='none','var(--text-muted)')}>None</button>
@@ -1877,8 +1877,8 @@ export default function AdminDashboard() {
                           })}
                         </div>
                         <div style={{ display:'flex', gap:9, marginTop:14, paddingTop:12, borderTop:'1px solid var(--border-faint)' }}>
-                          <button onClick={()=>resetPassword(a)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                            <Icon name="lock" size={13} color="#A6364E"/>Reset password to default
+                          <button onClick={()=>resetPassword(a)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                            <Icon name="lock" size={13} color="#9A5B26"/>Reset password to default
                           </button>
                           <button onClick={()=>{ removeAdmin(a); setExpandedAdmin(null); }} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:10, padding:'9px 13px', cursor:'pointer' }}>
                             <Icon name="trash" size={13} color="var(--tint-red-text)"/>Remove
@@ -1898,9 +1898,9 @@ export default function AdminDashboard() {
       {aTab === 'profile' && (
         <div style={{ padding:'16px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:18, display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:54, height:54, borderRadius:'50%', background:'#3A1622', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:18, flexShrink:0 }}>SA</div>
+            <div style={{ width:54, height:54, borderRadius:'50%', background:'#3A2210', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:18, flexShrink:0 }}>SA</div>
             <div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:600, color:'var(--text-primary)' }}>Siti Aminah</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Siti Aminah</div>
               <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>Portal Administrator</div>
             </div>
           </div>

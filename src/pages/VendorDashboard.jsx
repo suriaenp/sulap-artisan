@@ -72,9 +72,9 @@ export default function VendorDashboard() {
   const refundRec = (key) => refunds[key] || { status:'none' };
 
   const tabStyle = (active) => ({
-    flex:1, border:active?'none':'1px solid #efe7dc', fontFamily:"'DM Sans'",
+    flex:1, border:active?'none':'1px solid #efe7dc', fontFamily:"'Karla'",
     fontSize:12.5, fontWeight:600, borderRadius:11, padding:'10px 4px', cursor:'pointer',
-    background:active?'#A6364E':'#fff', color:active?'#FAF8F5':'#6B6560',
+    background:active?'#9A5B26':'#fff', color:active?'#FAF8F5':'#6B6560',
   });
 
   const logout = () => { set({ vScreen:'login' }); showToast('Signed out','leaf'); };
@@ -82,17 +82,17 @@ export default function VendorDashboard() {
   return (
     <div>
       {/* Header */}
-      <div style={{ background:'linear-gradient(160deg,#F8E9EE,#F2EDE6)', padding:'16px 20px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{ background:'linear-gradient(160deg,#F3E4CC,#F2EDE6)', padding:'16px 20px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:11 }}>
-          <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(140deg,#C75C84,#A6364E)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:16 }}>
+          <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(140deg,#B97434,#9A5B26)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:16 }}>
             {(me.business||'').slice(0,2).toUpperCase()}
           </div>
           <div>
             <div style={{ fontSize:12, color:'#6B6560' }}>Welcome back,</div>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17', lineHeight:1.1 }}>{me.business}</div>
+            <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17', lineHeight:1.1 }}>{me.business}</div>
           </div>
         </div>
-        <button onClick={logout} style={{ background:'#FAF8F5', border:'1px solid #e3d3c1', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
+        <button onClick={logout} style={{ background:'#FAF8F5', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
       </div>
 
       {/* Mobile tab bar */}
@@ -134,7 +134,7 @@ export default function VendorDashboard() {
                 <div className="admin-cards">
                   {groups.map(g => (
                     <div key={g.eventId} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
-                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15.5, fontWeight:600, color:'#1C1A17' }}>{g.ev.name||'Unknown market'}</div>
+                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:15.5, fontWeight:400, color:'#1C1A17' }}>{g.ev.name||'Unknown market'}</div>
                       {g.ev.dateRange && <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>{g.ev.dateRange}</div>}
                       <div style={{ display:'flex', flexDirection:'column', gap:11, marginTop:12 }}>
                         {g.offs.map((o,oi) => {
@@ -175,10 +175,10 @@ export default function VendorDashboard() {
           {/* Vendor details — locked, request-based */}
           <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Vendor details</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>Vendor details</div>
               {!editingDetails && !detailsReq && (
-                <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
-                  <Icon name="pencil" size={13} color="#A6364E"/>Request a change
+                <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
+                  <Icon name="pencil" size={13} color="#9A5B26"/>Request a change
                 </span>
               )}
             </div>
@@ -209,7 +209,7 @@ export default function VendorDashboard() {
                 <div style={{ fontSize:11, color:'#A09890' }}>Your changes are sent to Sulap Artisan for review — they won't appear here until admin approves.</div>
                 <div style={{ display:'flex', gap:9, marginTop:2 }}>
                   <button onClick={()=>setEditingDetails(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
-                  <button onClick={sendDetailsRequest} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
+                  <button onClick={sendDetailsRequest} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
                 </div>
               </div>
             ) : (
@@ -227,10 +227,10 @@ export default function VendorDashboard() {
           {/* Social media & power supply — directly vendor-editable */}
           <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Social media &amp; power supply</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>Social media &amp; power supply</div>
               {!editingSocial && (
-                <span onClick={startEditSocial} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
-                  <Icon name="pencil" size={13} color="#A6364E"/>Edit
+                <span onClick={startEditSocial} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
+                  <Icon name="pencil" size={13} color="#9A5B26"/>Edit
                 </span>
               )}
             </div>
@@ -238,7 +238,7 @@ export default function VendorDashboard() {
               <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:11 }}>
                 {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['tiktok','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
                   <div key={key} style={{ display:'flex', alignItems:'center', gap:11, border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'0 14px' }}>
-                    <Icon name={icon} size={18} color="#A6364E" />
+                    <Icon name={icon} size={18} color="#9A5B26" />
                     <input value={socialForm[key]} onChange={e=>setSocialForm({ ...socialForm, [key]:e.target.value })} placeholder={ph} style={{ flex:1, border:'none', padding:'13px 0', fontSize:14.5, outline:'none', background:'transparent' }} />
                   </div>
                 ))}
@@ -248,7 +248,7 @@ export default function VendorDashboard() {
                 </div>
                 <div style={{ display:'flex', gap:9, marginTop:2 }}>
                   <button onClick={()=>setEditingSocial(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
-                  <button onClick={saveSocial} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Save</button>
+                  <button onClick={saveSocial} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Save</button>
                 </div>
               </div>
             ) : (
@@ -256,7 +256,7 @@ export default function VendorDashboard() {
                 {[['Instagram',me.ig],['Facebook',me.fb],['TikTok',me.tiktok],['Power supply needs',me.power]].map(([k,v],i,arr) => (
                   <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
                     <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{k}</span>
-                    <span style={{ fontSize:13.5, fontWeight:600, color: k==='Power supply needs'?'#1C1A17':'#A6364E', textAlign:'right' }}>{v || '—'}</span>
+                    <span style={{ fontSize:13.5, fontWeight:600, color: k==='Power supply needs'?'#1C1A17':'#9A5B26', textAlign:'right' }}>{v || '—'}</span>
                   </div>
                 ))}
               </div>
@@ -268,12 +268,12 @@ export default function VendorDashboard() {
             <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                 <div>
-                  <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>E-Invoice &amp; bank details</div>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>E-Invoice &amp; bank details</div>
                   <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>Used for e-invoicing and deposit refunds</div>
                 </div>
                 {!editingEI && !einvoiceReq && (
-                  <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
-                    <Icon name="pencil" size={13} color="#A6364E"/>{einvoiceOk ? 'Request a change' : 'Complete now'}
+                  <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
+                    <Icon name="pencil" size={13} color="#9A5B26"/>{einvoiceOk ? 'Request a change' : 'Complete now'}
                   </span>
                 )}
               </div>
@@ -303,7 +303,7 @@ export default function VendorDashboard() {
                   ))}
                   <div style={{ display:'flex', gap:9, marginTop:2 }}>
                     <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
-                    <button onClick={saveEI} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
+                    <button onClick={saveEI} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
                   </div>
                 </div>
               ) : (
@@ -340,7 +340,7 @@ export default function VendorDashboard() {
                 <div style={{ display:'flex', gap:13, padding:13 }}>
                   <div style={{ width:110, height:66, borderRadius:12, background:ev.img, flexShrink:0 }}/>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'#1C1A17', lineHeight:1.15 }}>{ev.name}</div>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17', lineHeight:1.15 }}>{ev.name}</div>
                     <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#6B6560', marginTop:5 }}>
                       <Icon name="calendar" size={13} color="#A09890"/>{ev.dateRange}
                     </div>
@@ -352,7 +352,7 @@ export default function VendorDashboard() {
                 <div style={{ padding:'0 13px 13px' }}>
                   <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
                     <span style={{ background:'#E8F5F0', color:'#2D6A4F', fontSize:11, fontWeight:600, borderRadius:7, padding:'4px 8px' }}>F&B RM {ev.fnb}/day · {ev.days}d = RM {fmt(ev.fnb*ev.days)}</span>
-                    <span style={{ background:'#F8E9EE', color:'#A6364E', fontSize:11, fontWeight:600, borderRadius:7, padding:'4px 8px' }}>Non-F&B RM {ev.nonfnb}/day · RM {fmt(ev.nonfnb*ev.days)}</span>
+                    <span style={{ background:'#F3E4CC', color:'#9A5B26', fontSize:11, fontWeight:600, borderRadius:7, padding:'4px 8px' }}>Non-F&B RM {ev.nonfnb}/day · RM {fmt(ev.nonfnb*ev.days)}</span>
                   </div>
                   <button
                     onClick={() => {
@@ -362,7 +362,7 @@ export default function VendorDashboard() {
                       if (!open)   { showToast('Applications closed for this market','lock'); return; }
                       set({ showApplyModal:true, applyEventId:ev.id, applyShare:null, applyPartners:[], applyPartnerSearch:'' });
                     }}
-                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved||!einvoiceOk)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):((!vendorApproved||!einvoiceOk)?'#F2EDE6':(open?'#A6364E':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):((!vendorApproved||!einvoiceOk)?'#A09890':(open?'#FAF8F5':'#A09890')) }}
+                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved||!einvoiceOk)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):((!vendorApproved||!einvoiceOk)?'#F2EDE6':(open?'#9A5B26':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):((!vendorApproved||!einvoiceOk)?'#A09890':(open?'#FAF8F5':'#A09890')) }}
                   >
                     {applied ? (st==='approved'?'Approved': st==='rejected'?'Not selected':'Applied') : (!vendorApproved ? 'Awaiting registration approval' : !einvoiceOk ? 'Complete E-Invoice info to apply' : (open?'Apply to this market':'Applications closed'))}
                   </button>
@@ -393,12 +393,12 @@ export default function VendorDashboard() {
                   return (
                     <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>
+                        <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
                         <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#6B6560', marginTop:5 }}>
                           <Icon name="calendar" size={13} color="#A09890"/>{ev.dateRange}
                         </div>
-                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'#A6364E', marginTop:6 }}>
-                          <Icon name={a.shared?'users':'tent'} size={12} color="#A6364E"/>
+                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'#9A5B26', marginTop:6 }}>
+                          <Icon name={a.shared?'users':'tent'} size={12} color="#9A5B26"/>
                           {a.shared ? `Sharing booth with ${partnerNames.join(', ')}` : 'Solo booth'}
                         </div>
                       </div>
@@ -417,8 +417,8 @@ export default function VendorDashboard() {
         <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Product photos</div>
-              <span style={{ fontSize:12, fontWeight:600, color:'#A6364E', background:'#F8E9EE', borderRadius:999, padding:'4px 11px' }}>{(me.productPhotos||[]).length} of 8</span>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>Product photos</div>
+              <span style={{ fontSize:12, fontWeight:600, color:'#9A5B26', background:'#F3E4CC', borderRadius:999, padding:'4px 11px' }}>{(me.productPhotos||[]).length} of 8</span>
             </div>
             <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginTop:7 }}>These photos represent your brand across every market you apply to. When you update them here, the Sulap team automatically sees your latest set.</div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:14 }}>
@@ -426,7 +426,7 @@ export default function VendorDashboard() {
                 <PhotoTile key={ph.id} photo={ph} size={90} onRemove={()=>{
                   const next = (me.productPhotos||[]).filter(x=>x.id!==ph.id);
                   dispatch({type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===me.id?{...x,productPhotos:next}:x)});
-                  logActivity(me.business, 'removed a product photo.', {icon:'image', tint:'#F8E9EE', type:'vendor'});
+                  logActivity(me.business, 'removed a product photo.', {icon:'image', tint:'#F3E4CC', type:'vendor'});
                   showToast('Photo removed','image');
                 }}/>
               ))}
@@ -440,10 +440,10 @@ export default function VendorDashboard() {
                   const added = await Promise.all(files.slice(0, room).map(fileToPhoto));
                   if (!added.length) return;
                   dispatch({type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===me.id?{...x,productPhotos:[...cur,...added]}:x)});
-                  logActivity(me.business, `uploaded ${added.length} new product photo(s).`, {icon:'image', tint:'#F8E9EE', type:'vendor'});
+                  logActivity(me.business, `uploaded ${added.length} new product photo(s).`, {icon:'image', tint:'#F3E4CC', type:'vendor'});
                   showToast(`${added.length} photo(s) uploaded`,'check');
                 }}/>
-                <Icon name="upload" size={20} color="#A6364E"/><span style={{ fontSize:10, fontWeight:600, color:'#A6364E' }}>Add photos</span>
+                <Icon name="upload" size={20} color="#9A5B26"/><span style={{ fontSize:10, fontWeight:600, color:'#9A5B26' }}>Add photos</span>
               </label>
             </div>
           </div>
@@ -475,7 +475,7 @@ export default function VendorDashboard() {
                     <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>
+                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
                           <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange} · {photos.length} photo(s) from the Sulap team</div>
                         </div>
                         {photos.length > 0 && (
@@ -486,7 +486,7 @@ export default function VendorDashboard() {
                               `${safeName(ev.name)} - event photos.zip`
                             );
                             showToast('ZIP saved to your downloads','check');
-                          }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#A6364E', border:'none', color:'#FAF8F5', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer', flexShrink:0 }}>
+                          }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#9A5B26', border:'none', color:'#FAF8F5', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer', flexShrink:0 }}>
                             <Icon name="download" size={13} color="#FAF8F5"/>Download all
                           </button>
                         )}
@@ -526,11 +526,11 @@ export default function VendorDashboard() {
                 <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17' }}>{d.title}</div>
                 <div style={{ fontSize:12, color:d.subColor, marginTop:2 }}>{d.sub}</div>
               </div>
-              <span style={{ fontSize:13, color:'#A6364E', fontWeight:600, cursor:'pointer' }}>{d.action}</span>
+              <span style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>{d.action}</span>
             </div>
           ))}
           <div style={{ border:'2px dashed #d8c6b2', borderRadius:16, background:'#FBF7F1', padding:24, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
-            <Icon name="folder" size={26} color="#A6364E"/>
+            <Icon name="folder" size={26} color="#9A5B26"/>
             <div style={{ fontSize:13.5, fontWeight:600, color:'#1C1A17', marginTop:9 }}>Add another document</div>
             <div style={{ fontSize:11.5, color:'#A09890', marginTop:3 }}>PDF, JPG or PNG up to 10MB</div>
           </div>
@@ -547,7 +547,7 @@ export default function VendorDashboard() {
               <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'14px 15px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <Icon name="receipt" size={16} color="#A6364E"/>
+                    <Icon name="receipt" size={16} color="#9A5B26"/>
                     <span style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>Security deposit</span>
                   </div>
                   <Badge status={dep.status} />
@@ -583,7 +583,7 @@ export default function VendorDashboard() {
               <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
                 <div style={{ padding:'15px 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
                     <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange}</div>
                   </div>
                   <Badge status={rec.status} />
@@ -595,15 +595,15 @@ export default function VendorDashboard() {
                     {calc.needsDeposit && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6560', marginTop:5 }}><span>Security deposit (one-time)</span><span>RM 100.00</span></div>}
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:8, paddingTop:8, borderTop:'1px solid #efe7dc' }}>
                       <span style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>Total due</span>
-                      <span style={{ fontFamily:"'Playfair Display',serif", fontSize:21, fontWeight:600, color:'#1C1A17' }}>RM {money(calc.total)}</span>
+                      <span style={{ fontFamily:"'Marcellus',serif", fontSize:21, fontWeight:400, color:'#1C1A17' }}>RM {money(calc.total)}</span>
                     </div>
                     {isPartial && overpaidAmt <= 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:11.5, color:'#C76A0D', fontWeight:600, marginTop:5 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <div style={{ flex:1, display:'flex', alignItems:'center', gap:8, background:'#FAF8F5', border:'1px solid #efe7dc', borderRadius:10, padding:'9px 11px' }}>
-                      <Icon name="file" size={15} color="#A6364E"/><span style={{ fontSize:12, color:'#6B6560' }}>{rec.invoice ? rec.invoice.name : 'Invoice not issued yet'}</span>
+                      <Icon name="file" size={15} color="#9A5B26"/><span style={{ fontSize:12, color:'#6B6560' }}>{rec.invoice ? rec.invoice.name : 'Invoice not issued yet'}</span>
                     </div>
-                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', gap:6, background:rec.invoice?'#A6364E':'#F2EDE6', color:rec.invoice?'#FAF8F5':'#A09890', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
+                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', gap:6, background:rec.invoice?'#9A5B26':'#F2EDE6', color:rec.invoice?'#FAF8F5':'#A09890', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
                       <Icon name="eye" size={14} color={rec.invoice?'#FAF8F5':'#A09890'}/>Invoice
                     </button>
                   </div>
@@ -629,8 +629,8 @@ export default function VendorDashboard() {
                       </label>
                     ))}
                     {rec.receipt && (
-                      <button onClick={()=>set({docPreview:{payKey, field:'receipt', editable:false}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
-                        <Icon name="eye" size={14} color="#A6364E"/>Official receipt from Sulap — view
+                      <button onClick={()=>set({docPreview:{payKey, field:'receipt', editable:false}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                        <Icon name="eye" size={14} color="#9A5B26"/>Official receipt from Sulap — view
                       </button>
                     )}
                     {notice && notice.kind === 'unread' && (
@@ -694,13 +694,13 @@ export default function VendorDashboard() {
                     <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:16, fontWeight:600, color:'#1C1A17' }}>{ev.name}</div>
+                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
                           <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.location} · {ev.dateRange}</div>
                         </div>
                         <span style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'5px 11px', background:hasTicket?'#E8F5F0':'#FEF8EC', color:hasTicket?'#2D6A4F':'#B7770D' }}>{hasTicket?'Assigned':'Pending'}</span>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, background:'#F2EDE6', borderRadius:10, padding:'8px 12px', width:'fit-content' }}>
-                        <Icon name="car" size={15} color="#A6364E"/><span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{me.plate}</span>
+                        <Icon name="car" size={15} color="#9A5B26"/><span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{me.plate}</span>
                       </div>
                       <div style={{ display:'flex', gap:8, marginTop:12 }}>
                         {cells.map((c,i) => (
@@ -731,11 +731,11 @@ export default function VendorDashboard() {
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                     <div>
                       <div style={{ fontSize:10, letterSpacing:'0.16em', textTransform:'uppercase', color:'rgba(250,248,245,0.6)' }}>Sulap Artisan</div>
-                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:600, marginTop:3 }}>Vendor Pass</div>
+                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, marginTop:3 }}>Vendor Pass</div>
                     </div>
                     <Badge status={p.status} />
                   </div>
-                  <div style={{ marginTop:18, fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:600 }}>{me.business}</div>
+                  <div style={{ marginTop:18, fontFamily:"'Marcellus',serif", fontSize:22, fontWeight:400 }}>{me.business}</div>
                   <div style={{ fontSize:12.5, color:'rgba(250,248,245,0.72)', marginTop:3 }}>{ev.name}</div>
                 </div>
                 <div style={{ background:'#fff', padding:'14px 18px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #efe7dc', borderTop:'none' }}>

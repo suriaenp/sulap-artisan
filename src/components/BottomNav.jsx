@@ -13,8 +13,8 @@ export default function BottomNav() {
   const navBtn = (active) => ({
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     background: 'none', border: 'none', cursor: 'pointer',
-    fontFamily: "'DM Sans'", padding: '2px 14px',
-    color: active ? '#A6364E' : '#A09890',
+    fontFamily: "'Karla'", padding: '2px 14px',
+    color: active ? '#9A5B26' : '#A09890',
     fontWeight: active ? 700 : 500,
   });
 

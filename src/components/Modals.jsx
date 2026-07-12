@@ -24,7 +24,7 @@ function SheetHeader({ title, sub, onClose }) {
   return (
     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
       <div style={{ minWidth:0 }}>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:600, color:'#1C1A17' }}>{title}</div>
+        <div style={{ fontFamily:"'Marcellus',serif", fontSize:20, fontWeight:400, color:'#1C1A17' }}>{title}</div>
         {sub && <div style={{ fontSize:13, color:'#6B6560', marginTop:2 }}>{sub}</div>}
       </div>
       <button onClick={onClose} style={{ background:'#F2EDE6', border:'none', width:34, height:34, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:'#1C1A17', cursor:'pointer', flexShrink:0 }}>
@@ -92,7 +92,7 @@ export function VendorDetailModal() {
       dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===req.vendorId?{...x,...patch}:x) });
     }
     dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: profileRequests.map(r=>r.id===reqId?{...r,status:decision}:r) });
-    logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s ${req.section==='einvoice'?'E-Invoice':'profile'} change request.`, {icon: decision==='approved'?'check':'x', tint: decision==='approved'?'#F8E9EE':'#FDEEEC'});
+    logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s ${req.section==='einvoice'?'E-Invoice':'profile'} change request.`, {icon: decision==='approved'?'check':'x', tint: decision==='approved'?'#F3E4CC':'#FDEEEC'});
     showToast(`Request ${decision}`, decision==='approved'?'check':'x');
   };
 
@@ -133,8 +133,8 @@ export function VendorDetailModal() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Vendor details</span>
           {!editingDetails && (
-            <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
-              <Icon name="pencil" size={12} color="#A6364E"/>Edit
+            <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
+              <Icon name="pencil" size={12} color="#9A5B26"/>Edit
             </span>
           )}
         </div>
@@ -158,7 +158,7 @@ export function VendorDetailModal() {
             </div>
             <div style={{ display:'flex', gap:8, marginTop:2 }}>
               <button onClick={()=>setEditingDetails(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
-              <button onClick={saveDetails} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
+              <button onClick={saveDetails} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
             </div>
           </div>
         ) : (
@@ -181,8 +181,8 @@ export function VendorDetailModal() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Social media &amp; power supply</span>
           {!editingSocials && (
-            <span onClick={startEditSocials} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
-              <Icon name="pencil" size={12} color="#A6364E"/>Edit
+            <span onClick={startEditSocials} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
+              <Icon name="pencil" size={12} color="#9A5B26"/>Edit
             </span>
           )}
         </div>
@@ -197,7 +197,7 @@ export function VendorDetailModal() {
             <textarea value={socialForm.power} onChange={e=>setSocialForm({...socialForm,power:e.target.value})} placeholder="Power supply needs" style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:10, padding:'9px 11px', fontSize:12.5, outline:'none', minHeight:56, resize:'none' }} />
             <div style={{ display:'flex', gap:8, marginTop:2 }}>
               <button onClick={()=>setEditingSocials(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
-              <button onClick={saveSocials} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
+              <button onClick={saveSocials} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
             </div>
           </div>
         ) : (
@@ -225,8 +225,8 @@ export function VendorDetailModal() {
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ fontSize:10.5, fontWeight:600, color: einvoiceOk?'#2D6A4F':'#B7770D', background: einvoiceOk?'#E8F5F0':'#FEF8EC', borderRadius:999, padding:'3px 9px' }}>{einvoiceOk ? 'Complete' : 'Incomplete'}</span>
               {!editingEI && (
-                <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
-                  <Icon name="pencil" size={12} color="#A6364E"/>Edit
+                <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
+                  <Icon name="pencil" size={12} color="#9A5B26"/>Edit
                 </span>
               )}
             </div>
@@ -242,7 +242,7 @@ export function VendorDetailModal() {
                 ))}
                 <div style={{ display:'flex', gap:8, marginTop:2 }}>
                   <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
-                  <button onClick={saveEI} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
+                  <button onClick={saveEI} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
                 </div>
               </div>
             ) : (
@@ -258,7 +258,7 @@ export function VendorDetailModal() {
       )}
       {v.status === 'pending' && (
         <div style={{ display:'flex', gap:10, marginTop:20 }}>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F8E9EE'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
+          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F3E4CC'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
           <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); close(); }} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
         </div>
       )}
@@ -311,15 +311,15 @@ export function AppDetailModal() {
       </div>
       <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:15, marginTop:18 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <Icon name="users" size={17} color="#A6364E"/><div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>Booth sharing</div>
+          <Icon name="users" size={17} color="#9A5B26"/><div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>Booth sharing</div>
         </div>
         <div style={{ fontSize:11.5, color:'#A09890', marginTop:4, lineHeight:1.45 }}>Declared by the vendor when they applied.</div>
         {a.shared && partners.length > 0 ? (
           <>
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:12 }}>
               {partners.map(p => (
-                <div key={p.id} onClick={()=>set({appDetailId:null, vendorDetailId:p.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F8E9EE', borderRadius:11, padding:'9px 11px', cursor:'pointer' }}>
-                  <Icon name="users" size={15} color="#A6364E"/>
+                <div key={p.id} onClick={()=>set({appDetailId:null, vendorDetailId:p.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', cursor:'pointer' }}>
+                  <Icon name="users" size={15} color="#9A5B26"/>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.business}</div>
                     <div style={{ fontSize:11, color:'#A09890' }}>{p.category}</div>
@@ -400,7 +400,7 @@ export function EventDetailModal() {
           <div style={{ flex:1 }}><div style={lbl}>Start date</div><input type="date" value={eef.start} onChange={e=>upd('start',e.target.value)} style={inp}/></div>
           <div style={{ flex:1 }}><div style={lbl}>End date</div><input type="date" value={eef.end} onChange={e=>upd('end',e.target.value)} style={inp}/></div>
         </div>
-        {eef.start && eef.end && <div style={{ display:'flex', alignItems:'center', gap:7, background:'#F8E9EE', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#A6364E', fontWeight:600 }}><Icon name="calendar" size={15} color="#A6364E"/>Duration: {d} day(s)</div>}
+        {eef.start && eef.end && <div style={{ display:'flex', alignItems:'center', gap:7, background:'#F3E4CC', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#9A5B26', fontWeight:600 }}><Icon name="calendar" size={15} color="#9A5B26"/>Duration: {d} day(s)</div>}
         <div><div style={lbl}>Last date to apply</div><input type="date" value={eef.lastApp} onChange={e=>upd('lastApp',e.target.value)} style={inp}/><div style={{ fontSize:11, color:'#A09890', marginTop:5 }}>Applications close automatically after this date.</div></div>
         <div style={{ display:'flex', gap:10 }}>
           <div style={{ flex:1 }}><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.fnb} onChange={e=>upd('fnb',e.target.value)} placeholder="300" style={inp}/></div>
@@ -409,10 +409,10 @@ export function EventDetailModal() {
         {(eef.fnb || eef.nonfnb) && (
           <div style={{ display:'flex', gap:9 }}>
             <div style={{ flex:1, background:'#E8F5F0', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#2D6A4F', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
-            <div style={{ flex:1, background:'#F8E9EE', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#A6364E', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#A6364E', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#bd7e95', marginTop:1 }}>inclusive of 6% SST</div></div>
+            <div style={{ flex:1, background:'#F3E4CC', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
           </div>
         )}
-        <button onClick={save} className="cta" style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Save changes</button>
+        <button onClick={save} className="cta" style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Save changes</button>
       </div>
     </Sheet>
   );
@@ -439,11 +439,11 @@ export function ApplyModal() {
     const newApp = { id:'a'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners] };
     dispatch({type:'MERGE_APPS',payload:[...apps,newApp]});
     set({showApplyModal:false,applyEventId:null});
-    logActivity(me.business, `applied for ${ev.name}.`, {icon:'clipboard', tint:'#F8E9EE', type:'vendor'});
+    logActivity(me.business, `applied for ${ev.name}.`, {icon:'clipboard', tint:'#F3E4CC', type:'vendor'});
     showToast('Application submitted','mail');
   };
 
-  const btnSel = (active) => ({ flex:1, border:`1.5px solid ${active?'#A6364E':'#e3d8ca'}`, background:active?'#F8E9EE':'#fff', color:active?'#A6364E':'#6B6560', fontSize:13, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' });
+  const btnSel = (active) => ({ flex:1, border:`1.5px solid ${active?'#9A5B26':'#e3d8ca'}`, background:active?'#F3E4CC':'#fff', color:active?'#9A5B26':'#6B6560', fontSize:13, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' });
 
   return (
     <Sheet onClose={close} maxW={480}>
@@ -459,12 +459,12 @@ export function ApplyModal() {
           {partnerObjs.length > 0 && (
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:9 }}>
               {partnerObjs.map(p => (
-                <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, background:'#F8E9EE', borderRadius:11, padding:'9px 11px' }}>
+                <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px' }}>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.business}</div>
                     <div style={{ fontSize:11, color:'#A09890' }}>{p.category}</div>
                   </div>
-                  <button onClick={()=>set({applyPartners:applyPartners.filter(x=>x!==p.id)})} style={{ background:'#fff', border:'1px solid #eccdd6', width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#B03A2E', cursor:'pointer', flexShrink:0 }}>
+                  <button onClick={()=>set({applyPartners:applyPartners.filter(x=>x!==p.id)})} style={{ background:'#fff', border:'1px solid #E3CBA0', width:30, height:30, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#B03A2E', cursor:'pointer', flexShrink:0 }}>
                     <Icon name="x" size={14} color="#B03A2E"/>
                   </button>
                 </div>
@@ -485,7 +485,7 @@ export function ApplyModal() {
                         <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{r.business}</div>
                         <div style={{ fontSize:11, color:'#A09890' }}>{r.category}</div>
                       </div>
-                      <span style={{ fontSize:12, fontWeight:700, color:'#A6364E', flexShrink:0 }}>+ Add</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:'#9A5B26', flexShrink:0 }}>+ Add</span>
                     </button>
                   ))}
                 </div>
@@ -499,7 +499,7 @@ export function ApplyModal() {
           </div>
         </div>
       )}
-      <button onClick={submit} className="cta" style={{ marginTop:20, width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Submit application</button>
+      <button onClick={submit} className="cta" style={{ marginTop:20, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Submit application</button>
     </Sheet>
   );
 }
@@ -536,7 +536,7 @@ export function PassModal() {
         </div>
         <div style={{ display:'flex', gap:10, marginTop:6 }}>
           <button onClick={()=>save('collected')} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark collected</button>
-          <button onClick={()=>save('returned')} style={{ flex:1, background:'#A6364E', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark returned</button>
+          <button onClick={()=>save('returned')} style={{ flex:1, background:'#9A5B26', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark returned</button>
         </div>
       </div>
     </Sheet>
@@ -564,13 +564,13 @@ export function DepositModal() {
       <div style={{ fontSize:12, fontWeight:600, color:'#1C1A17', margin:'16px 0 7px' }}>Status</div>
       <div style={{ display:'flex', gap:8 }}>
         {['unpaid','paid','refunded'].map(s => (
-          <button key={s} onClick={()=>upd('status',s)} style={{ flex:1, border:`1.5px solid ${depf.status===s?'#A6364E':'#e3d8ca'}`, background:depf.status===s?'#F8E9EE':'#fff', color:depf.status===s?'#A6364E':'#6B6560', fontSize:13, fontWeight:600, borderRadius:12, padding:11, cursor:'pointer', textTransform:'capitalize' }}>{s}</button>
+          <button key={s} onClick={()=>upd('status',s)} style={{ flex:1, border:`1.5px solid ${depf.status===s?'#9A5B26':'#e3d8ca'}`, background:depf.status===s?'#F3E4CC':'#fff', color:depf.status===s?'#9A5B26':'#6B6560', fontSize:13, fontWeight:600, borderRadius:12, padding:11, cursor:'pointer', textTransform:'capitalize' }}>{s}</button>
         ))}
       </div>
       <div style={{ marginTop:14 }}><div style={lbl}>Deposit invoice no.</div><input value={depf.inv||''} onChange={e=>upd('inv',e.target.value)} placeholder="DEP-0000" style={inp}/></div>
       <div style={{ marginTop:13 }}><div style={lbl}>Date paid</div><input type="date" value={depf.payDate||''} onChange={e=>upd('payDate',e.target.value)} style={inp}/></div>
       {depf.status === 'refunded' && <div style={{ marginTop:13 }}><div style={lbl}>Date refunded</div><input type="date" value={depf.refundDate||''} onChange={e=>upd('refundDate',e.target.value)} style={inp}/></div>}
-      <button onClick={save} style={{ marginTop:18, width:'100%', background:'#A6364E', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Save deposit record</button>
+      <button onClick={save} style={{ marginTop:18, width:'100%', background:'#9A5B26', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Save deposit record</button>
     </Sheet>
   );
 }
@@ -603,7 +603,7 @@ export function RefundModal() {
       <div style={{ marginTop:14 }}><div style={lbl}>Reference code</div><input value={reff.refCode||''} onChange={e=>upd('refCode',e.target.value)} placeholder="REF-0000" style={inp}/></div>
       <div style={{ marginTop:13 }}><div style={lbl}>Date of refund</div><input type="date" value={reff.date||''} onChange={e=>upd('date',e.target.value)} style={inp}/></div>
       <div style={{ marginTop:13 }}><div style={lbl}>Time of refund</div><input type="time" value={reff.time||''} onChange={e=>upd('time',e.target.value)} style={inp}/></div>
-      <button onClick={save} style={{ marginTop:18, width:'100%', background:'#A6364E', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark refund complete</button>
+      <button onClick={save} style={{ marginTop:18, width:'100%', background:'#9A5B26', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark refund complete</button>
     </Sheet>
   );
 }
@@ -664,7 +664,7 @@ export function DocPreviewModal() {
         ) : file.url ? (
           <img src={file.url} alt={file.name} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#FBF7F1' }}/>
         ) : (
-          <div style={{ width:'100%', height:'100%', background:`linear-gradient(135deg,${file.grad?.[0]||'#F0D8DD'},${file.grad?.[1]||'#C75C84'})`, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.85)', fontSize:13, fontWeight:600 }}>
+          <div style={{ width:'100%', height:'100%', background:`linear-gradient(135deg,${file.grad?.[0]||'#F0D8DD'},${file.grad?.[1]||'#B97434'})`, display:'flex', alignItems:'center', justifyContent:'center', color:'rgba(255,255,255,0.85)', fontSize:13, fontWeight:600 }}>
             Sample document (demo)
           </div>
         )}
@@ -675,14 +675,14 @@ export function DocPreviewModal() {
         </div>
       )}
       <div style={{ display:'flex', gap:9, marginTop:14 }}>
-        <button onClick={()=>downloadPhoto(file, `${safeName(v.business)} - ${label} - ${safeName(ev.name)}.${photoExt(file)}`)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
+        <button onClick={()=>downloadPhoto(file, `${safeName(v.business)} - ${label} - ${safeName(ev.name)}.${photoExt(file)}`)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
           <Icon name="download" size={14} color="#FAF8F5"/>Download
         </button>
         {editable && (
           <>
-            <label style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
+            <label style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#9A5B26', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
               <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={onReplace}/>
-              <Icon name="upload" size={14} color="#A6364E"/>Replace
+              <Icon name="upload" size={14} color="#9A5B26"/>Replace
             </label>
             <button onClick={onRemove} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:13, fontWeight:600, borderRadius:11, padding:'12px 16px', cursor:'pointer' }}>
               <Icon name="trash" size={14} color="#B03A2E"/>Remove

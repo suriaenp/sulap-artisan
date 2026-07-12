@@ -50,7 +50,7 @@ export default function VendorRegister() {
     };
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
     logActivity(newVendor.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
-    if (autoApproved) logActivity('Admin', `auto-approved ${newVendor.business} as a vendor.`, { icon: 'check', tint: '#F8E9EE' });
+    if (autoApproved) logActivity('Admin', `auto-approved ${newVendor.business} as a vendor.`, { icon: 'check', tint: '#F3E4CC' });
     set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[] } });
   };
 
@@ -72,13 +72,13 @@ export default function VendorRegister() {
         <div style={{ width:84, height:84, borderRadius:'50%', background:'#E8F5F0', display:'flex', alignItems:'center', justifyContent:'center' }}>
           <Icon name="check" size={42} color="#2D6A4F" />
         </div>
-        <div style={{ fontFamily:"'Playfair Display',serif", fontSize:27, fontWeight:600, color:'#1C1A17', marginTop:24 }}>{regResult === 'approved' ? "You're in!" : "We've received your application"}</div>
+        <div style={{ fontFamily:"'Marcellus',serif", fontSize:27, fontWeight:400, color:'#1C1A17', marginTop:24 }}>{regResult === 'approved' ? "You're in!" : "We've received your application"}</div>
         <div style={{ fontSize:14, color:'#6B6560', marginTop:10, lineHeight:1.55, maxWidth:290 }}>
           {regResult === 'approved'
             ? "Your vendor account has been auto-approved — you can sign in to the Vendor Portal right away to apply for markets."
             : "Thank you for applying to become a Sulap Artisan vendor. Our team will review your application — if you're selected, you'll receive a confirmation email with next steps."}
         </div>
-        <button onClick={() => set({ view:'public', pubScreen:'home', vScreen:'login', regResult:null })} style={{ marginTop:30, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:'15px 40px', cursor:'pointer', boxShadow:'0 4px 12px rgba(166,54,78,0.22)' }}>Back to home</button>
+        <button onClick={() => set({ view:'public', pubScreen:'home', vScreen:'login', regResult:null })} style={{ marginTop:30, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:'15px 40px', cursor:'pointer', boxShadow:'0 4px 12px rgba(154,91,38,0.22)' }}>Back to home</button>
       </div>
     );
   }
@@ -90,11 +90,11 @@ export default function VendorRegister() {
         <button onClick={back} style={{ background:'#F2EDE6', border:'none', width:36, height:36, borderRadius:11, fontSize:17, color:'#1C1A17', cursor:'pointer', flexShrink:0 }}>‹</button>
         <div style={{ flex:1 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-            <span style={{ fontSize:12, fontWeight:600, color:'#A6364E' }}>Step {regStep} of 4</span>
+            <span style={{ fontSize:12, fontWeight:600, color:'#9A5B26' }}>Step {regStep} of 4</span>
             <span style={{ fontSize:12, color:'#A09890' }}>{STEPS[regStep]}</span>
           </div>
           <div style={{ height:6, borderRadius:4, background:'#F2EDE6', marginTop:7, overflow:'hidden' }}>
-            <div style={{ height:'100%', borderRadius:4, background:'linear-gradient(90deg,#C75C84,#A6364E)', width:PROGRESS[regStep], transition:'width 0.35s ease' }}/>
+            <div style={{ height:'100%', borderRadius:4, background:'linear-gradient(90deg,#B97434,#9A5B26)', width:PROGRESS[regStep], transition:'width 0.35s ease' }}/>
           </div>
         </div>
       </div>
@@ -102,7 +102,7 @@ export default function VendorRegister() {
       {/* Step 1 — Business details */}
       {regStep === 1 && (
         <div style={{ padding:20 }}>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Business details</div>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:23, fontWeight:400, color:'#1C1A17' }}>Business details</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Tell us about your craft business.</div>
           <div className="form-grid" style={{ marginTop:20 }}>
             <div><label style={lbl}>Business name</label><input value={rf.business} onChange={e=>upd('business',e.target.value)} placeholder="e.g. Nutmeg & Clay" style={inp} /></div>
@@ -115,13 +115,13 @@ export default function VendorRegister() {
                 {cats.map(c => {
                   const sel = selectedCat === c.id;
                   return (
-                    <div key={c.id} onClick={() => set({ selectedCat: c.id })} style={{ display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${sel?'#A6364E':'#e3d8ca'}`, background:sel?'#F8E9EE':'#fff', borderRadius:13, padding:'12px 13px', cursor:'pointer', maxWidth:460 }}>
-                      <Icon name={c.icon} size={22} color="#A6364E" />
+                    <div key={c.id} onClick={() => set({ selectedCat: c.id })} style={{ display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${sel?'#9A5B26':'#e3d8ca'}`, background:sel?'#F3E4CC':'#fff', borderRadius:13, padding:'12px 13px', cursor:'pointer', maxWidth:460 }}>
+                      <Icon name={c.icon} size={22} color="#9A5B26" />
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17' }}>{c.name}</div>
                         <div style={{ fontSize:11.5, color:'#A09890', marginTop:1 }}>{c.desc}</div>
                       </div>
-                      <div style={{ width:22, height:22, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#fff', background:sel?'#A6364E':'transparent', border:sel?'none':'1.5px solid #ddd2c4' }}>{sel?'✓':''}</div>
+                      <div style={{ width:22, height:22, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#fff', background:sel?'#9A5B26':'transparent', border:sel?'none':'1.5px solid #ddd2c4' }}>{sel?'✓':''}</div>
                     </div>
                   );
                 })}
@@ -140,13 +140,13 @@ export default function VendorRegister() {
       {/* Step 2 — Contact & logistics */}
       {regStep === 2 && (
         <div style={{ padding:20 }}>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Contact &amp; logistics</div>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:23, fontWeight:400, color:'#1C1A17' }}>Contact &amp; logistics</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Help shoppers find you and help us plan the day.</div>
           <div className="reg-narrow" style={{ marginTop:20, display:'flex', flexDirection:'column', gap:15 }}>
             <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>Social media</div>
             {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['tiktok','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
               <div key={icon} style={{ display:'flex', alignItems:'center', gap:11, border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'0 14px' }}>
-                <Icon name={icon} size={18} color="#A6364E" />
+                <Icon name={icon} size={18} color="#9A5B26" />
                 <input value={rf[key]} onChange={e=>upd(key,e.target.value)} placeholder={ph} style={{ flex:1, border:'none', padding:'13px 0', fontSize:14.5, outline:'none', background:'transparent' }} />
               </div>
             ))}
@@ -166,7 +166,7 @@ export default function VendorRegister() {
       {/* Step 3 — Product photos */}
       {regStep === 3 && (
         <div style={{ padding:20 }}>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Product photos</div>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:23, fontWeight:400, color:'#1C1A17' }}>Product photos</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Show your best work — this appears on your vendor profile.</div>
           <label style={{ display:'block', marginTop:20, border:'2px dashed #d8c6b2', borderRadius:18, background:'#FBF7F1', padding:'30px 20px', textAlign:'center', cursor:'pointer' }}>
             <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e => {
@@ -176,7 +176,7 @@ export default function VendorRegister() {
               const added = await Promise.all(files.slice(0, Math.max(room,0)).map(fileToPhoto));
               if (added.length) upd('photos', [...rf.photos, ...added]);
             }}/>
-            <Icon name="camera" size={32} color="#A6364E" />
+            <Icon name="camera" size={32} color="#9A5B26" />
             <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17', marginTop:11 }}>Tap to upload photos</div>
             <div style={{ fontSize:12, color:'#A09890', marginTop:4 }}>JPG or PNG · up to 8 images</div>
           </label>
@@ -197,7 +197,7 @@ export default function VendorRegister() {
       {/* Step 4 — Market terms */}
       {regStep === 4 && (
         <div style={{ padding:20 }}>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:23, fontWeight:600, color:'#1C1A17' }}>Market terms</div>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:23, fontWeight:400, color:'#1C1A17' }}>Market terms</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Please read all the way to the end, then accept before submitting your application.</div>
           <div style={{ position:'relative', marginTop:18 }}>
             <div ref={termsRef} className="scrollarea" onScroll={handleTermsScroll} style={{ border:'1px solid #efe7dc', background:'#FBF7F1', borderRadius:14, padding:16, maxHeight:300, overflowY:'auto', fontSize:12.5, color:'#4a443e', lineHeight:1.6, whiteSpace:'pre-wrap' }}>
@@ -205,13 +205,13 @@ export default function VendorRegister() {
             </div>
             {!tcScrolled && (
               <div style={{ position:'absolute', left:1, right:1, bottom:1, height:56, borderRadius:'0 0 13px 13px', background:'linear-gradient(rgba(251,247,241,0),#FBF7F1 78%)', pointerEvents:'none', display:'flex', alignItems:'flex-end', justifyContent:'center', paddingBottom:9 }}>
-                <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:'#A6364E', color:'#FAF8F5', fontSize:11, fontWeight:600, borderRadius:999, padding:'5px 12px', boxShadow:'0 2px 8px rgba(166,54,78,0.25)' }}>Scroll to read all ↓</span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:'#9A5B26', color:'#FAF8F5', fontSize:11, fontWeight:600, borderRadius:999, padding:'5px 12px', boxShadow:'0 2px 8px rgba(154,91,38,0.25)' }}>Scroll to read all ↓</span>
               </div>
             )}
           </div>
           {!tcScrolled && <div style={{ fontSize:12, color:'#B7770D', marginTop:9, display:'flex', alignItems:'center', gap:6 }}><Icon name="info" size={14} color="#B7770D" />Scroll through the full terms to unlock acceptance.</div>}
           <div onClick={toggleTc} style={{ display:'flex', alignItems:'flex-start', gap:12, marginTop:14, cursor:'pointer', opacity: tcScrolled ? 1 : 0.5 }}>
-            <div style={{ width:22, height:22, borderRadius:6, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:tcAccepted?'#A6364E':'#fff', border:tcAccepted?'none':'1.5px solid #d8c6b2', marginTop:1 }}>
+            <div style={{ width:22, height:22, borderRadius:6, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:tcAccepted?'#9A5B26':'#fff', border:tcAccepted?'none':'1.5px solid #d8c6b2', marginTop:1 }}>
               {tcAccepted && <Icon name="check" size={14} color="#fff" />}
             </div>
             <div style={{ flex:1, fontSize:13, color:'#1C1A17', lineHeight:1.45 }}>I have read and agree to the Sulap Artisan market terms, vendor conduct &amp; cancellation policy.</div>
@@ -221,7 +221,7 @@ export default function VendorRegister() {
 
       {/* Footer CTA */}
       <div style={{ padding:'8px 20px 24px' }}>
-        <button onClick={next} className="cta" style={{ width:'100%', background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(166,54,78,0.22)' }}>
+        <button onClick={next} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(154,91,38,0.22)' }}>
           {regStep < 4 ? 'Continue' : 'Submit application'}
         </button>
       </div>

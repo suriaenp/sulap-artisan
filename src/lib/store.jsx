@@ -168,7 +168,7 @@ export function StoreProvider({ children }) {
 
   const logActivity = (who, what, opts = {}) => {
     if (adminLocked) return; // a blocked action must not leave a log entry
-    const { type = 'admin', icon = 'check', tint = '#F8E9EE' } = opts;
+    const { type = 'admin', icon = 'check', tint = '#F3E4CC' } = opts;
     const when = 'Today ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     dispatch({ type: 'LOG_ACTIVITY', payload: { who, what, when, tint, icon, type } });
   };

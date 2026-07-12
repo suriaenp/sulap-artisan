@@ -26,7 +26,7 @@ export function badge(status) {
     rejected:  ['#FDEEEC', '#B03A2E', 'Rejected'],
     suspended: ['#F2EDE6', '#8B6F4E', 'Suspended'],
     collected: ['#E8F5F0', '#2D6A4F', 'Collected'],
-    returned:  ['#F8E9EE', '#A6364E', 'Returned'],
+    returned:  ['#F3E4CC', '#9A5B26', 'Returned'],
     paid:      ['#E8F5F0', '#2D6A4F', 'Paid'],
     partial:   ['#FFF3E0', '#C76A0D', 'Partial'],
     refunded:  ['#EEF1FB', '#3D5BC4', 'Refunded'],
