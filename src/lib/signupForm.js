@@ -128,33 +128,40 @@ export async function buildSignupFormHtml(vendor, terms) {
 </html>`;
 }
 
+const PDF_OPT = (filename) => ({
+  margin: [10, 10, 10, 10],
+  filename,
+  image: { type: 'jpeg', quality: 0.98 },
+  html2canvas: { scale: 2, windowWidth: 820 },
+  jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  pagebreak: { mode: ['css', 'legacy'] },
+});
+
+function htmlToElement(html) {
+  // The generated markup is a full <html> document, but html2pdf renders from
+  // a detached DOM node — parse it properly instead of dumping the whole
+  // document string into a <div>'s innerHTML (which silently drops <html>/
+  // <head>/<style> since a div can't contain them), otherwise the page styles
+  // are lost and content renders unstyled and full-bleed.
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const wrapper = document.createElement('div');
+  wrapper.appendChild(doc.querySelector('style').cloneNode(true));
+  wrapper.appendChild(doc.body);
+  return wrapper;
+}
+
 export async function downloadSignupForm(vendor, terms) {
   const html = await buildSignupFormHtml(vendor, terms);
-  const element = document.createElement('div');
-  element.innerHTML = html;
-  const opt = {
-    margin: 0,
-    filename: `${safeName(vendor.business)}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-  };
-  return html2pdf().set(opt).from(element).save();
+  const element = htmlToElement(html);
+  return html2pdf().set(PDF_OPT(`${safeName(vendor.business)}.pdf`)).from(element).save();
 }
 
 export async function downloadSignupFormsZip(vendors, terms) {
   const zip = new JSZip();
   for (const v of vendors) {
     const html = await buildSignupFormHtml(v, terms);
-    const element = document.createElement('div');
-    element.innerHTML = html;
-    const opt = {
-      margin: 0,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    };
-    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+    const element = htmlToElement(html);
+    const pdfBlob = await html2pdf().set(PDF_OPT(`${safeName(v.business)}.pdf`)).from(element).output('blob');
     zip.file(`${safeName(v.business)}.pdf`, pdfBlob);
   }
   const blob = await zip.generateAsync({ type: 'blob' });
