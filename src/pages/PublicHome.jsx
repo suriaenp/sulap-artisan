@@ -159,7 +159,7 @@ export default function PublicHome() {
       </section>
 
       {/* CTA */}
-      <section style={{ background: '#F1E2CC', padding: '0 24px 80px' }}>
+      <section style={{ background: '#F1E2CC', padding: '80px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', borderRadius: 28, padding: 'clamp(40px, 6vw, 64px)', textAlign: 'center', boxShadow: '0 16px 40px rgba(122,67,26,0.35)' }}>
           <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 4vw, 42px)', color: '#FFF8EE', margin: '0 0 14px' }}>Ready to showcase your craft?</h2>
           <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(255,248,238,0.85)', margin: '0 auto 32px', maxWidth: 520 }}>Applications for upcoming markets are open now. Join the Sulap Artisan vendor community today.</p>
