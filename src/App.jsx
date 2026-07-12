@@ -60,6 +60,7 @@ function AppShell() {
   const { state } = useStore();
   const { view, vScreen, aScreen, darkMode } = state;
   const isSignIn = (view === 'vendor' && vScreen === 'login') || (view === 'admin' && (aScreen === 'login' || aScreen === 'reset'));
+  const isRegister = view === 'vendor' && vScreen === 'register';
 
   if (view === 'public') {
     return (
@@ -70,13 +71,15 @@ function AppShell() {
     );
   }
 
-  // Sign-in screens get their own centered card — no Sidebar, since there's no portal
-  // context to navigate yet, and a "Back to home" button covers wayfinding.
-  if (isSignIn) {
+  // Sign-in screens and the registration form get their own centered card — no Sidebar,
+  // since there's no portal context to navigate yet, and a "Back to home" button covers
+  // wayfinding. The register card is wider to fit the multi-step form's 2-column grid.
+  if (isSignIn || isRegister) {
     return (
       <div data-theme={view === 'admin' && darkMode ? 'dark' : 'light'} className="outer-wrap">
-        <AuthLayout dark={view === 'admin' && darkMode}>
-          {view === 'vendor' && <VendorLogin />}
+        <AuthLayout dark={view === 'admin' && darkMode} maxWidth={isRegister ? 780 : 420}>
+          {view === 'vendor' && vScreen === 'login' && <VendorLogin />}
+          {isRegister && <VendorRegister />}
           {view === 'admin' && <AdminLogin />}
         </AuthLayout>
         <Toast />
@@ -91,10 +94,7 @@ function AppShell() {
         <div className="main-area">
           <div style={{ flexShrink:0, height:'env(safe-area-inset-top, 0px)' }}/>
           <div className="scrollarea" style={{ flex:1, overflowY:'auto', overflowX:'hidden', position:'relative' }}>
-            {view === 'vendor' && vScreen === 'login'     && <VendorLogin />}
-            {view === 'vendor' && vScreen === 'register'  && <VendorRegister />}
             {view === 'vendor' && vScreen === 'dashboard' && <VendorDashboard />}
-            {view === 'admin'  && (aScreen === 'login' || aScreen === 'reset') && <AdminLogin />}
             {view === 'admin'  && aScreen === 'dashboard' && <AdminDashboard />}
           </div>
           <Toast />

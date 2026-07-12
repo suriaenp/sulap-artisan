@@ -57,27 +57,10 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Nav items — only shown outside a signed-in portal (e.g. on the register screen).
-          Once inside Vendor Portal or Admin Console, the contextual tabs below are the
-          only navigation needed; Sign out (in the header) is how you leave. */}
+      {/* Nav items — the Sidebar only renders inside a signed-in portal now (sign-in and
+          register screens use AuthLayout), so only the contextual tab list is needed;
+          Sign out (in the header) is how you leave. */}
       <div className="themed-scroll" style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 16px' }}>
-        {!isVendor && !isAdmin && (
-          <>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: subC, padding: '8px 12px 6px' }}>NAVIGATE</div>
-            {[
-              { label:'Home',          icon:'home',     action:() => { closeModals(); set({ view:'public', pubScreen:'home' }); }, active: view==='public' },
-              { label:'Apply as Vendor', icon:'pen',    action:() => { closeModals(); set({ view:'vendor', vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false }); }, active: view==='vendor' && vScreen==='register' },
-              { label:'Vendor Portal', icon:'bag',      action:() => { closeModals(); set({ view:'vendor' }); }, active: isVendor },
-              { label:'Admin Console', icon:'settings', action:() => { closeModals(); set({ view:'admin' }); },  active: isAdmin },
-            ].map(n => (
-              <button key={n.label} style={sideNavStyle(n.active)} onClick={n.action}>
-                <Icon name={n.icon} size={16} color={n.active ? (isAdmin?'#FAF8F5':'#9A5B26') : (isAdmin?'rgba(250,248,245,0.55)':'var(--text-muted)')} />
-                <span>{n.label}</span>
-              </button>
-            ))}
-          </>
-        )}
-
         {/* Vendor portal tabs */}
         {isVendor && (
           <div>
