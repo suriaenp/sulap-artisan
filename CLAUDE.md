@@ -19,6 +19,13 @@ computer) and relies on git as the sync point between them.
   `origin/main` (pull/rebase if needed) to avoid diverging history between the
   two machines.
 
+## Verify localhost after every change
+
+Whenever you commit or otherwise finish an update to this repo, start (or
+reuse) the dev server preview and confirm the app actually loads — page
+renders, no console errors, no blank/broken screen — before considering the
+task done. Do this every time, not just for changes that look risky.
+
 ## Progress & documentation tracking
 
 The user needs a running record of what's built and what rules are baked in,
