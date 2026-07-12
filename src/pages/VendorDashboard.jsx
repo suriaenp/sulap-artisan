@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { CURRENT_VENDOR_ID, EMPTY_EINVOICE } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
@@ -23,19 +23,47 @@ const TABS = [
 
 export default function VendorDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes, eventPhotos, offenses, offenseTypes, settings } = state;
+  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
   const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
+  const pendingReq = (section) => profileRequests.find(r => r.vendorId === CURRENT_VENDOR_ID && r.section === section && r.status === 'pending');
+  const submitRequest = (section, changes) => {
+    dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: [...profileRequests, { id:`pr-${Date.now()}`, vendorId:CURRENT_VENDOR_ID, section, changes, submittedAt: fmtShort(new Date()), status:'pending' }] });
+    logActivity(me.business, section === 'einvoice' ? 'submitted E-Invoice & bank details for admin review.' : 'requested changes to their vendor profile.', { icon:'pencil', tint:'#F2EDE6', type:'vendor' });
+    showToast('Change request sent to admin', 'check');
+  };
 
+  // ── Vendor details (locked — request-based) ──
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState(null);
+  const detailsReq = pendingReq('details');
+  const startEditDetails = () => { setDetailsForm({ business:me.business||'', owner:me.owner||'', category:me.category||'', email:me.email||'', phone:me.phone||'', plate:me.plate||'', desc:me.desc||'' }); setEditingDetails(true); };
+  const sendDetailsRequest = () => {
+    if (!detailsForm.business.trim() || !detailsForm.owner.trim() || !detailsForm.email.trim() || !detailsForm.phone.trim()) { showToast('Please fill in all required fields', 'info'); return; }
+    submitRequest('details', detailsForm);
+    setEditingDetails(false);
+  };
+
+  // ── Social media & power supply (directly vendor-editable) ──
+  const [editingSocial, setEditingSocial] = useState(false);
+  const [socialForm, setSocialForm] = useState(null);
+  const startEditSocial = () => { setSocialForm({ ig:me.ig||'', fb:me.fb||'', tiktok:me.tiktok||'', power:me.power||'' }); setEditingSocial(true); };
+  const saveSocial = () => {
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===CURRENT_VENDOR_ID ? { ...v, ...socialForm } : v) });
+    logActivity(me.business, 'updated their social media & power supply info.', { icon:'pencil', tint:'#F2EDE6', type:'vendor' });
+    showToast('Updated', 'check');
+    setEditingSocial(false);
+  };
+
+  // ── E-Invoice & bank details (locked — request-based, required before applying) ──
   const [editingEI, setEditingEI] = useState(false);
   const [eiForm, setEiForm] = useState(null);
+  const einvoiceReq = pendingReq('einvoice');
   const startEditEI = () => { setEiForm({ ...EMPTY_EINVOICE, ...(me.einvoice||{}) }); setEditingEI(true); };
   const saveEI = () => {
     if (EINVOICE_FIELDS.some(([k]) => !eiForm[k].trim())) { showToast('Please fill in every field (use "N/A" for SST if not registered)', 'info'); return; }
-    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===CURRENT_VENDOR_ID ? { ...v, einvoice: eiForm } : v) });
-    logActivity(me.business, 'updated their E-Invoice & bank details.', { icon:'file', tint:'#F2EDE6', type:'vendor' });
-    showToast('E-Invoice details saved', 'check');
+    submitRequest('einvoice', eiForm);
     setEditingEI(false);
   };
 
@@ -144,37 +172,98 @@ export default function VendorDashboard() {
       {/* ── Profile ── */}
       {vTab === 'profile' && (
         <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
+          {/* Vendor details — locked, request-based */}
           <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
               <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Vendor details</div>
-              <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}><Icon name="pencil" size={13} color="#A6364E"/>Edit</span>
+              {!editingDetails && !detailsReq && (
+                <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
+                  <Icon name="pencil" size={13} color="#A6364E"/>Request a change
+                </span>
+              )}
             </div>
-            <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
-              {[
-                ['Brand name', me.business],
-                ['Contact person', me.owner],
-                ['Category', me.category],
-                ['Email', me.email],
-                ['Phone', me.phone],
-                ['Instagram', me.ig],
-                ['Facebook', me.fb],
-                ['TikTok', me.tiktok],
-                ['Car plate number', me.plate],
-                ['Power supply needs', me.power],
-              ].map(([k,v],i,arr) => (
-                <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
-                  <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{k}</span>
-                  <span style={{ fontSize:13.5, fontWeight:600, color: ['Instagram','Facebook','TikTok'].includes(k)?'#A6364E':'#1C1A17', textAlign:'right' }}>{v || '—'}</span>
+
+            {detailsReq && !editingDetails && (
+              <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', margin:'13px 0 0', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
+                <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }} />
+                Change request sent {detailsReq.submittedAt} — pending admin review. You'll see the update here once it's decided.
+              </div>
+            )}
+
+            {editingDetails ? (
+              <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:12 }}>
+                {DETAILS_FIELDS.map(([k,label]) => (
+                  <div key={k}>
+                    <label style={lbl}>{label}</label>
+                    {k === 'category' ? (
+                      <select value={detailsForm.category} onChange={e=>setDetailsForm({ ...detailsForm, category:e.target.value })} style={inp}>
+                        {cats.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                    ) : k === 'desc' ? (
+                      <textarea value={detailsForm.desc} onChange={e=>setDetailsForm({ ...detailsForm, desc:e.target.value })} style={{ ...inp, minHeight:74, resize:'none' }} />
+                    ) : (
+                      <input value={detailsForm[k]} onChange={e=>setDetailsForm({ ...detailsForm, [k]:e.target.value })} style={inp} />
+                    )}
+                  </div>
+                ))}
+                <div style={{ fontSize:11, color:'#A09890' }}>Your changes are sent to Sulap Artisan for review — they won't appear here until admin approves.</div>
+                <div style={{ display:'flex', gap:9, marginTop:2 }}>
+                  <button onClick={()=>setEditingDetails(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
+                  <button onClick={sendDetailsRequest} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
                 </div>
-              ))}
-            </div>
-          </div>
-          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'#1C1A17' }}>Product description</div>
-            <div style={{ fontSize:13, color:'#6B6560', lineHeight:1.5, marginTop:7 }}>{me.desc}</div>
+              </div>
+            ) : (
+              <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
+                {DETAILS_FIELDS.map(([k,label],i,arr) => (
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
+                    <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{label}</span>
+                    <span style={{ fontSize:13.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{me[k] || '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* E-Invoice & bank details — required (once approved) before applying to markets */}
+          {/* Social media & power supply — directly vendor-editable */}
+          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Social media &amp; power supply</div>
+              {!editingSocial && (
+                <span onClick={startEditSocial} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
+                  <Icon name="pencil" size={13} color="#A6364E"/>Edit
+                </span>
+              )}
+            </div>
+            {editingSocial ? (
+              <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:11 }}>
+                {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['tiktok','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
+                  <div key={key} style={{ display:'flex', alignItems:'center', gap:11, border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'0 14px' }}>
+                    <Icon name={icon} size={18} color="#A6364E" />
+                    <input value={socialForm[key]} onChange={e=>setSocialForm({ ...socialForm, [key]:e.target.value })} placeholder={ph} style={{ flex:1, border:'none', padding:'13px 0', fontSize:14.5, outline:'none', background:'transparent' }} />
+                  </div>
+                ))}
+                <div>
+                  <label style={lbl}>Power supply needs</label>
+                  <textarea value={socialForm.power} onChange={e=>setSocialForm({ ...socialForm, power:e.target.value })} placeholder="List machines + voltage" style={{ ...inp, minHeight:74, resize:'none' }} />
+                </div>
+                <div style={{ display:'flex', gap:9, marginTop:2 }}>
+                  <button onClick={()=>setEditingSocial(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
+                  <button onClick={saveSocial} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Save</button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
+                {[['Instagram',me.ig],['Facebook',me.fb],['TikTok',me.tiktok],['Power supply needs',me.power]].map(([k,v],i,arr) => (
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
+                    <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{k}</span>
+                    <span style={{ fontSize:13.5, fontWeight:600, color: k==='Power supply needs'?'#1C1A17':'#A6364E', textAlign:'right' }}>{v || '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* E-Invoice & bank details — locked, request-based, required (once approved) before applying to markets */}
           {me.status === 'approved' ? (
             <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -182,17 +271,24 @@ export default function VendorDashboard() {
                   <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>E-Invoice &amp; bank details</div>
                   <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>Used for e-invoicing and deposit refunds</div>
                 </div>
-                {!editingEI && (
+                {!editingEI && !einvoiceReq && (
                   <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
-                    <Icon name="pencil" size={13} color="#A6364E"/>{einvoiceOk ? 'Edit' : 'Complete now'}
+                    <Icon name="pencil" size={13} color="#A6364E"/>{einvoiceOk ? 'Request a change' : 'Complete now'}
                   </span>
                 )}
               </div>
 
-              {!einvoiceOk && !editingEI && (
+              {einvoiceReq && !editingEI && (
+                <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', marginTop:13, fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
+                  <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }} />
+                  Submitted {einvoiceReq.submittedAt} — pending admin review. {!einvoiceOk && "You'll be able to apply to markets once it's approved."}
+                </div>
+              )}
+
+              {!einvoiceOk && !editingEI && !einvoiceReq && (
                 <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', marginTop:13, fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
                   <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }} />
-                  Required before you can apply to any market. Please complete every field — enter "N/A" for SST if you're not SST-registered.
+                  Required before you can apply to any market. Please complete every field — enter "N/A" for SST if you're not SST-registered. Submitted details go to admin for review before they take effect.
                 </div>
               )}
 
@@ -207,7 +303,7 @@ export default function VendorDashboard() {
                   ))}
                   <div style={{ display:'flex', gap:9, marginTop:2 }}>
                     <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
-                    <button onClick={saveEI} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Save</button>
+                    <button onClick={saveEI} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
                   </div>
                 </div>
               ) : (
@@ -227,11 +323,6 @@ export default function VendorDashboard() {
               You'll be asked to complete E-Invoice &amp; bank details here once your vendor registration is approved.
             </div>
           )}
-
-          <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
-            <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }} />
-            This is the information Sulap Artisan has on record. Contact admin to update locked fields.
-          </div>
         </div>
       )}
 

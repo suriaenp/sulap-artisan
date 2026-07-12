@@ -3,8 +3,8 @@ import Icon from './Icon';
 import Badge from './Badge';
 import PhotoTile from './PhotoTile';
 import { useStore } from '../lib/store';
-import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
-import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete } from '../lib/helpers';
+import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, EMPTY_EINVOICE } from '../data/mockData';
+import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
 
@@ -34,24 +34,68 @@ function SheetHeader({ title, sub, onClose }) {
   );
 }
 
+// Locked-on-the-vendor-side fields — admin can edit any of these directly at any time.
+const ADMIN_DETAIL_FIELDS = [
+  ['business', 'Brand name'],
+  ['owner',    'Contact person (same as NRIC)'],
+  ['category', 'Category'],
+  ['email',    'Email'],
+  ['phone',    'Phone'],
+  ['plate',    'Car plate number'],
+];
+
 // ── Vendor Application Detail ─────────────────────────────────────────────────
 export function VendorDetailModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { vendorDetailId, vendorDetailReturnAppId, vendors, settings } = state;
+  const { vendorDetailId, vendorDetailReturnAppId, vendors, settings, cats, profileRequests } = state;
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState(null);
   const [editingSocials, setEditingSocials] = useState(false);
-  const [socialForm, setSocialForm] = useState({ ig:'', fb:'', tiktok:'' });
+  const [socialForm, setSocialForm] = useState({ ig:'', fb:'', tiktok:'', power:'' });
+  const [editingEI, setEditingEI] = useState(false);
+  const [eiForm, setEiForm] = useState(null);
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
-  const close = () => { setEditingSocials(false); vendorDetailReturnAppId
+  const close = () => { setEditingDetails(false); setEditingSocials(false); setEditingEI(false); vendorDetailReturnAppId
     ? set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId})
     : set({vendorDetailId:null}); };
-  const startEditSocials = () => { setSocialForm({ ig:v.ig||'', fb:v.fb||'', tiktok:v.tiktok||'' }); setEditingSocials(true); };
+
+  const startEditDetails = () => { setDetailsForm({ business:v.business||'', owner:v.owner||'', category:v.category||'', email:v.email||'', phone:v.phone||'', plate:v.plate||'', desc:v.desc||'' }); setEditingDetails(true); };
+  const saveDetails = () => {
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,...detailsForm}:x) });
+    logActivity('Admin', `updated ${v.business}'s vendor details.`, {icon:'pencil', tint:'#F2EDE6'});
+    showToast('Vendor details updated','check');
+    setEditingDetails(false);
+  };
+
+  const startEditSocials = () => { setSocialForm({ ig:v.ig||'', fb:v.fb||'', tiktok:v.tiktok||'', power:v.power||'' }); setEditingSocials(true); };
   const saveSocials = () => {
     dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,...socialForm}:x) });
-    logActivity('Admin', `updated ${v.business}'s social media links.`, {icon:'pencil', tint:'#F2EDE6'});
-    showToast('Social media updated','check');
+    logActivity('Admin', `updated ${v.business}'s social media & power supply info.`, {icon:'pencil', tint:'#F2EDE6'});
+    showToast('Updated','check');
     setEditingSocials(false);
   };
+
+  const startEditEI = () => { setEiForm({ ...EMPTY_EINVOICE, ...(v.einvoice||{}) }); setEditingEI(true); };
+  const saveEI = () => {
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,einvoice:eiForm}:x) });
+    logActivity('Admin', `updated ${v.business}'s E-Invoice & bank details.`, {icon:'pencil', tint:'#F2EDE6'});
+    showToast('E-Invoice details updated','check');
+    setEditingEI(false);
+  };
+
+  const pendingReqs = profileRequests.filter(r => r.vendorId===vendorDetailId && r.status==='pending');
+  const decideRequest = (reqId, decision) => {
+    const req = profileRequests.find(r=>r.id===reqId);
+    if (decision === 'approved') {
+      const patch = req.section === 'einvoice' ? { einvoice: req.changes } : req.changes;
+      dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===req.vendorId?{...x,...patch}:x) });
+    }
+    dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: profileRequests.map(r=>r.id===reqId?{...r,status:decision}:r) });
+    logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s ${req.section==='einvoice'?'E-Invoice':'profile'} change request.`, {icon: decision==='approved'?'check':'x', tint: decision==='approved'?'#F8E9EE':'#FDEEEC'});
+    showToast(`Request ${decision}`, decision==='approved'?'check':'x');
+  };
+
   const einvoiceOk = einvoiceComplete(v);
   return (
     <Sheet onClose={close} centered>
@@ -59,21 +103,83 @@ export function VendorDetailModal() {
       <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:12 }}>
         <Badge status={v.status}/>
       </div>
-      <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:14 }}>{v.desc}</div>
-      <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginTop:14, display:'flex', flexDirection:'column', gap:9 }}>
-        {[['mail',v.email],['phone',v.phone]].map(([icon,val]) => (
-          <div key={icon} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'#4a443e' }}>
-            <Icon name={icon} size={14} color="#A09890"/>{val}
+
+      {pendingReqs.map(req => (
+        <div key={req.id} style={{ background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:14, padding:'13px 14px', marginTop:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:7, fontSize:12.5, fontWeight:700, color:'#B7770D' }}>
+            <Icon name="clock" size={14} color="#B7770D"/>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile'} change request — {req.submittedAt}
           </div>
-        ))}
-        <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12.5, color:'#4a443e' }}>
-          <Icon name="car" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Car plate: {v.plate || '—'}</span>
+          <div style={{ marginTop:9, display:'flex', flexDirection:'column', gap:6 }}>
+            {Object.entries(req.changes).map(([k,newVal]) => {
+              const label = (req.section==='einvoice' ? EINVOICE_FIELDS : DETAILS_FIELDS).find(([fk])=>fk===k)?.[1] || k;
+              const oldVal = req.section==='einvoice' ? (v.einvoice&&v.einvoice[k]) : v[k];
+              if ((oldVal||'') === (newVal||'')) return null;
+              return (
+                <div key={k} style={{ fontSize:12, color:'#4a443e' }}>
+                  <span style={{ fontWeight:600 }}>{label}:</span> <span style={{ color:'#A09890', textDecoration:'line-through' }}>{oldVal||'—'}</span> → <span style={{ color:'#1C1A17', fontWeight:600 }}>{newVal||'—'}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display:'flex', gap:9, marginTop:12 }}>
+            <button onClick={()=>decideRequest(req.id,'approved')} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Approve</button>
+            <button onClick={()=>decideRequest(req.id,'rejected')} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Reject</button>
+          </div>
         </div>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12.5, color:'#4a443e' }}>
-          <Icon name="info" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Power: {v.power}</span>
+      ))}
+
+      {/* Vendor details — admin can edit directly */}
+      <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginTop:14 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Vendor details</span>
+          {!editingDetails && (
+            <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
+              <Icon name="pencil" size={12} color="#A6364E"/>Edit
+            </span>
+          )}
         </div>
-        <div style={{ borderTop:'1px solid #f1ece4', margin:'2px 0 0', paddingTop:9, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Social media</span>
+        {editingDetails ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:9, marginTop:10 }}>
+            {ADMIN_DETAIL_FIELDS.map(([k,label]) => (
+              <div key={k}>
+                <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#1C1A17', marginBottom:4 }}>{label}</label>
+                {k === 'category' ? (
+                  <select value={detailsForm.category} onChange={e=>setDetailsForm({...detailsForm,category:e.target.value})} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:9, padding:'9px 10px', fontSize:12.5, outline:'none' }}>
+                    {cats.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                  </select>
+                ) : (
+                  <input value={detailsForm[k]} onChange={e=>setDetailsForm({...detailsForm,[k]:e.target.value})} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:9, padding:'9px 10px', fontSize:12.5, outline:'none' }} />
+                )}
+              </div>
+            ))}
+            <div>
+              <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#1C1A17', marginBottom:4 }}>Product description</label>
+              <textarea value={detailsForm.desc} onChange={e=>setDetailsForm({...detailsForm,desc:e.target.value})} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:9, padding:'9px 10px', fontSize:12.5, outline:'none', minHeight:60, resize:'none' }} />
+            </div>
+            <div style={{ display:'flex', gap:8, marginTop:2 }}>
+              <button onClick={()=>setEditingDetails(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
+              <button onClick={saveDetails} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginTop:9, display:'flex', flexDirection:'column', gap:7 }}>
+            {[['mail',v.email],['phone',v.phone]].map(([icon,val]) => (
+              <div key={icon} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'#4a443e' }}>
+                <Icon name={icon} size={14} color="#A09890"/>{val}
+              </div>
+            ))}
+            <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12.5, color:'#4a443e' }}>
+              <Icon name="car" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Car plate: {v.plate || '—'}</span>
+            </div>
+            <div style={{ fontSize:12.5, color:'#4a443e', lineHeight:1.5 }}>{v.desc}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Social media & power supply — admin can edit directly */}
+      <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginTop:14, display:'flex', flexDirection:'column', gap:9 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Social media &amp; power supply</span>
           {!editingSocials && (
             <span onClick={startEditSocials} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
               <Icon name="pencil" size={12} color="#A6364E"/>Edit
@@ -88,17 +194,23 @@ export function VendorDetailModal() {
                 <input value={socialForm[key]} onChange={e=>setSocialForm({...socialForm,[key]:e.target.value})} placeholder={ph} style={{ flex:1, border:'none', padding:'9px 0', fontSize:12.5, outline:'none', background:'transparent' }}/>
               </div>
             ))}
+            <textarea value={socialForm.power} onChange={e=>setSocialForm({...socialForm,power:e.target.value})} placeholder="Power supply needs" style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:10, padding:'9px 11px', fontSize:12.5, outline:'none', minHeight:56, resize:'none' }} />
             <div style={{ display:'flex', gap:8, marginTop:2 }}>
               <button onClick={()=>setEditingSocials(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
               <button onClick={saveSocials} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
             </div>
           </div>
         ) : (
-          [['instagram',v.ig],['facebook',v.fb],['tiktok',v.tiktok]].map(([icon,val]) => (
-            <div key={icon} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'#4a443e' }}>
-              <Icon name={icon} size={14} color="#A09890"/>{val || '—'}
+          <>
+            {[['instagram',v.ig],['facebook',v.fb],['tiktok',v.tiktok]].map(([icon,val]) => (
+              <div key={icon} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'#4a443e' }}>
+                <Icon name={icon} size={14} color="#A09890"/>{val || '—'}
+              </div>
+            ))}
+            <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12.5, color:'#4a443e' }}>
+              <Icon name="info" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Power: {v.power}</span>
             </div>
-          ))
+          </>
         )}
       </div>
       <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'16px 2px 8px' }}>Product photos ({(v.productPhotos||[]).length})</div>
@@ -110,15 +222,37 @@ export function VendorDetailModal() {
         <>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'16px 2px 8px' }}>
             <span style={{ fontSize:12, fontWeight:700, color:'#1C1A17' }}>E-Invoice &amp; bank details</span>
-            <span style={{ fontSize:10.5, fontWeight:600, color: einvoiceOk?'#2D6A4F':'#B7770D', background: einvoiceOk?'#E8F5F0':'#FEF8EC', borderRadius:999, padding:'3px 9px' }}>{einvoiceOk ? 'Complete' : 'Incomplete'}</span>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontSize:10.5, fontWeight:600, color: einvoiceOk?'#2D6A4F':'#B7770D', background: einvoiceOk?'#E8F5F0':'#FEF8EC', borderRadius:999, padding:'3px 9px' }}>{einvoiceOk ? 'Complete' : 'Incomplete'}</span>
+              {!editingEI && (
+                <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
+                  <Icon name="pencil" size={12} color="#A6364E"/>Edit
+                </span>
+              )}
+            </div>
           </div>
           <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', display:'flex', flexDirection:'column' }}>
-            {EINVOICE_FIELDS.map(([k,label],i,arr) => (
-              <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'9px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
-                <span style={{ fontSize:11.5, color:'#A09890', flexShrink:0 }}>{label}</span>
-                <span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{(v.einvoice&&v.einvoice[k]) || '—'}</span>
+            {editingEI ? (
+              <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+                {EINVOICE_FIELDS.map(([k,label,hint]) => (
+                  <div key={k}>
+                    <label style={{ display:'block', fontSize:11, fontWeight:600, color:'#1C1A17', marginBottom:4 }}>{label}</label>
+                    <input value={eiForm[k]} onChange={e=>setEiForm({...eiForm,[k]:e.target.value})} placeholder={hint} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:9, padding:'9px 10px', fontSize:12.5, outline:'none' }} />
+                  </div>
+                ))}
+                <div style={{ display:'flex', gap:8, marginTop:2 }}>
+                  <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
+                  <button onClick={saveEI} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
+                </div>
               </div>
-            ))}
+            ) : (
+              EINVOICE_FIELDS.map(([k,label],i,arr) => (
+                <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'9px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
+                  <span style={{ fontSize:11.5, color:'#A09890', flexShrink:0 }}>{label}</span>
+                  <span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{(v.einvoice&&v.einvoice[k]) || '—'}</span>
+                </div>
+              ))
+            )}
           </div>
         </>
       )}

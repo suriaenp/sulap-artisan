@@ -37,6 +37,10 @@ const INIT = {
   cats: INITIAL_CATS,
   content: INITIAL_CONTENT,
   activity: INITIAL_ACTIVITY,
+  // Vendor-submitted requests to change locked profile fields (business, owner,
+  // category, email, phone, plate, desc, or e-invoice/bank info) — admin must
+  // approve before the change lands on the vendor record. See rule 17.
+  profileRequests: [],
   settings: { autoApprove:false, publicEvents:true, emailAlerts:true, skipMarkets:1 },
   // admin accounts & the admin currently signed in
   admins: INITIAL_ADMINS,
@@ -106,6 +110,7 @@ function reducer(state, action) {
     case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };
     case 'MERGE_PAY_DOC_DOWNLOADS': return { ...state, payDocDownloads: { ...state.payDocDownloads, ...action.payload } };
     case 'MERGE_CATS': return { ...state, cats: action.payload };
+    case 'MERGE_PROFILE_REQUESTS': return { ...state, profileRequests: action.payload };
     case 'MERGE_ADMINS': return { ...state, admins: action.payload };
     case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
     default: return state;

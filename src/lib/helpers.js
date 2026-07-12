@@ -72,3 +72,16 @@ export function einvoiceComplete(v) {
   if (!e) return false;
   return EINVOICE_FIELDS.every(([k]) => (e[k] || '').trim().length > 0);
 }
+
+// Locked profile fields — vendor can request a change but admin must approve it
+// (see profileRequests in lib/store.jsx). Everything else (social links + power
+// supply) is directly vendor-editable.
+export const DETAILS_FIELDS = [
+  ['business', 'Brand name'],
+  ['owner',    'Contact person (same as NRIC)'],
+  ['category', 'Category'],
+  ['email',    'Email'],
+  ['phone',    'Phone'],
+  ['plate',    'Car plate number'],
+  ['desc',     'Product description'],
+];

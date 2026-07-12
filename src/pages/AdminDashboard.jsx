@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS } from '../lib/helpers';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
@@ -15,6 +15,7 @@ export const ADMIN_TABS = [
   { id:'overview',   label:'Overview',            icon:'bars' },
   { id:'vendors',    label:'Vendor Applications', icon:'users' },
   { id:'vendorList', label:'Vendor Listing',      icon:'file' },
+  { id:'profileReq', label:'Profile Requests',    icon:'pencil' },
   { id:'events',     label:'Events',              icon:'tent' },
   { id:'apps',       label:'Event Applications',  icon:'clipboard' },
   { id:'payments',   label:'Payments',            icon:'receipt' },
@@ -73,7 +74,7 @@ function NoSearchMatch({ query }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
@@ -88,6 +89,7 @@ export default function AdminDashboard() {
     if (!allowed && visibleTabs.length) set({ aTab: visibleTabs[0].id, page:1 });
   }, [aTab, currentAdminId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showRejected, setShowRejected] = useState(false);
+  const [showDecidedReq, setShowDecidedReq] = useState(false);
   const [photoSel, setPhotoSel] = useState({});        // booth-group selection for bulk download
   const [photoFilter, setPhotoFilter] = useState('all'); // 'all' | 'new'
   const [bulkUpMsg, setBulkUpMsg] = useState(null);      // bulk upload result summary
@@ -501,6 +503,91 @@ export default function AdminDashboard() {
           <Pager total={searchedApprovedList.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
         </div>
       )}
+
+      {/* ── Profile Requests (vendor-submitted changes to locked profile fields) ── */}
+      {aTab === 'profileReq' && (() => {
+        const pending = profileRequests.filter(r=>r.status==='pending');
+        const decided = profileRequests.filter(r=>r.status!=='pending').sort((a,b)=>b.id.localeCompare(a.id));
+        const decide = (req, decision) => {
+          const v = vendors.find(x=>x.id===req.vendorId);
+          if (decision === 'approved') {
+            const patch = req.section === 'einvoice' ? { einvoice: req.changes } : req.changes;
+            dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===req.vendorId?{...x,...patch}:x) });
+          }
+          dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: profileRequests.map(r=>r.id===req.id?{...r,status:decision}:r) });
+          logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v?.business||'a vendor'}'s ${req.section==='einvoice'?'E-Invoice':'profile'} change request.`, {icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-pink-bg)':'var(--tint-red-bg)'});
+          showToast(`Request ${decision}`, decision==='approved'?'check':'x');
+        };
+        return (
+          <div style={{ padding:'14px 16px 20px' }}>
+            <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}><b style={{ color:'#A6364E' }}>{pending.length}</b> pending change request{pending.length!==1?'s':''}</div>
+            {pending.length === 0 && (
+              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
+                No pending profile change requests.
+              </div>
+            )}
+            <div className="admin-cards">
+              {pending.map(req => {
+                const v = vendors.find(x=>x.id===req.vendorId)||{};
+                const fields = req.section==='einvoice' ? EINVOICE_FIELDS : DETAILS_FIELDS;
+                return (
+                  <div key={req.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                      <div>
+                        <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
+                        <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
+                      </div>
+                    </div>
+                    <div style={{ marginTop:11, display:'flex', flexDirection:'column', gap:6 }}>
+                      {fields.map(([k,label]) => {
+                        const newVal = req.changes[k];
+                        const oldVal = req.section==='einvoice' ? (v.einvoice&&v.einvoice[k]) : v[k];
+                        if ((oldVal||'') === (newVal||'')) return null;
+                        return (
+                          <div key={k} style={{ fontSize:12, color:'var(--text-secondary)' }}>
+                            <span style={{ fontWeight:600, color:'var(--text-primary)' }}>{label}:</span>{' '}
+                            <span style={{ color:'var(--text-muted)', textDecoration:'line-through' }}>{oldVal||'—'}</span>{' → '}
+                            <span style={{ color:'var(--text-primary)', fontWeight:600 }}>{newVal||'—'}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display:'flex', gap:9, marginTop:13 }}>
+                      <button onClick={()=>decide(req,'approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Approve</button>
+                      <button onClick={()=>decide(req,'rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Reject</button>
+                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>View vendor</button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {decided.length > 0 && (
+              <div style={{ marginTop:22, paddingTop:16, borderTop:'1px solid var(--border-light)' }}>
+                <button onClick={()=>setShowDecidedReq(s=>!s)} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:12, fontWeight:600, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                  <Icon name={showDecidedReq?'x':'eye'} size={13} color="var(--text-muted)"/>
+                  {showDecidedReq ? 'Hide' : 'Show'} {decided.length} decided request{decided.length!==1?'s':''}
+                </button>
+                {showDecidedReq && (
+                  <div className="admin-cards" style={{ marginTop:13 }}>
+                    {decided.map(req => {
+                      const v = vendors.find(x=>x.id===req.vendorId)||{};
+                      return (
+                        <div key={req.id} style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
+                          <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
+                          <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', marginTop:9, background: req.status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)', color: req.status==='approved'?'var(--tint-green-text)':'var(--tint-red-text)' }}>
+                            {req.status==='approved' ? 'Approved' : 'Rejected'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Events ── */}
       {aTab === 'events' && (
