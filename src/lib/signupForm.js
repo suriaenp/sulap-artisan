@@ -1,12 +1,10 @@
 import JSZip from 'jszip';
-import { downloadBlob, safeName } from './photoFiles';
+import html2pdf from 'html2pdf.js';
+import { safeName } from './photoFiles';
 import { EINVOICE_FIELDS, DETAILS_FIELDS, einvoiceComplete } from './helpers';
 
-// Generates a vendor's sign-up & T&C acceptance form as a self-contained,
-// print-ready HTML file (there's no PDF generator in this project — pdfjs-dist
-// only reads PDFs — so the form opens in any browser and prints cleanly to
-// PDF via the browser's own Print dialog; @media print styles included).
-// Single download saves as "<Vendor Name>.html"; bulk saves a ZIP with one
+// Generates a vendor's sign-up & T&C acceptance form as a PDF document.
+// Single download saves as "<Vendor Name>.pdf"; bulk saves a ZIP with one
 // file per vendor, named the same way.
 
 let logoDataUrl = null;
@@ -121,16 +119,39 @@ export async function buildSignupFormHtml(vendor, terms) {
 
 export async function downloadSignupForm(vendor, terms) {
   const html = await buildSignupFormHtml(vendor, terms);
-  const blob = new Blob([html], { type: 'text/html' });
-  downloadBlob(blob, `${safeName(vendor.business)}.html`);
+  const element = document.createElement('div');
+  element.innerHTML = html;
+  const opt = {
+    margin: 0,
+    filename: `${safeName(vendor.business)}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  };
+  return html2pdf().set(opt).from(element).save();
 }
 
 export async function downloadSignupFormsZip(vendors, terms) {
   const zip = new JSZip();
   for (const v of vendors) {
     const html = await buildSignupFormHtml(v, terms);
-    zip.file(`${safeName(v.business)}.html`, html);
+    const element = document.createElement('div');
+    element.innerHTML = html;
+    const opt = {
+      margin: 0,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    };
+    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+    zip.file(`${safeName(v.business)}.pdf`, pdfBlob);
   }
   const blob = await zip.generateAsync({ type: 'blob' });
-  downloadBlob(blob, 'Sulap Artisan - Vendor sign-up forms.zip');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Sulap Artisan - Vendor sign-up forms.zip';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
