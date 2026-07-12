@@ -1895,6 +1895,24 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Footer</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The dark footer at the bottom of the page. Logo and the "Vendors" navigation links aren't editable here — only copy.</div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Description</div>
+                <textarea value={state.cf?.footerDescription ?? content.footerDescription} onChange={e=>set({cf:{...(state.cf||content),footerDescription:e.target.value}})} style={{ ...inp, minHeight:64, resize:'none' }}/>
+              </div>
+              <div style={{ marginTop:14 }}>
+                <div style={lbl}>Visit Us address</div>
+                <textarea value={state.cf?.footerAddress ?? content.footerAddress} onChange={e=>set({cf:{...(state.cf||content),footerAddress:e.target.value}})} style={{ ...inp, minHeight:64, resize:'none' }}/>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:5 }}>Each line becomes its own line in the footer.</div>
+              </div>
+              <div style={{ marginTop:14 }}>
+                <div style={lbl}>Copyright line</div>
+                <input value={state.cf?.footerCopyright ?? content.footerCopyright} onChange={e=>set({cf:{...(state.cf||content),footerCopyright:e.target.value}})} style={inp}/>
+              </div>
+            </div>
+
+            <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Application — market terms</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
               <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>

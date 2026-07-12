@@ -187,7 +187,7 @@ export default function PublicHome() {
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div style={{ flex: '1 1 300px', minWidth: 260 }}>
             <img src="/assets/sulap-lockup.png" alt="Sulap Artisan" style={{ height: 73, width: 'auto', display: 'block', marginBottom: 18 }} />
-            <p style={{ fontSize: 14, lineHeight: 1.65, color: 'rgba(233,213,184,0.8)', margin: 0, maxWidth: 350 }}>Sulap Artisan is a curated artisan market series by Suria Sabah Shopping Mall, celebrating Sabahan craft, food, and culture.</p>
+            <p style={{ fontSize: 14, lineHeight: 1.65, color: 'rgba(233,213,184,0.8)', margin: 0, maxWidth: 350 }}>{content.footerDescription}</p>
           </div>
           <div style={{ flex: '0 1 200px', minWidth: 160 }}>
             <div style={{ fontFamily: "'Marcellus', serif", fontSize: 17, color: '#FFF3E2', marginBottom: 16 }}>Vendors</div>
@@ -200,10 +200,14 @@ export default function PublicHome() {
           </div>
           <div style={{ flex: '0 1 280px', minWidth: 220 }}>
             <div style={{ fontFamily: "'Marcellus', serif", fontSize: 17, color: '#FFF3E2', marginBottom: 16 }}>Visit Us</div>
-            <div style={{ fontSize: 14, lineHeight: 1.7, color: 'rgba(233,213,184,0.85)' }}>Suria Sabah Shopping Mall<br />1, Jalan Tun Fuad Stephens<br />88000 Kota Kinabalu, Sabah</div>
+            <div style={{ fontSize: 14, lineHeight: 1.7, color: 'rgba(233,213,184,0.85)' }}>
+              {content.footerAddress.split('\n').map((line, i, arr) => (
+                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+              ))}
+            </div>
           </div>
         </div>
-        <div style={{ maxWidth: 1200, margin: '40px auto 0', paddingTop: 20, borderTop: '1px solid rgba(233,213,184,0.2)', fontSize: 13, color: 'rgba(233,213,184,0.6)', textAlign: 'center' }}>© 2026 Sulap Artisan · Suria Sabah Shopping Mall. All rights reserved.</div>
+        <div style={{ maxWidth: 1200, margin: '40px auto 0', paddingTop: 20, borderTop: '1px solid rgba(233,213,184,0.2)', fontSize: 13, color: 'rgba(233,213,184,0.6)', textAlign: 'center' }}>{content.footerCopyright}</div>
       </section>
     </div>
   );

@@ -163,6 +163,12 @@ export const INITIAL_CONTENT = {
   ctaTitle:    'Ready to showcase your craft?',
   ctaSubtitle: 'Applications for upcoming markets are open now. Join the Sulap Artisan vendor community today.',
 
+  // Footer (public home page) — logo + "Vendors" nav links stay code-driven
+  // (site branding / navigation, not editable copy).
+  footerDescription: 'Sulap Artisan is a curated artisan market series by Suria Sabah Shopping Mall, celebrating Sabahan craft, food, and culture.',
+  footerAddress:      'Suria Sabah Shopping Mall\n1, Jalan Tun Fuad Stephens\n88000 Kota Kinabalu, Sabah',
+  footerCopyright:    '© 2026 Sulap Artisan · Suria Sabah Shopping Mall. All rights reserved.',
+
   terms: `1. Application & selection
 Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.
 
