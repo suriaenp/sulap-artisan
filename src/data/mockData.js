@@ -124,6 +124,17 @@ export const INITIAL_CONTENT = {
   heroImage:    null, // data URL from admin upload, else gradient placeholder
   heroTag1:     '40+ Artisan Vendors',
   heroTag2:     'Monthly Markets',
+
+  // "Coming Soon" carousel (public home page) — static placeholder cards,
+  // intentionally not wired to the live events store (see PROJECT_NOTES.md).
+  comingSoonHeading: 'COMING SOON',
+  comingSoonEvents: [
+    { id: 'cs1', day: '12', month: 'JUL', name: 'Tamu Weekend Bazaar', image: null },
+    { id: 'cs2', day: '26', month: 'JUL', name: 'Borneo Makers Fair',  image: null },
+    { id: 'cs3', day: '02', month: 'AUG', name: 'Harvest Night Market', image: null },
+    { id: 'cs4', day: '29', month: 'AUG', name: 'Merdeka Craft Fest',  image: null },
+  ],
+
   terms: `1. Application & selection
 Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.
 

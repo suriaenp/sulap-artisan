@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 
-const comingSoonEvents = [
-  { day: '12', month: 'JUL', name: 'Tamu Weekend Bazaar' },
-  { day: '26', month: 'JUL', name: 'Borneo Makers Fair' },
-  { day: '02', month: 'AUG', name: 'Harvest Night Market' },
-  { day: '29', month: 'AUG', name: 'Merdeka Craft Fest' },
-];
-
 const whyJoin = [
   { title: 'Prime mall location', body: 'Trade in the heart of Kota Kinabalu with steady daily footfall.' },
   { title: 'Simple online application', body: 'Apply in minutes and track your application from the vendor portal.' },
@@ -114,12 +107,12 @@ export default function PublicHome() {
       <section id="coming-soon" style={{ position: 'relative', background: '#1D1006', overflow: 'hidden', padding: '72px 0 64px' }}>
         <div style={{ position: 'absolute', top: -60, left: -80, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.55, filter: 'blur(2px)' }} />
         <div style={{ position: 'absolute', bottom: -70, right: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.5, filter: 'blur(2px)' }} />
-        <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>COMING SOON</h2>
+        <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>{content.comingSoonHeading}</h2>
         <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
           <button onClick={() => scrollRail(-1)} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8249;</button>
           <div ref={railRef} style={{ flex: 1, display: 'flex', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '8px 4px 20px', scrollbarWidth: 'none' }}>
-            {comingSoonEvents.map(ev => (
-              <div key={ev.name} style={{ position: 'relative', flex: '0 0 320px', height: 440, borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'start', background: 'linear-gradient(180deg, #8A5322, #3A2210)', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+            {content.comingSoonEvents.map(ev => (
+              <div key={ev.id} style={{ position: 'relative', flex: '0 0 320px', height: 440, borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'start', background: ev.image ? undefined : 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundImage: ev.image ? `url(${ev.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)', pointerEvents: 'none' }} />
                 <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
                   <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1 }}>{ev.day}</div>
