@@ -66,6 +66,8 @@ const INIT = {
   ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   cf: null,
+  catEditId: null,
+  expandedCats: {},  // { 'c-fnb': true, 'c-craft': false, ... }
   newCat: '',
   newOffType: '',
   // filters & pagination

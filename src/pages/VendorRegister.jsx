@@ -5,24 +5,12 @@ import { useStore } from '../lib/store';
 import { fmtShort } from '../lib/helpers';
 import { fileToPhoto } from '../lib/photoFiles';
 
-const CATS = [
-  { id:'fnb',      icon:'utensils', name:'Food & Beverage',                desc:'Coffee, drinks, cakes, cookies, desserts, snacks, meals, packaged food' },
-  { id:'craft',    icon:'palette',  name:'Handcraft / Art',                desc:'Paintings, prints, pottery, crochet, candles, resin art, handmade décor' },
-  { id:'fashion',  icon:'shopbag',  name:'Fashion',                        desc:'Clothing, thrift wear, upcycled fashion, tote bags, scarves, batik' },
-  { id:'jewel',    icon:'sparkles', name:'Jewellery',                      desc:'Earrings, bracelets, necklaces, rings, beaded & clay accessories' },
-  { id:'beauty',   icon:'droplet',  name:'Beauty & Wellness',              desc:'Handmade soap, body scrub, balm, perfume, essential oils, bath' },
-  { id:'home',     icon:'home',     name:'Home & Lifestyle',               desc:'Home décor, tableware, room fragrance, plants, dried flowers, gifts' },
-  { id:'creative', icon:'pen',      name:'Creative Services / Experience', desc:'Portrait drawing, calligraphy, henna, workshops, live painting' },
-  { id:'books',    icon:'file',     name:'Books / Stationery',             desc:'Zines, journals, notebooks, postcards, stickers, bookmarks, planners' },
-  { id:'other',    icon:'folder',   name:'Others',                         desc:'Any product or service not listed above' },
-];
-
 const STEPS = ['', 'Business details', 'Contact & logistics', 'Product photos', 'Market terms'];
 const PROGRESS = ['', '25%', '50%', '75%', '100%'];
 
 export default function VendorRegister() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { regStep, selectedCat, tcAccepted, tcScrolled, content, rf, vendors, settings, regResult } = state;
+  const { regStep, selectedCat, tcAccepted, tcScrolled, content, rf, vendors, settings, regResult, cats } = state;
   const termsRef = useRef(null);
   const upd = (k, val) => set({ rf: { ...rf, [k]: val } });
 
@@ -40,7 +28,7 @@ export default function VendorRegister() {
     if (regStep < 4) { set({ regStep: regStep + 1 }); return; }
     if (!tcAccepted) { showToast('Please accept the market terms first', 'info'); return; }
 
-    const cat = CATS.find(c => c.id === selectedCat);
+    const cat = cats.find(c => c.id === selectedCat);
     const autoApproved = !!settings.autoApprove;
     const newVendor = {
       id: 'v' + Date.now(),
@@ -121,7 +109,7 @@ export default function VendorRegister() {
             <div className="span2">
               <div style={lbl}>Product category</div>
               <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
-                {CATS.map(c => {
+                {cats.map(c => {
                   const sel = selectedCat === c.id;
                   return (
                     <div key={c.id} onClick={() => set({ selectedCat: c.id })} style={{ display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${sel?'#A6364E':'#e3d8ca'}`, background:sel?'#F8E9EE':'#fff', borderRadius:13, padding:'12px 13px', cursor:'pointer', maxWidth:460 }}>

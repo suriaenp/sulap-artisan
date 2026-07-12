@@ -97,15 +97,15 @@ export const INITIAL_PASSES = {
 };
 
 export const INITIAL_CATS = [
-  { id:'c-fnb',      name:'Food & Beverage' },
-  { id:'c-craft',    name:'Handcraft / Art' },
-  { id:'c-fashion',  name:'Fashion' },
-  { id:'c-jewel',    name:'Jewellery' },
-  { id:'c-beauty',   name:'Beauty & Wellness' },
-  { id:'c-home',     name:'Home & Lifestyle' },
-  { id:'c-creative', name:'Creative Services / Experience' },
-  { id:'c-books',    name:'Books / Stationery' },
-  { id:'c-other',    name:'Others' },
+  { id:'c-fnb',      icon:'utensils', name:'Food & Beverage',                desc:'Coffee, drinks, cakes, cookies, desserts, snacks, meals, packaged food' },
+  { id:'c-craft',    icon:'palette',  name:'Handcraft / Art',                desc:'Paintings, prints, pottery, crochet, candles, resin art, handmade décor' },
+  { id:'c-fashion',  icon:'shopbag',  name:'Fashion',                        desc:'Clothing, thrift wear, upcycled fashion, tote bags, scarves, batik' },
+  { id:'c-jewel',    icon:'sparkles', name:'Jewellery',                      desc:'Earrings, bracelets, necklaces, rings, beaded & clay accessories' },
+  { id:'c-beauty',   icon:'droplet',  name:'Beauty & Wellness',              desc:'Handmade soap, body scrub, balm, perfume, essential oils, bath' },
+  { id:'c-home',     icon:'home',     name:'Home & Lifestyle',               desc:'Home décor, tableware, room fragrance, plants, dried flowers, gifts' },
+  { id:'c-creative', icon:'pen',      name:'Creative Services / Experience', desc:'Portrait drawing, calligraphy, henna, workshops, live painting' },
+  { id:'c-books',    icon:'file',     name:'Books / Stationery',             desc:'Zines, journals, notebooks, postcards, stickers, bookmarks, planners' },
+  { id:'c-other',    icon:'folder',   name:'Others',                         desc:'Any product or service not listed above' },
 ];
 
 export const INITIAL_CONTENT = {

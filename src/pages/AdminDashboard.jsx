@@ -73,7 +73,7 @@ function NoSearchMatch({ query }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
@@ -1209,53 +1209,95 @@ export default function AdminDashboard() {
       {/* ── Categories ── */}
       {aTab === 'categories' && (
         <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14, display:'flex', gap:9 }}>
-            <input value={state.newCat} onChange={e=>set({newCat:e.target.value})} placeholder="New category name" style={{ flex:1, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
-            <button onClick={()=>{ const n=state.newCat.trim(); if(!n) return; dispatch({type:'MERGE_CATS',payload:[...cats,{id:'c'+Date.now(),name:n}]}); set({newCat:''}); logActivity('Admin', `added the "${n}" category.`, {icon:'folder', tint:'var(--tint-pink-bg)'}); showToast('Category added','check'); }} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
-          </div>
-          <div className="admin-cards" style={{ marginTop:14 }}>
-            {cats.map(c => (
-              <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:34, height:34, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon name="folder" size={17} color="#A6364E"/>
+          <button onClick={()=>set({catEditId:'new'})} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 24px', cursor:'pointer', marginBottom:16 }}>+ Add Category</button>
+
+          <SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search vendors by name"/>
+
+          {/* Category Editor Modal */}
+          {state.catEditId && (
+            <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }} onClick={()=>set({catEditId:null})}>
+              <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:20, padding:24, maxWidth:420, width:'90%', maxHeight:'80vh', overflowY:'auto' }}>
+                <div style={{ fontSize:18, fontWeight:700, color:'var(--text-primary)', marginBottom:16 }}>
+                  {state.catEditId==='new'?'Add Category':'Edit Category'}
                 </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{c.name}</div>
-                  <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:1 }}>{vendors.filter(v=>v.category===c.name).length} vendors</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)', marginBottom:6, display:'block' }}>Category name</label>
+                    <input value={state.cf?.name||''} onChange={e=>set({cf:{...state.cf,name:e.target.value}})} placeholder="e.g. Food & Beverage" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
+                  </div>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)', marginBottom:6, display:'block' }}>Description</label>
+                    <textarea value={state.cf?.desc||''} onChange={e=>set({cf:{...state.cf,desc:e.target.value}})} placeholder="What products or services are in this category?" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none', minHeight:70, resize:'none' }}/>
+                  </div>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)', marginBottom:9, display:'block' }}>Icon</label>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:8 }}>
+                      {['utensils','palette','shopbag','sparkles','droplet','home','pen','file','folder','settings','heart','star'].map(ic => (
+                        <button key={ic} onClick={()=>set({cf:{...state.cf,icon:ic}})} style={{ width:'100%', aspectRatio:'1/1', border:`2px solid ${state.cf?.icon===ic?'#A6364E':'var(--border-medium)'}`, background:state.cf?.icon===ic?'var(--tint-pink-bg)':'var(--bg-card)', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                          <Icon name={ic} size={18} color={state.cf?.icon===ic?'#A6364E':'var(--text-secondary)'}/>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:9, marginTop:16 }}>
+                    <button onClick={()=>set({catEditId:null,cf:null})} style={{ flex:1, background:'var(--bg-subtle)', border:'1px solid var(--border-medium)', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer', color:'var(--text-secondary)' }}>Cancel</button>
+                    <button onClick={()=>{
+                      const name=(state.cf?.name||'').trim(), desc=(state.cf?.desc||'').trim(), icon=state.cf?.icon||'folder';
+                      if(!name) { showToast('Category name required','info'); return; }
+                      if(state.catEditId==='new') {
+                        dispatch({type:'MERGE_CATS',payload:[...cats,{id:'c'+Date.now(),name,desc,icon}]});
+                        logActivity('Admin', `added the "${name}" category.`, {icon:'folder', tint:'var(--tint-pink-bg)'});
+                        showToast('Category added','check');
+                      }
+                      set({catEditId:null,cf:null});
+                    }} style={{ flex:1, background:'#A6364E', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer', color:'#FAF8F5' }}>Save</button>
+                  </div>
                 </div>
-                <button onClick={()=>{ dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); }} style={{ background:'var(--tint-red-bg)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
-                  <Icon name="x" size={15} color="var(--tint-red-text)"/>
-                </button>
               </div>
-            ))}
-          </div>
-          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', margin:'20px 2px 11px' }}>Vendors by category</div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          <div className="admin-cards">
+            </div>
+          )}
+
+          {/* Category Accordion Cards */}
+          <div style={{ display:'flex', flexDirection:'column', gap:12, marginTop:16 }}>
             {cats.map(c => {
               const members = vendors.filter(v=>v.category===c.name);
               const shownMembers = searchVendors(members);
+              const isExpanded = state.expandedCats[c.id];
               return (
-                <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{c.name}</div>
-                    <span style={{ fontSize:11, fontWeight:600, color:'#A6364E', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px' }}>{members.length}</span>
-                  </div>
-                  {shownMembers.length > 0 ? (
-                    <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:11 }}>
-                      {shownMembers.map(v => (
-                        <div key={v.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle-alt)', borderRadius:11, padding:'9px 11px' }}>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{v.business}</div>
-                            <div style={{ fontSize:11, color:'var(--text-muted)' }}>{v.owner}</div>
-                          </div>
-                          <select onChange={e=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,category:e.target.value}:x)}); showToast('Vendor re-assigned','folder'); }} value={v.category} style={{ flexShrink:0, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'7px 9px', fontSize:12, color:'var(--text-secondary)', outline:'none', cursor:'pointer' }}>
-                            {cats.map(x=><option key={x.id} value={x.name}>{x.name}</option>)}
-                          </select>
-                        </div>
-                      ))}
+                <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, overflow:'hidden' }}>
+                  <div onClick={()=>set({expandedCats:{...state.expandedCats,[c.id]:!isExpanded}})} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px', cursor:'pointer' }}>
+                    <div style={{ width:40, height:40, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <Icon name={c.icon} size={18} color="#A6364E"/>
                     </div>
-                  ) : <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:9 }}>{members.length > 0 ? `No vendors match "${vendorSearch}" in this category.` : 'No vendors in this category yet.'}</div>}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{c.name}</div>
+                      {c.desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{c.desc}</div>}
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:600, color:'#A6364E', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px', flexShrink:0 }}>{members.length}</span>
+                    <Icon name={isExpanded?'chevron-down':'chevron-right'} size={16} color="var(--text-muted)" style={{flexShrink:0}}/>
+                    <button onClick={e=>{ e.stopPropagation(); if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'var(--tint-red-bg)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
+                      <Icon name="x" size={15} color="var(--tint-red-text)"/>
+                    </button>
+                  </div>
+                  {isExpanded && (
+                    <div style={{ padding:'0 14px 14px', borderTop:'1px solid var(--border-light)' }}>
+                      {shownMembers.length > 0 ? (
+                        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                          {shownMembers.map(v => (
+                            <div key={v.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle-alt)', borderRadius:11, padding:'9px 11px' }}>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{v.business}</div>
+                                <div style={{ fontSize:11, color:'var(--text-muted)' }}>{v.owner}</div>
+                              </div>
+                              <select onChange={e=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,category:e.target.value}:x)}); showToast('Vendor re-assigned','folder'); }} value={v.category} style={{ flexShrink:0, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'7px 9px', fontSize:12, color:'var(--text-secondary)', outline:'none', cursor:'pointer' }}>
+                                {cats.map(x=><option key={x.id} value={x.name}>{x.name}</option>)}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      ) : <div style={{ fontSize:11.5, color:'var(--text-muted)', padding:'8px' }}>{members.length > 0 ? `No vendors match "${vendorSearch}" in this category.` : 'No vendors in this category yet.'}</div>}
+                    </div>
+                  )}
                 </div>
               );
             })}
