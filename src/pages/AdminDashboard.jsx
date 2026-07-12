@@ -718,6 +718,9 @@ export default function AdminDashboard() {
                                     <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}
                                   </div>
                                   {a.status==='approved' && <span style={{ fontSize:11, fontWeight:600, color:'var(--tint-green-text)' }}>Approved</span>}
+                                  {a.status==='approved' && (
+                                    <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }} style={{ background:'none', border:'none', color:'var(--tint-red-text)', fontSize:11, fontWeight:600, padding:0, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Release vendor</button>
+                                  )}
                                 </div>
                                 <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
                                 {a.shared && (
