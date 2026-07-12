@@ -1,6 +1,5 @@
 import { StoreProvider, useStore } from './lib/store';
 import Sidebar from './components/Sidebar';
-import BottomNav from './components/BottomNav';
 import AuthLayout from './components/AuthLayout';
 import Toast from './components/Toast';
 import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, PassModal, DepositModal, RefundModal, DocPreviewModal } from './components/Modals';
@@ -60,7 +59,6 @@ function PayModal() {
 function AppShell() {
   const { state } = useStore();
   const { view, vScreen, aScreen, darkMode } = state;
-  const showNav = !(view === 'vendor' && (vScreen === 'login' || vScreen === 'register'));
   const isSignIn = (view === 'vendor' && vScreen === 'login') || (view === 'admin' && (aScreen === 'login' || aScreen === 'reset'));
 
   if (view === 'public') {
@@ -72,8 +70,8 @@ function AppShell() {
     );
   }
 
-  // Sign-in screens get their own centered card — no Sidebar/BottomNav, since there's
-  // no portal context to navigate yet, and a "Back to home" button covers wayfinding.
+  // Sign-in screens get their own centered card — no Sidebar, since there's no portal
+  // context to navigate yet, and a "Back to home" button covers wayfinding.
   if (isSignIn) {
     return (
       <div data-theme={view === 'admin' && darkMode ? 'dark' : 'light'} className="outer-wrap">
@@ -99,7 +97,6 @@ function AppShell() {
             {view === 'admin'  && (aScreen === 'login' || aScreen === 'reset') && <AdminLogin />}
             {view === 'admin'  && aScreen === 'dashboard' && <AdminDashboard />}
           </div>
-          {showNav && <BottomNav />}
           <Toast />
           <VendorDetailModal />
           <AppDetailModal />

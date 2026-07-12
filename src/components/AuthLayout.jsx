@@ -1,9 +1,9 @@
 import { useStore } from '../lib/store';
 import Icon from './Icon';
 
-// Shared centered card shell for the vendor + admin sign-in screens (no Sidebar/BottomNav —
-// those only make sense once you're actually inside a portal). Always offers a way back to
-// the public home page, since signing out lands here with no other nav visible.
+// Shared centered card shell for the vendor + admin sign-in screens (no Sidebar — it only
+// makes sense once you're actually inside a portal). Always offers a way back to the
+// public home page, since signing out lands here with no other nav visible.
 export default function AuthLayout({ children, dark }) {
   const { closeModals, set } = useStore();
   const goHome = () => { closeModals(); set({ view:'public', pubScreen:'home' }); };

@@ -138,7 +138,6 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
   .outer-wrap { justify-content: flex-start; }
   .app-shell { max-width: 100%; flex-direction: row; box-shadow: none; }
   .app-sidebar { display: flex; }
-  .bottom-nav { display: none !important; }
   .vendor-tabs-bar, .admin-tabs-bar { display: none !important; }
   .event-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
   .admin-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
