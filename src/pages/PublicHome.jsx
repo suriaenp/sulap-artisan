@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 
 const comingSoonEvents = [
@@ -15,9 +15,18 @@ const whyJoin = [
   { title: 'Flexible booth rates', body: 'Daily rates for F&B and non-F&B booths — pay only for the days you trade.' },
 ];
 
+const galleryTiles = [1, 2, 3, 4, 5, 6, 7, 8];
+
 export default function PublicHome() {
   const { closeModals, set } = useStore();
   const railRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 720);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 720);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const goRegister = () => { closeModals(); set({ view:'vendor', vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false }); };
   const goVendor   = () => { closeModals(); set({ view:'vendor' }); };
@@ -42,18 +51,18 @@ export default function PublicHome() {
     <div style={{ background: '#F7EFE3', fontFamily: "'Karla', sans-serif", color: '#3A2210' }}>
       {/* Header */}
       <section style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(247,239,227,0.92)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(154,91,38,0.15)' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-          <a href="#hero" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/assets/sulap-lockup.png" alt="Sulap Artisan by Suria Sabah Shopping Mall" style={{ height: 46, width: 'auto', display: 'block' }} />
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <a href="#hero" style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+            <img src="/assets/sulap-lockup.png" alt="Sulap Artisan by Suria Sabah Shopping Mall" style={{ height: 46, width: 'auto', display: 'block', maxWidth: '100%', objectFit: 'contain' }} />
           </a>
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
+          <nav style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 28 }}>
             <a href="#coming-soon" style={navLink}>Coming Soon</a>
             <a href="#why-join" style={navLink}>Why Join</a>
             <a href="#contact" style={navLink}>Contact</a>
           </nav>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button onClick={goVendor} style={{ padding: '10px 20px', border: '1.5px solid #9A5B26', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#9A5B26', background: 'transparent', cursor: 'pointer' }}>Vendor Log In</button>
-            <button onClick={goRegister} style={{ padding: '10px 22px', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#FFF8EE', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow: '0 4px 14px rgba(122,67,26,0.35)', cursor: 'pointer' }}>Apply as a Vendor</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <button onClick={goVendor} style={{ display: isMobile ? 'none' : 'inline-block', padding: '10px 20px', border: '1.5px solid #9A5B26', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#9A5B26', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>Vendor Log In</button>
+            <button onClick={goRegister} style={{ padding: '10px 22px', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#FFF8EE', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow: '0 4px 14px rgba(122,67,26,0.35)', cursor: 'pointer', whiteSpace: 'nowrap' }}>Apply as a Vendor</button>
           </div>
         </div>
       </section>
@@ -62,7 +71,6 @@ export default function PublicHome() {
       <section id="hero" style={{ background: 'linear-gradient(180deg, #F7EFE3 0%, #F1E2CC 100%)', overflow: 'hidden' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px 80px', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 420px', minWidth: 300 }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 999, background: 'rgba(154,91,38,0.1)', border: '1px solid rgba(154,91,38,0.25)', fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#9A5B26', marginBottom: 24 }}>Now accepting vendor applications</div>
             <h1 style={{ fontFamily: "'Marcellus', serif", fontSize: 'clamp(38px, 5.2vw, 60px)', lineHeight: 1.1, margin: '0 0 20px', color: '#3A2210', fontWeight: 400 }}>
               Showcase your craft at <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Sulap Artisan</span> markets
             </h1>
@@ -137,6 +145,19 @@ export default function PublicHome() {
         </div>
       </section>
 
+      {/* Our Gallery */}
+      <section id="gallery" style={{ background: '#1D1006', padding: '64px 0' }}>
+        <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 44px' }}>OUR GALLERY</h2>
+        <div style={isMobile
+          ? { display: 'flex', gap: 14, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 16px 12px', scrollbarWidth: 'none' }
+          : { maxWidth: 1240, margin: '0 auto', padding: '0 16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 280, gap: 14 }
+        }>
+          {galleryTiles.map(n => (
+            <div key={n} style={{ borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(135deg, #4A2A0F, #2A1708)', scrollSnapAlign: 'start', minWidth: 0, flex: '0 0 78vw', maxWidth: 300, height: 280 }} />
+          ))}
+        </div>
+      </section>
+
       {/* CTA */}
       <section style={{ background: '#F1E2CC', padding: '0 24px 80px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', borderRadius: 28, padding: 'clamp(40px, 6vw, 64px)', textAlign: 'center', boxShadow: '0 16px 40px rgba(122,67,26,0.35)' }}>
@@ -153,10 +174,8 @@ export default function PublicHome() {
       <section id="contact" style={{ background: '#2A1708', color: '#E9D5B8', padding: '56px 24px 32px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 48, flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div style={{ flex: '1 1 300px', minWidth: 260 }}>
-            <div style={{ display: 'inline-block', background: '#FFF8EE', borderRadius: 16, padding: '14px 18px', marginBottom: 18 }}>
-              <img src="/assets/sulap-lockup.png" alt="Sulap Artisan" style={{ height: 44, width: 'auto', display: 'block' }} />
-            </div>
-            <p style={{ fontSize: 14, lineHeight: 1.65, color: 'rgba(233,213,184,0.8)', margin: 0, maxWidth: 340 }}>Sulap Artisan is a curated artisan market series by Suria Sabah Shopping Mall, celebrating Sabahan craft, food, and culture.</p>
+            <img src="/assets/sulap-lockup.png" alt="Sulap Artisan" style={{ height: 73, width: 'auto', display: 'block', marginBottom: 18 }} />
+            <p style={{ fontSize: 14, lineHeight: 1.65, color: 'rgba(233,213,184,0.8)', margin: 0, maxWidth: 350 }}>Sulap Artisan is a curated artisan market series by Suria Sabah Shopping Mall, celebrating Sabahan craft, food, and culture.</p>
           </div>
           <div style={{ flex: '0 1 200px', minWidth: 160 }}>
             <div style={{ fontFamily: "'Marcellus', serif", fontSize: 17, color: '#FFF3E2', marginBottom: 16 }}>Vendors</div>
