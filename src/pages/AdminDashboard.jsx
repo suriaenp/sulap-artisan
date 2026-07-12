@@ -77,7 +77,9 @@ export default function AdminDashboard() {
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
-  const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix is open
+  const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix (or transfer panel) is open
+  const [transferTo, setTransferTo] = useState('');
+  const [transferConfirm, setTransferConfirm] = useState('');
 
   // If the signed-in admin can't view the current tab, land on their first visible tab
   useEffect(() => {
@@ -1492,6 +1494,21 @@ export default function AdminDashboard() {
           logActivity('Admin', `removed the admin ID "${a.id}".`, { icon:'x', tint:'#FDEEEC' });
           showToast('Admin removed', 'x');
         };
+        const staffAdmins = admins.filter(a => a.role !== 'super');
+        const target = admins.find(a => a.id === transferTo);
+        const transferReady = target && transferConfirm.trim().toLowerCase() === target.id.toLowerCase();
+        const transferSuperAdmin = () => {
+          if (!transferReady) return;
+          const outgoingId = acting?.id;
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => {
+            if (x.id === target.id) return { ...x, role:'super' };
+            if (x.id === outgoingId) return { ...x, role:'staff', perms: Object.fromEntries(grantableTabs.map(t => [t.id,'edit'])) };
+            return x;
+          })});
+          logActivity('Admin', `transferred the super admin role to "${target.id}" (${target.name}).`, { icon:'lock', tint:'#F8E9EE' });
+          showToast(`Super admin transferred to ${target.name} — you're now a regular admin with full edit access`, 'lock');
+          setExpandedAdmin(null); setTransferTo(''); setTransferConfirm('');
+        };
         const segStyle = (on, color) => ({ flex:1, border:'none', fontSize:11, fontWeight:600, borderRadius:7, padding:'6px 4px', cursor:'pointer', background:on?color:'transparent', color:on?'#fff':'#6B6560' });
         return (
           <div style={{ padding:'14px 16px 20px' }}>
@@ -1521,8 +1538,8 @@ export default function AdminDashboard() {
                 return (
                   <div key={a.id} style={{ borderTop: i>0 ? '1px solid #f1ece4' : 'none' }}>
                     <button
-                      onClick={()=> a.role!=='super' && setExpandedAdmin(isOpen ? null : a.id)}
-                      style={{ width:'100%', display:'flex', alignItems:'center', gap:11, padding:'12px 14px', background:'none', border:'none', cursor: a.role==='super' ? 'default' : 'pointer', textAlign:'left' }}
+                      onClick={()=> setExpandedAdmin(isOpen ? null : a.id)}
+                      style={{ width:'100%', display:'flex', alignItems:'center', gap:11, padding:'12px 14px', background:'none', border:'none', cursor:'pointer', textAlign:'left' }}
                     >
                       <div style={{ width:36, height:36, borderRadius:'50%', background: a.role==='super' ? '#3A1622' : '#F8E9EE', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#A6364E', fontWeight:700, fontSize:13, flexShrink:0 }}>
                         {a.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
@@ -1541,8 +1558,39 @@ export default function AdminDashboard() {
                         </div>
                         <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>{summary}</div>
                       </div>
-                      {a.role !== 'super' && <Icon name={isOpen ? 'x' : 'pencil'} size={14} color="#A09890" style={{ flexShrink:0 }}/>}
+                      <Icon name={isOpen ? 'x' : 'pencil'} size={14} color="#A09890" style={{ flexShrink:0 }}/>
                     </button>
+                    {isOpen && a.role === 'super' && (
+                      <div style={{ padding:'0 14px 16px' }}>
+                        <div style={{ fontSize:12, color:'#6B6560', lineHeight:1.5 }}>You have full access to every tab and manage all other admin accounts. Only one admin can hold this role at a time.</div>
+                        {staffAdmins.length === 0 ? (
+                          <div style={{ background:'#FBF7F1', border:'1px solid #efe7dc', borderRadius:11, padding:'11px 13px', marginTop:12, fontSize:12, color:'#A09890' }}>
+                            Create another admin ID first — you'll be able to transfer the super admin role to them here.
+                          </div>
+                        ) : (
+                          <div style={{ background:'#FBF7F1', border:'1px solid #efe7dc', borderRadius:14, padding:14, marginTop:12 }}>
+                            <div style={{ fontSize:12.5, fontWeight:700, color:'#1C1A17' }}>Transfer super admin role</div>
+                            <div style={{ fontSize:11.5, color:'#A09890', marginTop:3, lineHeight:1.5 }}>You'll immediately become a regular admin with full edit access on every tab, and can no longer manage admin accounts. This can be undone by having the new super admin transfer it back to you.</div>
+                            <div style={{ marginTop:11 }}>
+                              <div style={{ fontSize:11.5, fontWeight:600, color:'#1C1A17', marginBottom:6 }}>Transfer to</div>
+                              <select value={transferTo} onChange={e=>{ setTransferTo(e.target.value); setTransferConfirm(''); }} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:10, padding:'10px 12px', fontSize:13, color:'#1C1A17', outline:'none' }}>
+                                <option value="">Select an admin…</option>
+                                {staffAdmins.map(x => <option key={x.id} value={x.id}>{x.name} ({x.id})</option>)}
+                              </select>
+                            </div>
+                            {target && (
+                              <div style={{ marginTop:11 }}>
+                                <div style={{ fontSize:11.5, fontWeight:600, color:'#1C1A17', marginBottom:6 }}>Type "{target.id}" to confirm</div>
+                                <input value={transferConfirm} onChange={e=>setTransferConfirm(e.target.value)} placeholder={target.id} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:10, padding:'10px 12px', fontSize:13, color:'#1C1A17', outline:'none' }}/>
+                              </div>
+                            )}
+                            <button onClick={transferSuperAdmin} disabled={!transferReady} style={{ marginTop:12, width:'100%', background:transferReady?'#A6364E':'#F2EDE6', color:transferReady?'#FAF8F5':'#A09890', border:'none', fontSize:13, fontWeight:600, borderRadius:10, padding:11, cursor:transferReady?'pointer':'not-allowed' }}>
+                              Transfer super admin role{target ? ` to ${target.name}` : ''}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {isOpen && a.role !== 'super' && (
                       <div style={{ padding:'0 14px 16px' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, paddingTop:2 }}>
