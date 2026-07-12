@@ -76,37 +76,51 @@ export default function VendorDashboard() {
                 <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Keep it up! A clean record keeps you eligible for every market.</div>
               </div>
             );
+            // Group offences by market, most recent market first
+            const groups = [];
+            myOff.forEach(o => {
+              let g = groups.find(x => x.eventId === o.eventId);
+              if (!g) { g = { eventId:o.eventId, ev: events.find(e=>e.id===o.eventId)||{}, offs:[] }; groups.push(g); }
+              g.offs.push(o);
+            });
+            groups.sort((a,b) => (b.ev.startDate||'').localeCompare(a.ev.startDate||''));
             return (
               <>
                 <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
                   <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }}/>
-                  Market policy: vendors with offences sit out the next {skipN} market{skipN>1?'s':''} after the incident. The Sulap team may allow earlier participation at their discretion.
+                  This tab is your compliance record — offences the Sulap team has logged against your booth. Policy: vendors with offences sit out the next {skipN} market{skipN>1?'s':''} after the incident, though the Sulap team may allow earlier participation at their discretion.
                 </div>
-                {myOff.map(o => {
-                  const ot = offenseTypes[o.type]||{};
-                  const ev = events.find(e => e.id === o.eventId) || {};
-                  const oPhotos = o.photos||[];
-                  return (
-                    <div key={o.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                        <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label||'Offence'}</span>
-                        <span style={{ fontSize:12, color:'#6B6560' }}>{ev.name}{ev.dateRange ? ` · ${ev.dateRange}` : ''}</span>
+                <div className="admin-cards">
+                  {groups.map(g => (
+                    <div key={g.eventId} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
+                      <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15.5, fontWeight:600, color:'#1C1A17' }}>{g.ev.name||'Unknown market'}</div>
+                      {g.ev.dateRange && <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>{g.ev.dateRange}</div>}
+                      <div style={{ display:'flex', flexDirection:'column', gap:11, marginTop:12 }}>
+                        {g.offs.map((o,oi) => {
+                          const ot = offenseTypes[o.type]||{};
+                          const oPhotos = o.photos||[];
+                          return (
+                            <div key={o.id} style={oi>0 ? { paddingTop:11, borderTop:'1px solid #f1ece4' } : undefined}>
+                              <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label||'Offence'}</span>
+                              {oPhotos.length > 0 ? (
+                                <>
+                                  <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:10 }}>Photos from the Sulap team ({oPhotos.length})</div>
+                                  <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:7 }}>
+                                    {oPhotos.map((ph,i) => (
+                                      <PhotoTile key={ph.id} photo={ph} size={72} onDownload={()=>downloadPhoto(ph, `${safeName(g.ev.name||'offence')} - evidence - ${String(i+1).padStart(2,'0')}.${photoExt(ph)}`)}/>
+                                    ))}
+                                  </div>
+                                </>
+                              ) : (
+                                <div style={{ fontSize:11.5, color:'#A09890', marginTop:9 }}>No photos attached to this record.</div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      {oPhotos.length > 0 ? (
-                        <>
-                          <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:11 }}>Photos from the Sulap team ({oPhotos.length})</div>
-                          <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:7 }}>
-                            {oPhotos.map((ph,i) => (
-                              <PhotoTile key={ph.id} photo={ph} size={80} onDownload={()=>downloadPhoto(ph, `${safeName(ev.name||'offence')} - evidence - ${String(i+1).padStart(2,'0')}.${photoExt(ph)}`)}/>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <div style={{ fontSize:11.5, color:'#A09890', marginTop:10 }}>No photos attached to this record.</div>
-                      )}
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
                 <div style={{ fontSize:11.5, color:'#A09890', lineHeight:1.5 }}>If you believe a record was logged in error, contact the Sulap team with your booth details.</div>
               </>
             );
