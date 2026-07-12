@@ -47,6 +47,14 @@ export function payCalc(vendor, ev, depositStatus) {
   return { tier, rate, days, base, sst, deposit, needsDeposit, total: base + sst + deposit };
 }
 
+// "12 Jul 2026, 3:42 PM" — recorded the moment a vendor accepts the market
+// terms at registration; printed on their downloadable sign-up form.
+export function tcTimestamp(d = new Date()) {
+  const date = d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  const time = d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+  return `${date}, ${time}`;
+}
+
 export function dayCount(start, end) {
   if (!start || !end) return 0;
   const d = (new Date(end) - new Date(start)) / 86400000;

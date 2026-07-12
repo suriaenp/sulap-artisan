@@ -7,6 +7,7 @@ import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELD
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
+import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
 // Admin Roles permission matrix all render from this list, so adding or
@@ -450,11 +451,23 @@ export default function AdminDashboard() {
       {/* ── Vendor Listing (master list of approved/suspended vendors) ── */}
       {aTab === 'vendorList' && (
         <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12, gap:9, flexWrap:'wrap' }}>
             <div style={{ fontSize:13, color:'var(--text-secondary)' }}><b style={{ color:'var(--tint-green-text)' }}>{approvedVendors.filter(v=>v.status==='approved').length}</b> approved vendors</div>
-            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-              <Icon name="download" size={14} color="#A6364E"/>Export CSV
-            </button>
+            <div style={{ display:'flex', gap:8 }}>
+              <button
+                onClick={async ()=>{
+                  const list = searchedApprovedList.length ? searchedApprovedList : approvedVendors;
+                  showToast(`Preparing ${list.length} sign-up forms…`,'download');
+                  await downloadSignupFormsZip(list, content.terms);
+                  logActivity('Admin', `bulk-downloaded ${list.length} vendor sign-up forms.`, {icon:'download', tint:'var(--tint-pink-bg)'});
+                }}
+                style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+                <Icon name="file" size={14} color="#A6364E"/>Download all forms
+              </button>
+              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+                <Icon name="download" size={14} color="#A6364E"/>Export CSV
+              </button>
+            </div>
           </div>
           <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
           {approvedVendors.length > 0 && searchedApprovedList.length === 0 && <NoSearchMatch query={vendorSearch}/>}
@@ -494,6 +507,15 @@ export default function AdminDashboard() {
                   <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
                     <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
                       <Icon name="eye" size={14} color="#A6364E"/>View details
+                    </button>
+                    <button
+                      onClick={async ()=>{
+                        await downloadSignupForm(v, content.terms);
+                        showToast(`Downloaded ${v.business}'s sign-up form`,'download');
+                        logActivity('Admin', `downloaded ${v.business}'s sign-up form.`, {icon:'download', tint:'var(--tint-pink-bg)'});
+                      }}
+                      style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#A6364E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                      <Icon name="file" size={14} color="#A6364E"/>Sign-up form
                     </button>
                   </div>
                 </div>

@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import Icon from '../components/Icon';
 import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
-import { fmtShort } from '../lib/helpers';
+import { fmtShort, tcTimestamp } from '../lib/helpers';
 import { fileToPhoto } from '../lib/photoFiles';
 import { EMPTY_EINVOICE } from '../data/mockData';
 
@@ -41,6 +41,7 @@ export default function VendorRegister() {
       ig: rf.ig.trim(), fb: rf.fb.trim(), tiktok: rf.tiktok.trim(),
       plate: rf.plate.trim(),
       regDate: fmtShort(new Date()),
+      tcAcceptedAt: tcTimestamp(),
       status: autoApproved ? 'approved' : 'pending',
       power: rf.power.trim() || 'None',
       productPhotos: rf.photos,
