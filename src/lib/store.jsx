@@ -71,6 +71,7 @@ const INIT = {
   filterEvent: 'e1',
   page: 1,
   PER_PAGE: 20,
+  appsTab: 'apps', // 'apps' | 'shortlist' — sub-tab under Event Applications
   // compliance
   compTab: 'log',
   compSel: {},
