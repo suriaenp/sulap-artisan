@@ -1325,7 +1325,8 @@ export default function AdminDashboard() {
           {/* Category Editor Modal */}
           {state.catEditId && (
             <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }} onClick={()=>set({catEditId:null})}>
-              <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:20, padding:24, maxWidth:420, width:'90%', maxHeight:'80vh', overflowY:'auto' }}>
+              <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:20, maxWidth:420, width:'90%', maxHeight:'80vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+                <div className="themed-scroll" style={{ overflowY:'auto', padding:24 }}>
                 <div style={{ fontSize:18, fontWeight:700, color:'var(--text-primary)', marginBottom:16 }}>
                   {state.catEditId==='new'?'Add Category':'Edit Category'}
                 </div>
@@ -1361,6 +1362,7 @@ export default function AdminDashboard() {
                       set({catEditId:null,cf:null});
                     }} style={{ flex:1, background:'#9A5B26', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer', color:'#FAF8F5' }}>Save</button>
                   </div>
+                </div>
                 </div>
               </div>
             </div>

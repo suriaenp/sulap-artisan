@@ -5,6 +5,24 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
 .scrollarea::-webkit-scrollbar { width: 0; height: 0; }
 .scrollarea { scrollbar-width: none; }
 
+/* Thin, theme-matched scrollbars — used inside modals/popups and the sidebar
+   tab list instead of the browser's default scrollbar, so it reads as part
+   of the design rather than a stock OS element. */
+.themed-scroll { scrollbar-width: thin; scrollbar-color: var(--border-medium) transparent; }
+.themed-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
+.themed-scroll::-webkit-scrollbar-track { background: transparent; }
+.themed-scroll::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 999px; }
+.themed-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Fixed-light variant for popups whose internal content isn't dark-mode
+   aware (their background stays a fixed light cream regardless of admin
+   night mode — see Sheet in components/Modals.jsx). */
+.themed-scroll-light { scrollbar-width: thin; scrollbar-color: #E3CBA0 transparent; }
+.themed-scroll-light::-webkit-scrollbar { width: 7px; height: 7px; }
+.themed-scroll-light::-webkit-scrollbar-track { background: transparent; }
+.themed-scroll-light::-webkit-scrollbar-thumb { background: #E3CBA0; border-radius: 999px; }
+.themed-scroll-light::-webkit-scrollbar-thumb:hover { background: #C9A876; }
+
 /* ── Admin Console theme (day / night mode) ────────────────────────────────── */
 :root {
   --bg-page: #F1E2CC;

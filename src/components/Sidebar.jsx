@@ -58,7 +58,7 @@ export default function Sidebar() {
       </div>
 
       {/* Nav items */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 16px' }}>
+      <div className="themed-scroll" style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 16px' }}>
         {/* Main nav */}
         <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: subC, padding: '8px 12px 6px' }}>NAVIGATE</div>
         {[

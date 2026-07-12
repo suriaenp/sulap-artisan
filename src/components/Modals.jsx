@@ -9,12 +9,20 @@ import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFile
 import { scanAndRecord } from '../lib/payScan';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
-function Sheet({ onClose, children, maxW = 560, centered = false }) {
+// Always centered (all popups across admin + vendor are centered dialogs, not
+// bottom sheets). The rounded outer div clips the inner scroll container so
+// the scrollbar never overhangs the rounded corners. Background stays a fixed
+// light cream (not var(--bg-card)) because this modal's internal content
+// still uses hardcoded light-mode text colors throughout — following the
+// admin dark-mode background here without also reworking every hex color
+// inside would make the text unreadable.
+function Sheet({ onClose, children, maxW = 560 }) {
   return (
-    <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems: centered ? 'center' : 'flex-end', justifyContent:'center', padding: centered ? 24 : 0 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius: centered ? 20 : '26px 26px 0 0', padding:'22px 22px 30px', maxHeight:'90%', overflowY:'auto', animation:'modalIn 0.22s ease' }}>
-        {!centered && <div style={{ width:40, height:4, borderRadius:3, background:'#ddd2c4', margin:'0 auto 16px' }}/>}
-        {children}
+    <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius:20, maxHeight:'90%', overflow:'hidden', animation:'modalIn 0.22s ease', display:'flex', flexDirection:'column' }}>
+        <div className="themed-scroll-light" style={{ overflowY:'auto', padding:'22px 22px 30px' }}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -98,7 +106,7 @@ export function VendorDetailModal() {
 
   const einvoiceOk = einvoiceComplete(v);
   return (
-    <Sheet onClose={close} centered>
+    <Sheet onClose={close}>
       <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close}/>
       <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:12 }}>
         <Badge status={v.status}/>
@@ -298,7 +306,7 @@ export function AppDetailModal() {
   const partners = (a.partners||[]).map(pid=>vendors.find(x=>x.id===pid)).filter(Boolean);
   const close = () => set({appDetailId:null});
   return (
-    <Sheet onClose={close} centered>
+    <Sheet onClose={close}>
       <SheetHeader title={v.business} sub={`${ev.name} · ${v.category}`} onClose={close}/>
       <span style={{ display:'inline-block', marginTop:8, fontSize:12, fontWeight:600, color: a.status==='approved' ? '#8FB8A4' : a.status==='rejected' ? '#CB9A93' : '#B7770D' }}>
         {a.status==='approved' ? 'Approved' : a.status==='rejected' ? 'Rejected' : 'Awaiting review'}
@@ -375,7 +383,7 @@ export function EventDetailModal() {
     close();
   };
   return (
-    <Sheet onClose={close} centered maxW={520}>
+    <Sheet onClose={close} maxW={520}>
       <SheetHeader title="Edit event" sub={ev.name} onClose={close}/>
       <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:13 }}>
         <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
@@ -653,7 +661,7 @@ export function DocPreviewModal() {
   };
 
   return (
-    <Sheet onClose={close} centered maxW={620}>
+    <Sheet onClose={close} maxW={620}>
       <SheetHeader title={label} sub={`${v.business} · ${ev.name}`} onClose={close}/>
       <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:10, fontSize:12, color:'#6B6560' }}>
         <Icon name="file" size={14} color="#A09890"/><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{file.name}</span>
