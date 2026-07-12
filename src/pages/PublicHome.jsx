@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 
-const galleryTiles = [1, 2, 3, 4, 5, 6, 7, 8];
-
 // Position-specific corner radius + fallback color for the "Why Join" 2x2
 // photo grid, kept as static layout constants since they're about shape/
 // position, not editable content.
@@ -161,13 +159,13 @@ export default function PublicHome() {
 
       {/* Our Gallery */}
       <section id="gallery" style={{ background: '#1D1006', padding: '64px 0' }}>
-        <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 44px' }}>OUR GALLERY</h2>
+        <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 44px' }}>{content.galleryHeading}</h2>
         <div style={isMobile
           ? { display: 'flex', gap: 14, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 16px 12px', scrollbarWidth: 'none' }
           : { maxWidth: 1240, margin: '0 auto', padding: '0 16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 280, gap: 14 }
         }>
-          {galleryTiles.map(n => (
-            <div key={n} style={{ borderRadius: 12, overflow: 'hidden', background: 'linear-gradient(135deg, #4A2A0F, #2A1708)', scrollSnapAlign: 'start', minWidth: 0, flex: '0 0 78vw', maxWidth: 300, height: 280 }} />
+          {content.galleryImages.map(tile => (
+            <div key={tile.id} style={{ borderRadius: 12, overflow: 'hidden', background: tile.image ? undefined : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundImage: tile.image ? `url(${tile.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', scrollSnapAlign: 'start', minWidth: 0, flex: '0 0 78vw', maxWidth: 300, height: 280 }} />
           ))}
         </div>
       </section>
@@ -175,8 +173,8 @@ export default function PublicHome() {
       {/* CTA */}
       <section style={{ background: '#F1E2CC', padding: '80px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', borderRadius: 28, padding: 'clamp(40px, 6vw, 64px)', textAlign: 'center', boxShadow: '0 16px 40px rgba(122,67,26,0.35)' }}>
-          <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 4vw, 42px)', color: '#FFF8EE', margin: '0 0 14px' }}>Ready to showcase your craft?</h2>
-          <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(255,248,238,0.85)', margin: '0 auto 32px', maxWidth: 520 }}>Applications for upcoming markets are open now. Join the Sulap Artisan vendor community today.</p>
+          <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 4vw, 42px)', color: '#FFF8EE', margin: '0 0 14px' }}>{content.ctaTitle}</h2>
+          <p style={{ fontSize: 16, lineHeight: 1.6, color: 'rgba(255,248,238,0.85)', margin: '0 auto 32px', maxWidth: 520 }}>{content.ctaSubtitle}</p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button onClick={goRegister} style={{ padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#7A431A', background: '#FFF8EE', border: 'none', cursor: 'pointer' }}>Apply as a Vendor</button>
             <button onClick={goVendor} style={{ padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#FFF8EE', border: '1.5px solid rgba(255,248,238,0.7)', background: 'transparent', cursor: 'pointer' }}>Vendor Log In</button>

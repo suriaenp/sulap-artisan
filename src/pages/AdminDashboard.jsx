@@ -1841,6 +1841,60 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Our Gallery section</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The dark strip of 8 photo tiles near the bottom of the page. Recommended photo size: <strong>600 × 700px</strong> (portrait, ~6:7 ratio) — matches the tile's on-screen 300×280 shape at a sharp resolution. Falls back to a plain dark gradient tile if no photo is set.</div>
+
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Section heading</div>
+                <input value={state.cf?.galleryHeading ?? content.galleryHeading} onChange={e=>set({cf:{...(state.cf||content),galleryHeading:e.target.value}})} style={inp}/>
+              </div>
+
+              <div style={{ marginTop:14, display:'flex', gap:10, flexWrap:'wrap' }}>
+                {(state.cf?.galleryImages ?? content.galleryImages).map((tile, i) => {
+                  const tiles = state.cf?.galleryImages ?? content.galleryImages;
+                  const setTile = (patch) => {
+                    const next = tiles.map((x, xi) => xi === i ? { ...x, ...patch } : x);
+                    set({cf:{...(state.cf||content), galleryImages: next}});
+                  };
+                  return (
+                    <div key={tile.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                      <div style={{ width:64, height:64, borderRadius:10, overflow:'hidden', background:'linear-gradient(135deg, #4A2A0F, #2A1708)', border:'1px solid var(--border-light)' }}>
+                        {tile.image && <img src={tile.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>}
+                      </div>
+                      <div style={{ display:'flex', gap:4 }}>
+                        <label style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', borderRadius:8, width:28, height:28, cursor:'pointer' }} title="Upload photo">
+                          <Icon name="upload" size={12} color="#9A5B26"/>
+                          <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => setTile({image: reader.result});
+                            reader.readAsDataURL(file);
+                            e.target.value = '';
+                          }}/>
+                        </label>
+                        {tile.image && <button onClick={()=>setTile({image:null})} title="Remove" style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', borderRadius:8, width:28, height:28, cursor:'pointer' }}>×</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>CTA banner</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The gradient call-to-action card above the footer.</div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Title</div>
+                <input value={state.cf?.ctaTitle ?? content.ctaTitle} onChange={e=>set({cf:{...(state.cf||content),ctaTitle:e.target.value}})} style={inp}/>
+              </div>
+              <div style={{ marginTop:14 }}>
+                <div style={lbl}>Subtitle</div>
+                <textarea value={state.cf?.ctaSubtitle ?? content.ctaSubtitle} onChange={e=>set({cf:{...(state.cf||content),ctaSubtitle:e.target.value}})} style={{ ...inp, minHeight:64, resize:'none' }}/>
+              </div>
+            </div>
+
+            <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Application — market terms</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
               <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>

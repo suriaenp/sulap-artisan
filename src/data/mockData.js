@@ -152,6 +152,17 @@ export const INITIAL_CONTENT = {
     { id: 'wj4', title: 'Flexible booth rates',        body: 'Daily rates for F&B and non-F&B booths — pay only for the days you trade.' },
   ],
 
+  // "Our Gallery" section (public home page) — dark strip of 8 photo tiles.
+  galleryHeading: 'OUR GALLERY',
+  galleryImages: [
+    { id: 'g1', image: null }, { id: 'g2', image: null }, { id: 'g3', image: null }, { id: 'g4', image: null },
+    { id: 'g5', image: null }, { id: 'g6', image: null }, { id: 'g7', image: null }, { id: 'g8', image: null },
+  ],
+
+  // CTA banner (public home page, above the footer)
+  ctaTitle:    'Ready to showcase your craft?',
+  ctaSubtitle: 'Applications for upcoming markets are open now. Join the Sulap Artisan vendor community today.',
+
   terms: `1. Application & selection
 Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.
 
