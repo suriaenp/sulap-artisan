@@ -77,6 +77,7 @@ export default function AdminDashboard() {
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
+  const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix is open
 
   // If the signed-in admin can't view the current tab, land on their first visible tab
   useEffect(() => {
@@ -1508,66 +1509,79 @@ export default function AdminDashboard() {
               <Icon name="info" size={14} color="#A09890" style={{ marginTop:1, flexShrink:0 }}/>
               New console tabs appear in this list automatically. Access is <b style={{ color:'#6B6560' }}>off by default</b> — grant View (browse only) or Edit (make changes) per tab.
             </div>
-            {/* Admin list */}
-            <div className="admin-cards">
-              {admins.map(a => (
-                <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                    <div style={{ width:38, height:38, borderRadius:'50%', background: a.role==='super' ? '#3A1622' : '#F8E9EE', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#A6364E', fontWeight:700, fontSize:14, flexShrink:0 }}>
-                      {a.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{a.name}</div>
-                      <div style={{ fontSize:11.5, color:'#A09890', marginTop:1 }}>ID: {a.id}</div>
-                    </div>
-                    {a.role === 'super' ? (
-                      <span style={{ fontSize:10.5, fontWeight:700, color:'#FAF8F5', background:'#3A1622', borderRadius:999, padding:'4px 11px', flexShrink:0 }}>Super admin</span>
-                    ) : a.mustReset ? (
-                      <span style={{ fontSize:10.5, fontWeight:600, color:'#B7770D', background:'#FEF8EC', borderRadius:999, padding:'4px 11px', flexShrink:0 }}>Awaiting first sign-in</span>
-                    ) : (
-                      <span style={{ fontSize:10.5, fontWeight:600, color:'#2D6A4F', background:'#E8F5F0', borderRadius:999, padding:'4px 11px', flexShrink:0 }}>Active</span>
+            {/* Admin list — compact rows, click to expand permissions */}
+            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, overflow:'hidden' }}>
+              {admins.map((a,i) => {
+                const isOpen = expandedAdmin === a.id;
+                const grantedCount = grantableTabs.filter(t => permOf(a,t.id) !== 'none').length;
+                const editCount = grantableTabs.filter(t => permOf(a,t.id) === 'edit').length;
+                const summary = a.role === 'super' ? 'Full access · all tabs'
+                  : grantedCount === 0 ? 'No tab access granted'
+                  : `${grantedCount} tab${grantedCount>1?'s':''} granted${editCount ? ` · ${editCount} editable` : ' · view only'}`;
+                return (
+                  <div key={a.id} style={{ borderTop: i>0 ? '1px solid #f1ece4' : 'none' }}>
+                    <button
+                      onClick={()=> a.role!=='super' && setExpandedAdmin(isOpen ? null : a.id)}
+                      style={{ width:'100%', display:'flex', alignItems:'center', gap:11, padding:'12px 14px', background:'none', border:'none', cursor: a.role==='super' ? 'default' : 'pointer', textAlign:'left' }}
+                    >
+                      <div style={{ width:36, height:36, borderRadius:'50%', background: a.role==='super' ? '#3A1622' : '#F8E9EE', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#A6364E', fontWeight:700, fontSize:13, flexShrink:0 }}>
+                        {a.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:13.5, fontWeight:700, color:'#1C1A17' }}>{a.name}</span>
+                          <span style={{ fontSize:11, color:'#A09890' }}>{a.id}</span>
+                          {a.role === 'super' ? (
+                            <span style={{ fontSize:10, fontWeight:700, color:'#FAF8F5', background:'#3A1622', borderRadius:999, padding:'2px 8px' }}>Super admin</span>
+                          ) : a.mustReset ? (
+                            <span style={{ fontSize:10, fontWeight:600, color:'#B7770D', background:'#FEF8EC', borderRadius:999, padding:'2px 8px' }}>Awaiting first sign-in</span>
+                          ) : (
+                            <span style={{ fontSize:10, fontWeight:600, color:'#2D6A4F', background:'#E8F5F0', borderRadius:999, padding:'2px 8px' }}>Active</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>{summary}</div>
+                      </div>
+                      {a.role !== 'super' && <Icon name={isOpen ? 'x' : 'pencil'} size={14} color="#A09890" style={{ flexShrink:0 }}/>}
+                    </button>
+                    {isOpen && a.role !== 'super' && (
+                      <div style={{ padding:'0 14px 16px' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, paddingTop:2 }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Tab access</span>
+                          <div style={{ flex:1 }}/>
+                          <button onClick={()=>setAllPerms(a.id,'view')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All view</button>
+                          <button onClick={()=>setAllPerms(a.id,'edit')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All edit</button>
+                          <button onClick={()=>setAllPerms(a.id,'none')} style={{ background:'none', border:'none', color:'#A09890', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>Clear</button>
+                        </div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:9 }}>
+                          {grantableTabs.map(t => {
+                            const p = permOf(a, t.id);
+                            return (
+                              <div key={t.id} style={{ display:'flex', alignItems:'center', gap:9 }}>
+                                <span style={{ flex:1, fontSize:12, color: p==='none' ? '#A09890' : '#1C1A17', fontWeight: p==='none' ? 400 : 600, display:'flex', alignItems:'center', gap:7, minWidth:0 }}>
+                                  <Icon name={t.icon} size={13} color={p==='none' ? '#cbc2b6' : '#A6364E'}/>{t.label}
+                                </span>
+                                <div style={{ display:'flex', background:'#F2EDE6', borderRadius:9, padding:3, gap:2, width:186, flexShrink:0 }}>
+                                  <button onClick={()=>setPerm(a.id,t.id,'none')} style={segStyle(p==='none','#A09890')}>None</button>
+                                  <button onClick={()=>setPerm(a.id,t.id,'view')} style={segStyle(p==='view','#B7770D')}>View</button>
+                                  <button onClick={()=>setPerm(a.id,t.id,'edit')} style={segStyle(p==='edit','#2D6A4F')}>Edit</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display:'flex', gap:9, marginTop:14, paddingTop:12, borderTop:'1px solid #f1ece4' }}>
+                          <button onClick={()=>resetPassword(a)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                            <Icon name="lock" size={13} color="#A6364E"/>Reset password to default
+                          </button>
+                          <button onClick={()=>{ removeAdmin(a); setExpandedAdmin(null); }} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:10, padding:'9px 13px', cursor:'pointer' }}>
+                            <Icon name="trash" size={13} color="#B03A2E"/>Remove
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
-                  {a.role === 'super' ? (
-                    <div style={{ fontSize:12, color:'#6B6560', marginTop:11, lineHeight:1.5 }}>Full access to every tab, manages admin IDs and permissions. This account can't be restricted or removed.</div>
-                  ) : (
-                    <>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:13 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Tab access</span>
-                        <div style={{ flex:1 }}/>
-                        <button onClick={()=>setAllPerms(a.id,'view')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All view</button>
-                        <button onClick={()=>setAllPerms(a.id,'edit')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All edit</button>
-                        <button onClick={()=>setAllPerms(a.id,'none')} style={{ background:'none', border:'none', color:'#A09890', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>Clear</button>
-                      </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:9 }}>
-                        {grantableTabs.map(t => {
-                          const p = permOf(a, t.id);
-                          return (
-                            <div key={t.id} style={{ display:'flex', alignItems:'center', gap:9 }}>
-                              <span style={{ flex:1, fontSize:12, color: p==='none' ? '#A09890' : '#1C1A17', fontWeight: p==='none' ? 400 : 600, display:'flex', alignItems:'center', gap:7, minWidth:0 }}>
-                                <Icon name={t.icon} size={13} color={p==='none' ? '#cbc2b6' : '#A6364E'}/>{t.label}
-                              </span>
-                              <div style={{ display:'flex', background:'#F2EDE6', borderRadius:9, padding:3, gap:2, width:186, flexShrink:0 }}>
-                                <button onClick={()=>setPerm(a.id,t.id,'none')} style={segStyle(p==='none','#A09890')}>None</button>
-                                <button onClick={()=>setPerm(a.id,t.id,'view')} style={segStyle(p==='view','#B7770D')}>View</button>
-                                <button onClick={()=>setPerm(a.id,t.id,'edit')} style={segStyle(p==='edit','#2D6A4F')}>Edit</button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div style={{ display:'flex', gap:9, marginTop:14, paddingTop:12, borderTop:'1px solid #f1ece4' }}>
-                        <button onClick={()=>resetPassword(a)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                          <Icon name="lock" size={13} color="#A6364E"/>Reset password to default
-                        </button>
-                        <button onClick={()=>removeAdmin(a)} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:10, padding:'9px 13px', cursor:'pointer' }}>
-                          <Icon name="trash" size={13} color="#B03A2E"/>Remove
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
