@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
+import MobileNavDrawer from '../components/MobileNavDrawer';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS } from '../lib/helpers';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
@@ -124,14 +125,9 @@ export default function AdminDashboard() {
   const searchApps    = (list) => searchQ ? list.filter(a => vendorMatches(vById(a.vendorId))) : list;
   const searchGroups  = (list) => searchQ ? list.filter(g => g.members.some(vid => vendorMatches(vById(vid)))) : list;
 
-  const tabStyle = (active) => ({
-    display:'inline-flex', alignItems:'center', gap:7, flexShrink:0,
-    border:active?'none':'1px solid #e7ddd0', fontFamily:"'Karla'",
-    fontSize:13, fontWeight:600, borderRadius:999, padding:'9px 16px', cursor:'pointer',
-    background:active?'#9A5B26':'var(--bg-card)', color:active?'#FAF8F5':'var(--text-secondary)',
-  });
-
   const logout = () => { set({ aScreen:'login', currentAdminId:null }); showToast('Signed out','leaf'); };
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const activeTabLabel = ADMIN_TABS.find(t => t.id === aTab)?.label || 'Menu';
 
   // Derived filtered data for paginated tabs
   // Event Applications = pending only now; shortlisted/approved live in the Shortlist tab.
@@ -320,12 +316,22 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Mobile pill tabs */}
-      <div className="admin-tabs-bar" style={{ display:'flex', flexWrap:'wrap', gap:7, padding:'13px 16px', background:'var(--bg-card)', borderBottom:'1px solid var(--border-faint)' }}>
-        {visibleTabs.map(t => (
-          <button key={t.id} onClick={()=>{ closeModals(); set({aTab:t.id,page:1}); }} style={tabStyle(aTab===t.id)}>{t.label}</button>
-        ))}
-      </div>
+      {/* Mobile nav trigger — opens the tab drawer instead of a wrapping pill row */}
+      <button className="admin-tabs-bar" onClick={() => setDrawerOpen(true)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'13px 16px', background:'var(--bg-card)', border:'none', borderBottom:'1px solid var(--border-faint)', cursor:'pointer', textAlign:'left' }}>
+        <Icon name="menu" size={18} color="#9A5B26" />
+        <span style={{ fontFamily:"'Karla'", fontSize:14, fontWeight:700, color:'var(--text-primary)', flex:1 }}>{activeTabLabel}</span>
+        <Icon name="arrowLeft" size={15} color="var(--text-muted)" style={{ transform:'rotate(180deg)' }} />
+      </button>
+      <MobileNavDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="Admin Console"
+        subtitle={acting ? `${acting.name}${isSuperActing ? ' · Super admin' : ''}` : undefined}
+        tabs={visibleTabs}
+        activeId={aTab}
+        onSelect={id => { closeModals(); set({ aTab:id, page:1 }); }}
+        dark
+      />
 
       {/* View-only notice for restricted admins */}
       {acting && !isSuperActing && canViewTab(aTab) && !canEditTab(aTab) && (

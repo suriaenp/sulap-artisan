@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
+import MobileNavDrawer from '../components/MobileNavDrawer';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { CURRENT_VENDOR_ID, EMPTY_EINVOICE } from '../data/mockData';
@@ -9,16 +10,16 @@ import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 
 const TABS = [
-  { id:'events',   label:'Available Markets' },
-  { id:'apps',     label:'My Applications' },
-  { id:'photos',   label:'Product Photos' },
-  { id:'eventPics',label:'Event Pictures' },
-  { id:'docs',     label:'Documents' },
-  { id:'payments', label:'Payments' },
-  { id:'parking',  label:'Parking' },
-  { id:'pass',     label:'Vendor Pass' },
-  { id:'compliance', label:'Compliance' },
-  { id:'profile',  label:'Profile' },
+  { id:'events',   label:'Available Markets', icon:'calendar' },
+  { id:'apps',     label:'My Applications',   icon:'clipboard' },
+  { id:'photos',   label:'Product Photos',    icon:'image' },
+  { id:'eventPics',label:'Event Pictures',    icon:'camera' },
+  { id:'docs',     label:'Documents',         icon:'file' },
+  { id:'payments', label:'Payments',          icon:'receipt' },
+  { id:'parking',  label:'Parking',           icon:'car' },
+  { id:'pass',     label:'Vendor Pass',       icon:'badge' },
+  { id:'compliance', label:'Compliance',      icon:'shield' },
+  { id:'profile',  label:'Profile',           icon:'users' },
 ];
 
 export default function VendorDashboard() {
@@ -71,13 +72,9 @@ export default function VendorDashboard() {
   const payRec = (key) => payments[key] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
   const refundRec = (key) => refunds[key] || { status:'none' };
 
-  const tabStyle = (active) => ({
-    flex:1, border:active?'none':'1px solid #efe7dc', fontFamily:"'Karla'",
-    fontSize:12.5, fontWeight:600, borderRadius:11, padding:'10px 4px', cursor:'pointer',
-    background:active?'#9A5B26':'#fff', color:active?'#FAF8F5':'#6B6560',
-  });
-
   const logout = () => { set({ vScreen:'login' }); showToast('Signed out','leaf'); };
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const activeTabLabel = TABS.find(t => t.id === vTab)?.label || 'Menu';
 
   return (
     <div>
@@ -95,12 +92,21 @@ export default function VendorDashboard() {
         <button onClick={logout} style={{ background:'#FAF8F5', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
       </div>
 
-      {/* Mobile tab bar */}
-      <div className="vendor-tabs-bar" style={{ display:'flex', flexWrap:'wrap', gap:7, padding:'13px 16px 6px' }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }} style={tabStyle(vTab===t.id)}>{t.label}</button>
-        ))}
-      </div>
+      {/* Mobile nav trigger — opens the tab drawer instead of a wrapping pill row */}
+      <button className="vendor-tabs-bar" onClick={() => setDrawerOpen(true)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'13px 16px', background:'#fff', border:'none', borderBottom:'1px solid #efe7dc', cursor:'pointer', textAlign:'left' }}>
+        <Icon name="menu" size={18} color="#9A5B26" />
+        <span style={{ fontFamily:"'Karla'", fontSize:14, fontWeight:700, color:'#1C1A17', flex:1 }}>{activeTabLabel}</span>
+        <Icon name="arrowLeft" size={15} color="#A09890" style={{ transform:'rotate(180deg)' }} />
+      </button>
+      <MobileNavDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="My Portal"
+        subtitle={me.business}
+        tabs={TABS}
+        activeId={vTab}
+        onSelect={id => { closeModals(); set({ vTab:id, page:1 }); }}
+      />
 
       {/* ── Compliance ── */}
       {vTab === 'compliance' && (

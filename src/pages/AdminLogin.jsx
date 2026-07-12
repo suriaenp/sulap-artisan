@@ -40,16 +40,16 @@ export default function AdminLogin() {
   if (aScreen === 'reset') {
     const a = admins.find(x => x.id === currentAdminId) || {};
     return (
-      <div style={{ padding:'28px 22px', minHeight:740, display:'flex', flexDirection:'column' }}>
+      <div>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <img src="/assets/sulap-mark.png" alt="Sulap" style={{ height:44, width:'auto' }} />
+          <img src="/assets/sulap-mark.png" alt="Sulap" style={{ height:40, width:'auto' }} />
           <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#3A2210', color:'#FAF8F5', fontSize:11, fontWeight:600, letterSpacing:'0.04em', borderRadius:999, padding:'5px 11px' }}>
             <Icon name="lock" size={13} color="#FAF8F5"/>Set new password
           </div>
         </div>
-        <div style={{ fontFamily:"'Marcellus',serif", fontSize:27, fontWeight:400, color:'var(--text-primary)', marginTop:24 }}>Hi {a.name?.split(' ')[0] || 'there'}, set your password</div>
-        <div style={{ fontSize:14, color:'var(--text-secondary)', marginTop:6, lineHeight:1.5 }}>You signed in with the default password. Choose your own before continuing — you'll use it from now on.</div>
-        <div style={{ marginTop:26, display:'flex', flexDirection:'column', gap:16 }}>
+        <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, color:'var(--text-primary)', marginTop:22 }}>Hi {a.name?.split(' ')[0] || 'there'}, set your password</div>
+        <div style={{ fontSize:13.5, color:'var(--text-secondary)', marginTop:6, lineHeight:1.5 }}>You signed in with the default password. Choose your own before continuing — you'll use it from now on.</div>
+        <div style={{ marginTop:22, display:'flex', flexDirection:'column', gap:16 }}>
           <div>
             <div style={lbl}>New password</div>
             <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="At least 6 characters" style={inp}/>
@@ -59,24 +59,24 @@ export default function AdminLogin() {
             <input type="password" value={confirmPass} onChange={e=>setConfirmPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveNewPassword()} placeholder="Type it again" style={inp}/>
           </div>
         </div>
-        <button onClick={saveNewPassword} className="cta" style={{ marginTop:22, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Save & continue</button>
-        <button onClick={()=>set({ aScreen:'login', currentAdminId:null })} style={{ marginTop:12, background:'none', border:'none', color:'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer', alignSelf:'flex-start' }}>‹ Back to sign in</button>
+        <button onClick={saveNewPassword} className="cta" style={{ marginTop:20, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Save & continue</button>
+        <button onClick={()=>set({ aScreen:'login', currentAdminId:null })} style={{ marginTop:12, background:'none', border:'none', color:'var(--text-muted)', fontSize:13, fontWeight:600, cursor:'pointer' }}>‹ Back to sign in</button>
       </div>
     );
   }
 
   // ── Sign in ──
   return (
-    <div style={{ padding:'28px 22px', minHeight:740, display:'flex', flexDirection:'column' }}>
+    <div>
       <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-        <img src="/assets/sulap-mark.png" alt="Sulap" style={{ height:44, width:'auto' }} />
+        <img src="/assets/sulap-mark.png" alt="Sulap" style={{ height:40, width:'auto' }} />
         <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'#3A2210', color:'#FAF8F5', fontSize:11, fontWeight:600, letterSpacing:'0.04em', borderRadius:999, padding:'5px 11px' }}>
           <Icon name="settings" size={13} color="#FAF8F5"/>Admin
         </div>
       </div>
-      <div style={{ fontFamily:"'Marcellus',serif", fontSize:27, fontWeight:400, color:'var(--text-primary)', marginTop:24 }}>Admin Sign In</div>
-      <div style={{ fontSize:14, color:'var(--text-secondary)', marginTop:6 }}>Sulap Artisan Vendor Registration</div>
-      <div style={{ marginTop:26, display:'flex', flexDirection:'column', gap:16 }}>
+      <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, color:'var(--text-primary)', marginTop:22 }}>Admin Sign In</div>
+      <div style={{ fontSize:13.5, color:'var(--text-secondary)', marginTop:6 }}>Sulap Artisan Vendor Registration</div>
+      <div style={{ marginTop:22, display:'flex', flexDirection:'column', gap:16 }}>
         <div>
           <div style={lbl}>Admin ID</div>
           <input value={adminId} onChange={e=>setAdminId(e.target.value)} placeholder="e.g. admin" style={inp}/>
@@ -86,8 +86,8 @@ export default function AdminLogin() {
           <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} placeholder="••••••••" style={inp}/>
         </div>
       </div>
-      <button onClick={login} className="cta" style={{ marginTop:22, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Sign in</button>
-      <div style={{ marginTop:18, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.55, maxWidth:460 }}>
+      <button onClick={login} className="cta" style={{ marginTop:20, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Sign in</button>
+      <div style={{ marginTop:18, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.55 }}>
         Demo accounts — super admin: <b style={{ color:'var(--text-secondary)' }}>admin / sulap123</b> · staff (first sign-in flow): <b style={{ color:'var(--text-secondary)' }}>staff01 / 00000</b>. Forgot passwords are reset to the default by a super admin in Admin Roles.
       </div>
     </div>
