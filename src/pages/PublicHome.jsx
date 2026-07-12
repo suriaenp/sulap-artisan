@@ -113,7 +113,7 @@ export default function PublicHome() {
           <button onClick={() => scrollRail(-1)} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8249;</button>
           <div ref={railRef} style={{ flex: 1, display: 'flex', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '8px 4px 20px', scrollbarWidth: 'none' }}>
             {content.comingSoonEvents.map(ev => (
-              <div key={ev.id} style={{ position: 'relative', flex: '0 0 320px', height: 440, borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'start', background: ev.image ? undefined : 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundImage: ev.image ? `url(${ev.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
+              <div key={ev.id} style={{ position: 'relative', flex: '0 0 320px', height: 440, borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'start', backgroundImage: ev.image ? `url(${ev.image})` : 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)', pointerEvents: 'none' }} />
                 <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
                   <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1 }}>{ev.day}</div>
@@ -134,7 +134,7 @@ export default function PublicHome() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px', display: 'flex', alignItems: 'center', gap: 56, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 380px', minWidth: 300, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             {content.whyJoinImages.map((tile, i) => (
-              <div key={tile.id} style={{ height: 220, borderRadius: whyJoinTileStyle[i].radius, overflow: 'hidden', background: tile.image ? undefined : whyJoinTileStyle[i].fallback, backgroundImage: tile.image ? `url(${tile.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+              <div key={tile.id} style={{ height: 220, borderRadius: whyJoinTileStyle[i].radius, overflow: 'hidden', backgroundImage: tile.image ? `url(${tile.image})` : 'none', backgroundColor: whyJoinTileStyle[i].fallback, backgroundSize: 'cover', backgroundPosition: 'center' }} />
             ))}
           </div>
           <div style={{ flex: '1 1 420px', minWidth: 300 }}>
@@ -165,7 +165,7 @@ export default function PublicHome() {
           : { maxWidth: 1240, margin: '0 auto', padding: '0 16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 280, gap: 14 }
         }>
           {content.galleryImages.map(tile => (
-            <div key={tile.id} style={{ borderRadius: 12, overflow: 'hidden', background: tile.image ? undefined : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundImage: tile.image ? `url(${tile.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center', scrollSnapAlign: 'start', minWidth: 0, flex: '0 0 78vw', maxWidth: 300, height: 280 }} />
+            <div key={tile.id} style={{ borderRadius: 12, overflow: 'hidden', backgroundImage: tile.image ? `url(${tile.image})` : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundSize: 'cover', backgroundPosition: 'center', scrollSnapAlign: 'start', minWidth: 0, flex: '0 0 78vw', maxWidth: 300, height: 280 }} />
           ))}
         </div>
       </section>
