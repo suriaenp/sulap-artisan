@@ -41,6 +41,7 @@ const INIT = {
   // admin accounts & the admin currently signed in
   admins: INITIAL_ADMINS,
   currentAdminId: null,
+  darkMode: typeof window !== 'undefined' && window.localStorage.getItem('sulap_admin_dark') === '1',
   // modals / drawers
   vendorDetailId: null,
   vendorDetailReturnAppId: null,
@@ -151,6 +152,9 @@ export function StoreProvider({ children }) {
       const hit = Object.keys(payload).some(k => EDIT_SET_KEYS.includes(k) && payload[k] != null && payload[k] !== false);
       if (hit) { blockedToast(); return; }
       if (payload.docPreview?.editable) payload = { ...payload, docPreview: { ...payload.docPreview, editable: false } };
+    }
+    if ('darkMode' in payload) {
+      try { window.localStorage.setItem('sulap_admin_dark', payload.darkMode ? '1' : '0'); } catch {}
     }
     dispatch({ type: 'SET', payload });
   };

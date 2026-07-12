@@ -24,9 +24,9 @@ export default function Sidebar() {
   const adminTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
 
   const bg    = isAdmin ? '#2A1C1E' : '#FAF8F5';
-  const borderC = isAdmin ? '#3d2528' : '#efe7dc';
-  const headC   = isAdmin ? '#FAF8F5' : '#1C1A17';
-  const subC    = isAdmin ? 'rgba(250,248,245,0.45)' : '#A09890';
+  const borderC = isAdmin ? '#3d2528' : 'var(--border-light)';
+  const headC   = isAdmin ? '#FAF8F5' : 'var(--text-primary)';
+  const subC    = isAdmin ? 'rgba(250,248,245,0.45)' : 'var(--text-muted)';
 
   const sideNavStyle = (active) => ({
     width: '100%', display: 'flex', alignItems: 'center', gap: 9,
@@ -34,11 +34,11 @@ export default function Sidebar() {
     fontFamily: "'DM Sans'", fontSize: 13.5, cursor: 'pointer',
     border: 'none', textAlign: 'left',
     background: active
-      ? (isAdmin ? 'rgba(250,248,245,0.13)' : '#F8E9EE')
+      ? (isAdmin ? 'rgba(250,248,245,0.13)' : 'var(--tint-pink-bg)')
       : 'transparent',
     color: active
       ? (isAdmin ? '#FAF8F5' : '#A6364E')
-      : (isAdmin ? 'rgba(250,248,245,0.55)' : '#6B6560'),
+      : (isAdmin ? 'rgba(250,248,245,0.55)' : 'var(--text-secondary)'),
     fontWeight: active ? 600 : 500,
   });
 
@@ -68,18 +68,18 @@ export default function Sidebar() {
           { label:'Admin Console', icon:'settings', action:() => { closeModals(); set({ view:'admin' }); },  active: isAdmin },
         ].map(n => (
           <button key={n.label} style={sideNavStyle(n.active)} onClick={n.action}>
-            <Icon name={n.icon} size={16} color={n.active ? (isAdmin?'#FAF8F5':'#A6364E') : (isAdmin?'rgba(250,248,245,0.55)':'#A09890')} />
+            <Icon name={n.icon} size={16} color={n.active ? (isAdmin?'#FAF8F5':'#A6364E') : (isAdmin?'rgba(250,248,245,0.55)':'var(--text-muted)')} />
             <span>{n.label}</span>
           </button>
         ))}
 
         {/* Vendor portal tabs */}
         {isVendor && (
-          <div style={{ borderTop: '1px solid #efe7dc', marginTop: 10, paddingTop: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#A09890', padding: '4px 12px 6px' }}>MY PORTAL</div>
+          <div style={{ borderTop: '1px solid var(--border-light)', marginTop: 10, paddingTop: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', padding: '4px 12px 6px' }}>MY PORTAL</div>
             {VENDOR_TABS.map(t => (
               <button key={t.id} style={sideNavStyle(vTab===t.id)} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }}>
-                <Icon name={t.icon} size={16} color={vTab===t.id ? '#A6364E' : '#A09890'} />
+                <Icon name={t.icon} size={16} color={vTab===t.id ? '#A6364E' : 'var(--text-muted)'} />
                 <span>{t.label}</span>
               </button>
             ))}

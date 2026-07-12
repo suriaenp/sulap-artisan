@@ -4,12 +4,81 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
 .scrollarea::-webkit-scrollbar { width: 0; height: 0; }
 .scrollarea { scrollbar-width: none; }
 
+/* ── Admin Console theme (day / night mode) ────────────────────────────────── */
+:root {
+  --bg-page: #e7ddd0;
+  --bg-card: #FAF8F5;
+  --bg-subtle: #F2EDE6;
+  --bg-subtle-alt: #FBF7F1;
+  --bg-neutral-soft: #F7F4EF;
+  --text-primary: #1C1A17;
+  --text-secondary: #6B6560;
+  --text-muted: #A09890;
+  --text-faint: #8A837B;
+  --border-light: #efe7dc;
+  --border-medium: #e3d8ca;
+  --border-soft: #EFEAE2;
+  --border-faint: #f1ece4;
+  --border-dashed: #d8c6b2;
+  --tint-pink-bg: #F8E9EE;
+  --tint-green-bg: #E8F5F0;
+  --tint-green-text: #2D6A4F;
+  --tint-green-border: #cfe9df;
+  --tint-green-bg-soft: #F1F7F3;
+  --tint-green-text-soft: #5F8A72;
+  --tint-red-bg: #FDEEEC;
+  --tint-red-text: #B03A2E;
+  --tint-red-border: #f3d5d0;
+  --tint-amber-bg: #FEF8EC;
+  --tint-amber-text: #B7770D;
+  --tint-amber-border: #f3e6c9;
+  --tint-amber-bg-soft: #FDF9EE;
+  --tint-amber-text-soft: #A98B3D;
+  --tint-amber-border-soft: #F3EBD5;
+  --tint-blue-bg: #EEF1FB;
+  --tint-blue-text: #3D5BC4;
+}
+.outer-wrap[data-theme="dark"] {
+  --bg-page: #1C1613;
+  --bg-card: #262019;
+  --bg-subtle: #332B22;
+  --bg-subtle-alt: #2C251E;
+  --bg-neutral-soft: #2E2721;
+  --text-primary: #F3EDE4;
+  --text-secondary: #C4B9AC;
+  --text-muted: #8F8377;
+  --text-faint: #948A7C;
+  --border-light: #3D342A;
+  --border-medium: #473C30;
+  --border-soft: #3D342A;
+  --border-faint: #362E25;
+  --border-dashed: #5A4C3B;
+  --tint-pink-bg: rgba(166,54,78,0.20);
+  --tint-green-bg: rgba(45,106,79,0.24);
+  --tint-green-text: #6FCB9F;
+  --tint-green-border: rgba(111,203,159,0.35);
+  --tint-green-bg-soft: rgba(45,106,79,0.16);
+  --tint-green-text-soft: #8FCBA9;
+  --tint-red-bg: rgba(176,58,46,0.22);
+  --tint-red-text: #E8887A;
+  --tint-red-border: rgba(232,136,122,0.32);
+  --tint-amber-bg: rgba(183,119,13,0.22);
+  --tint-amber-text: #E3A94D;
+  --tint-amber-border: rgba(227,169,77,0.32);
+  --tint-amber-bg-soft: rgba(183,119,13,0.15);
+  --tint-amber-text-soft: #D6B876;
+  --tint-amber-border-soft: rgba(214,184,118,0.28);
+  --tint-blue-bg: rgba(61,91,196,0.22);
+  --tint-blue-text: #8FA3E8;
+}
+.outer-wrap, .app-shell { transition: background-color .25s ease; }
+
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 .outer-wrap {
   min-height: 100dvh;
-  background: #e7ddd0;
+  background: var(--bg-page);
   display: flex;
   justify-content: center;
   align-items: stretch;
@@ -18,7 +87,7 @@ input, textarea, select, button { font-family: 'DM Sans', sans-serif; }
   width: 100%;
   max-width: 460px;
   height: 100dvh;
-  background: #FAF8F5;
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 1px rgba(60,40,20,.18), 0 18px 60px rgba(60,40,20,.10);

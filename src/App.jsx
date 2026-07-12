@@ -29,26 +29,26 @@ function PayModal() {
     p[payModalKey] = { ...(p[payModalKey] || {}), status, paid: amt };
     dispatch({ type: 'MERGE_PAYMENTS', payload: p });
     set({ payModalKey: null });
-    logActivity('Admin', `recorded a payment of RM ${money(amt)} for ${v.business}'s ${ev.name} application.`, { icon:'receipt', tint:'#E8F5F0' });
+    logActivity('Admin', `recorded a payment of RM ${money(amt)} for ${v.business}'s ${ev.name} application.`, { icon:'receipt', tint:'var(--tint-green-bg)' });
     showToast(amt > calc.total ? 'Payment recorded — overpaid, refund flagged' : `Marked ${status}`, 'check');
   };
   return (
     <div onClick={close} style={{ position:'absolute', inset:0, zIndex:75, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:380, background:'#FAF8F5', borderRadius:20, padding:22 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:380, background:'var(--bg-card)', borderRadius:20, padding:22 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
           <div>
-            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:600, color:'#1C1A17' }}>Record payment</div>
-            <div style={{ fontSize:12.5, color:'#6B6560', marginTop:2 }}>{v.business} · {ev.name}</div>
+            <div style={{ fontFamily:"'Playfair Display',serif", fontSize:19, fontWeight:600, color:'var(--text-primary)' }}>Record payment</div>
+            <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>{v.business} · {ev.name}</div>
           </div>
-          <button onClick={close} style={{ background:'#F2EDE6', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:18, color:'#1C1A17' }}>×</button>
+          <button onClick={close} style={{ background:'var(--bg-subtle)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:18, color:'var(--text-primary)' }}>×</button>
         </div>
-        <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:12, padding:'11px 13px', marginTop:14, display:'flex', justifyContent:'space-between', fontSize:13, color:'#6B6560' }}>
-          <span>Total due</span><span style={{ fontWeight:700, color:'#1C1A17' }}>RM {money(calc.total)}</span>
+        <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', marginTop:14, display:'flex', justifyContent:'space-between', fontSize:13, color:'var(--text-secondary)' }}>
+          <span>Total due</span><span style={{ fontWeight:700, color:'var(--text-primary)' }}>RM {money(calc.total)}</span>
         </div>
         <div style={{ marginTop:14 }}>
-          <div style={{ fontSize:12, fontWeight:600, color:'#1C1A17', marginBottom:6 }}>Amount received (RM)</div>
-          <input inputMode="decimal" value={payf.amount || ''} onChange={e=>set({payf:{...payf,amount:e.target.value}})} placeholder="0.00" style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:15, outline:'none' }}/>
-          <div style={{ fontSize:11, color:'#A09890', marginTop:6, lineHeight:1.4 }}>Matches the total due → marked Paid. Less → Partial. More → Paid, and flagged for a refund.</div>
+          <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', marginBottom:6 }}>Amount received (RM)</div>
+          <input inputMode="decimal" value={payf.amount || ''} onChange={e=>set({payf:{...payf,amount:e.target.value}})} placeholder="0.00" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:15, outline:'none' }}/>
+          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6, lineHeight:1.4 }}>Matches the total due → marked Paid. Less → Partial. More → Paid, and flagged for a refund.</div>
         </div>
         <button onClick={save} style={{ marginTop:16, width:'100%', background:'#A6364E', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Save payment</button>
       </div>
@@ -58,12 +58,12 @@ function PayModal() {
 
 function AppShell() {
   const { state } = useStore();
-  const { view, vScreen, aScreen } = state;
+  const { view, vScreen, aScreen, darkMode } = state;
   const isPublicHome = view === 'public';
   const showNav = !(view === 'vendor' && (vScreen === 'login' || vScreen === 'register'));
 
   return (
-    <div className={isPublicHome ? 'outer-wrap home-wrap' : 'outer-wrap'}>
+    <div className={isPublicHome ? 'outer-wrap home-wrap' : 'outer-wrap'} data-theme={view === 'admin' && darkMode ? 'dark' : 'light'}>
       <div className={isPublicHome ? 'app-shell home-shell' : 'app-shell'}>
         <Sidebar />
         <div className="main-area">
