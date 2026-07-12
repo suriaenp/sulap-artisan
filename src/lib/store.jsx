@@ -3,14 +3,14 @@ import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
-  EVENT_IMG_PALETTE, OFFENSE_TYPES,
+  EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS,
 } from '../data/mockData';
 
 const INIT = {
   // navigation
   view: 'public',       // 'public' | 'vendor' | 'admin'
   vScreen: 'login',     // 'login' | 'register' | 'dashboard'
-  aScreen: 'login',     // 'login' | 'dashboard'
+  aScreen: 'login',     // 'login' | 'reset' | 'dashboard'
   pubScreen: 'home',
   vTab: 'events',
   aTab: 'overview',
@@ -38,6 +38,9 @@ const INIT = {
   content: INITIAL_CONTENT,
   activity: INITIAL_ACTIVITY,
   settings: { autoApprove:false, publicEvents:true, emailAlerts:true, skipMarkets:1 },
+  // admin accounts & the admin currently signed in
+  admins: INITIAL_ADMINS,
+  currentAdminId: null,
   // modals / drawers
   vendorDetailId: null,
   vendorDetailReturnAppId: null,
@@ -99,6 +102,7 @@ function reducer(state, action) {
     case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };
     case 'MERGE_PAY_DOC_DOWNLOADS': return { ...state, payDocDownloads: { ...state.payDocDownloads, ...action.payload } };
     case 'MERGE_CATS': return { ...state, cats: action.payload };
+    case 'MERGE_ADMINS': return { ...state, admins: action.payload };
     case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
     default: return state;
   }
@@ -106,11 +110,13 @@ function reducer(state, action) {
 
 const StoreContext = createContext(null);
 
+// set() payload keys that count as edits when an admin only has view access.
+// Includes the keys that open edit modals, so those never open in view-only.
+const EDIT_SET_KEYS = ['content','settings','parkOverride','compOverrides','payModalKey','refundModalKey','depModalVendor','passModalVendor','eventDetailId'];
+
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, INIT);
   const toastTimer = useRef(null);
-
-  const set = useCallback((payload) => dispatch({ type: 'SET', payload }), []);
 
   const showToast = useCallback((msg, icon = 'check') => {
     dispatch({ type: 'SET', payload: { toast: msg, toastIcon: icon } });
@@ -118,20 +124,51 @@ export function StoreProvider({ children }) {
     toastTimer.current = setTimeout(() => dispatch({ type: 'SET', payload: { toast: null } }), 2400);
   }, []);
 
-  const logActivity = useCallback((who, what, opts = {}) => {
+  // ── Admin permissions (RBAC) ──
+  // Super admins bypass everything. Staff perms map tabId → 'view' | 'edit';
+  // a missing tab means no access. Enforcement is central: every data
+  // mutation flows through dispatch/set below, so modals are covered too.
+  const acting = state.currentAdminId ? state.admins.find(a => a.id === state.currentAdminId) : null;
+  const isSuper = !acting || acting.role === 'super';
+  const canViewTab = (tab) => isSuper || acting.perms?.[tab] === 'view' || acting.perms?.[tab] === 'edit';
+  const canEditTab = (tab) => isSuper || acting.perms?.[tab] === 'edit';
+  const adminLocked = state.view === 'admin' && state.aScreen === 'dashboard' && !canEditTab(state.aTab);
+
+  const blockedToast = () => {
+    clearTimeout(toastTimer.current);
+    // fires after any optimistic success toast so the block message wins
+    setTimeout(() => showToast('View-only access — ask a super admin for edit rights', 'lock'), 80);
+  };
+
+  const guardedDispatch = (action) => {
+    if (adminLocked && action.type !== 'SET') { blockedToast(); return; }
+    dispatch(action);
+  };
+
+  const set = (payload) => {
+    if (adminLocked) {
+      const hit = Object.keys(payload).some(k => EDIT_SET_KEYS.includes(k) && payload[k] != null && payload[k] !== false);
+      if (hit) { blockedToast(); return; }
+      if (payload.docPreview?.editable) payload = { ...payload, docPreview: { ...payload.docPreview, editable: false } };
+    }
+    dispatch({ type: 'SET', payload });
+  };
+
+  const logActivity = (who, what, opts = {}) => {
+    if (adminLocked) return; // a blocked action must not leave a log entry
     const { type = 'admin', icon = 'check', tint = '#F8E9EE' } = opts;
     const when = 'Today ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     dispatch({ type: 'LOG_ACTIVITY', payload: { who, what, when, tint, icon, type } });
-  }, []);
+  };
 
-  const closeModals = useCallback(() => set({
+  const closeModals = () => set({
     vendorDetailId: null, vendorDetailReturnAppId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
     refundModalKey: null, depModalVendor: null, passModalVendor: null, docPreview: null, showApplyModal: false,
     applyEventId: null,
-  }), [set]);
+  });
 
   return (
-    <StoreContext.Provider value={{ state, dispatch, set, showToast, closeModals, logActivity }}>
+    <StoreContext.Provider value={{ state, dispatch: guardedDispatch, set, showToast, closeModals, logActivity, acting, canViewTab, canEditTab }}>
       {children}
     </StoreContext.Provider>
   );

@@ -4,11 +4,14 @@ import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount } from '../lib/helpers';
-import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
+import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
 
-const ADMIN_TABS = [
+// Single source of truth for console tabs — the sidebar, mobile pills, AND the
+// Admin Roles permission matrix all render from this list, so adding or
+// removing a tab here automatically updates role management too.
+export const ADMIN_TABS = [
   { id:'overview',   label:'Overview',            icon:'bars' },
   { id:'vendors',    label:'Vendor Applications', icon:'users' },
   { id:'vendorList', label:'Vendor Listing',      icon:'file' },
@@ -25,6 +28,7 @@ const ADMIN_TABS = [
   { id:'compliance', label:'Compliance',          icon:'shield' },
   { id:'content',    label:'Content',             icon:'pen' },
   { id:'settings',   label:'Settings',            icon:'settings' },
+  { id:'roles',      label:'Admin Roles',         icon:'lock', superOnly:true },
 ];
 
 function Pager({ total, perPage, page, onPage }) {
@@ -68,8 +72,18 @@ function NoSearchMatch({ query }) {
 }
 
 export default function AdminDashboard() {
-  const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType } = state;
+  const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId } = state;
+  const isSuperActing = !acting || acting.role === 'super';
+  const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
+  const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
+
+  // If the signed-in admin can't view the current tab, land on their first visible tab
+  useEffect(() => {
+    const cur = ADMIN_TABS.find(t => t.id === aTab);
+    const allowed = cur && (cur.superOnly ? isSuperActing : canViewTab(aTab));
+    if (!allowed && visibleTabs.length) set({ aTab: visibleTabs[0].id, page:1 });
+  }, [aTab, currentAdminId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showRejected, setShowRejected] = useState(false);
   const [photoSel, setPhotoSel] = useState({});        // booth-group selection for bulk download
   const [photoFilter, setPhotoFilter] = useState('all'); // 'all' | 'new'
@@ -101,7 +115,7 @@ export default function AdminDashboard() {
     background:active?'#A6364E':'#faf8f5', color:active?'#FAF8F5':'#6B6560',
   });
 
-  const logout = () => { set({ aScreen:'login' }); showToast('Signed out','leaf'); };
+  const logout = () => { set({ aScreen:'login', currentAdminId:null }); showToast('Signed out','leaf'); };
 
   // Derived filtered data for paginated tabs
   const filteredApps = searchApps(apps.filter(a => a.eventId === filterEvent));
@@ -279,17 +293,24 @@ export default function AdminDashboard() {
       <div style={{ background:'#3A1622', padding:'15px 20px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
           <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#FAF8F5' }}>Admin Console</div>
-          <div style={{ fontSize:11, color:'#C99AAA', marginTop:1 }}>Sulap Artisan</div>
+          <div style={{ fontSize:11, color:'#C99AAA', marginTop:1 }}>Sulap Artisan{acting ? ` · ${acting.name}${isSuperActing ? ' (Super admin)' : ''}` : ''}</div>
         </div>
         <button onClick={logout} style={{ background:'#54222f', border:'none', color:'#f0d9e0', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
       </div>
 
       {/* Mobile pill tabs */}
       <div className="admin-tabs-bar" style={{ display:'flex', flexWrap:'wrap', gap:7, padding:'13px 16px', background:'#FAF8F5', borderBottom:'1px solid #f0e9df' }}>
-        {ADMIN_TABS.map(t => (
+        {visibleTabs.map(t => (
           <button key={t.id} onClick={()=>{ closeModals(); set({aTab:t.id,page:1}); }} style={tabStyle(aTab===t.id)}>{t.label}</button>
         ))}
       </div>
+
+      {/* View-only notice for restricted admins */}
+      {acting && !isSuperActing && canViewTab(aTab) && !canEditTab(aTab) && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, background:'#FDF9EE', borderBottom:'1px solid #F3EBD5', padding:'9px 18px', fontSize:12, color:'#A98B3D', fontWeight:500 }}>
+          <Icon name="eye" size={14} color="#A98B3D"/>View-only access — you can browse this tab but changes are disabled.
+        </div>
+      )}
 
       {/* ── Overview ── */}
       {aTab === 'overview' && (
@@ -1428,6 +1449,129 @@ export default function AdminDashboard() {
           })}
         </div>
       )}
+
+      {/* ── Admin Roles (super admin only) ── */}
+      {aTab === 'roles' && isSuperActing && (() => {
+        const grantableTabs = ADMIN_TABS.filter(t => !t.superOnly);
+        const permOf = (a, tab) => a.perms?.[tab] || 'none';
+        const setPerm = (adminId, tab, level) => {
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => {
+            if (x.id !== adminId) return x;
+            const perms = { ...x.perms };
+            if (level === 'none') delete perms[tab]; else perms[tab] = level;
+            return { ...x, perms };
+          })});
+        };
+        const setAllPerms = (adminId, level) => {
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === adminId
+            ? { ...x, perms: level === 'none' ? {} : Object.fromEntries(grantableTabs.map(t => [t.id, level])) }
+            : x)});
+          showToast(level === 'none' ? 'All access cleared' : `All tabs set to ${level}`, 'lock');
+        };
+        const createAdmin = () => {
+          const id = newAdmin.id.trim().toLowerCase().replace(/\s+/g, '');
+          const name = newAdmin.name.trim();
+          if (!id || !name) { showToast('Fill in both the admin ID and full name', 'info'); return; }
+          if (!/^[a-z0-9_.-]+$/.test(id)) { showToast('Admin ID can only use letters, numbers, dots, dashes', 'info'); return; }
+          if (admins.some(a => a.id === id)) { showToast('That admin ID already exists', 'info'); return; }
+          dispatch({ type:'MERGE_ADMINS', payload: [...admins, { id, name, role:'staff', password:DEFAULT_ADMIN_PASSWORD, mustReset:true, perms:{} }] });
+          setNewAdmin({ id:'', name:'' });
+          logActivity('Admin', `created the admin ID "${id}" for ${name}.`, { icon:'lock', tint:'#F8E9EE' });
+          showToast(`Admin created — they sign in with ${id} / ${DEFAULT_ADMIN_PASSWORD}`, 'check');
+        };
+        const resetPassword = (a) => {
+          if (!window.confirm(`Reset ${a.name}'s password back to the default (${DEFAULT_ADMIN_PASSWORD})? They'll set a new one on their next sign-in.`)) return;
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === a.id ? { ...x, password:DEFAULT_ADMIN_PASSWORD, mustReset:true } : x) });
+          logActivity('Admin', `reset the password for admin "${a.id}".`, { icon:'lock', tint:'#FEF8EC' });
+          showToast(`${a.name}'s password reset to ${DEFAULT_ADMIN_PASSWORD}`, 'lock');
+        };
+        const removeAdmin = (a) => {
+          if (!window.confirm(`Remove admin "${a.id}" (${a.name})? They will no longer be able to sign in.`)) return;
+          dispatch({ type:'MERGE_ADMINS', payload: admins.filter(x => x.id !== a.id) });
+          logActivity('Admin', `removed the admin ID "${a.id}".`, { icon:'x', tint:'#FDEEEC' });
+          showToast('Admin removed', 'x');
+        };
+        const segStyle = (on, color) => ({ flex:1, border:'none', fontSize:11, fontWeight:600, borderRadius:7, padding:'6px 4px', cursor:'pointer', background:on?color:'transparent', color:on?'#fff':'#6B6560' });
+        return (
+          <div style={{ padding:'14px 16px 20px' }}>
+            {/* Create admin */}
+            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>Create admin ID</div>
+              <div style={{ fontSize:12, color:'#A09890', marginTop:3, lineHeight:1.5 }}>New admins start with the default password <b style={{ color:'#6B6560' }}>{DEFAULT_ADMIN_PASSWORD}</b> and must set their own the first time they sign in.</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginTop:14 }}>
+                <input value={newAdmin.id} onChange={e=>setNewAdmin(s=>({...s,id:e.target.value}))} placeholder="Admin ID, e.g. staff02" style={{ flex:1, minWidth:150, border:'1px solid #e3d8ca', background:'#FAF8F5', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
+                <input value={newAdmin.name} onChange={e=>setNewAdmin(s=>({...s,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&createAdmin()} placeholder="Full name" style={{ flex:1, minWidth:150, border:'1px solid #e3d8ca', background:'#FAF8F5', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' }}/>
+                <button onClick={createAdmin} style={{ background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Create</button>
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:9, background:'#FBF7F1', border:'1px solid #efe7dc', borderRadius:12, padding:'11px 13px', margin:'13px 0', fontSize:11.5, color:'#A09890', lineHeight:1.5 }}>
+              <Icon name="info" size={14} color="#A09890" style={{ marginTop:1, flexShrink:0 }}/>
+              New console tabs appear in this list automatically. Access is <b style={{ color:'#6B6560' }}>off by default</b> — grant View (browse only) or Edit (make changes) per tab.
+            </div>
+            {/* Admin list */}
+            <div className="admin-cards">
+              {admins.map(a => (
+                <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    <div style={{ width:38, height:38, borderRadius:'50%', background: a.role==='super' ? '#3A1622' : '#F8E9EE', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#A6364E', fontWeight:700, fontSize:14, flexShrink:0 }}>
+                      {a.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:'#1C1A17' }}>{a.name}</div>
+                      <div style={{ fontSize:11.5, color:'#A09890', marginTop:1 }}>ID: {a.id}</div>
+                    </div>
+                    {a.role === 'super' ? (
+                      <span style={{ fontSize:10.5, fontWeight:700, color:'#FAF8F5', background:'#3A1622', borderRadius:999, padding:'4px 11px', flexShrink:0 }}>Super admin</span>
+                    ) : a.mustReset ? (
+                      <span style={{ fontSize:10.5, fontWeight:600, color:'#B7770D', background:'#FEF8EC', borderRadius:999, padding:'4px 11px', flexShrink:0 }}>Awaiting first sign-in</span>
+                    ) : (
+                      <span style={{ fontSize:10.5, fontWeight:600, color:'#2D6A4F', background:'#E8F5F0', borderRadius:999, padding:'4px 11px', flexShrink:0 }}>Active</span>
+                    )}
+                  </div>
+                  {a.role === 'super' ? (
+                    <div style={{ fontSize:12, color:'#6B6560', marginTop:11, lineHeight:1.5 }}>Full access to every tab, manages admin IDs and permissions. This account can't be restricted or removed.</div>
+                  ) : (
+                    <>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:13 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Tab access</span>
+                        <div style={{ flex:1 }}/>
+                        <button onClick={()=>setAllPerms(a.id,'view')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All view</button>
+                        <button onClick={()=>setAllPerms(a.id,'edit')} style={{ background:'none', border:'none', color:'#A6364E', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>All edit</button>
+                        <button onClick={()=>setAllPerms(a.id,'none')} style={{ background:'none', border:'none', color:'#A09890', fontSize:11, fontWeight:600, cursor:'pointer', textDecoration:'underline', textUnderlineOffset:2 }}>Clear</button>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:9 }}>
+                        {grantableTabs.map(t => {
+                          const p = permOf(a, t.id);
+                          return (
+                            <div key={t.id} style={{ display:'flex', alignItems:'center', gap:9 }}>
+                              <span style={{ flex:1, fontSize:12, color: p==='none' ? '#A09890' : '#1C1A17', fontWeight: p==='none' ? 400 : 600, display:'flex', alignItems:'center', gap:7, minWidth:0 }}>
+                                <Icon name={t.icon} size={13} color={p==='none' ? '#cbc2b6' : '#A6364E'}/>{t.label}
+                              </span>
+                              <div style={{ display:'flex', background:'#F2EDE6', borderRadius:9, padding:3, gap:2, width:186, flexShrink:0 }}>
+                                <button onClick={()=>setPerm(a.id,t.id,'none')} style={segStyle(p==='none','#A09890')}>None</button>
+                                <button onClick={()=>setPerm(a.id,t.id,'view')} style={segStyle(p==='view','#B7770D')}>View</button>
+                                <button onClick={()=>setPerm(a.id,t.id,'edit')} style={segStyle(p==='edit','#2D6A4F')}>Edit</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display:'flex', gap:9, marginTop:14, paddingTop:12, borderTop:'1px solid #f1ece4' }}>
+                        <button onClick={()=>resetPassword(a)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#A6364E', fontSize:12, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
+                          <Icon name="lock" size={13} color="#A6364E"/>Reset password to default
+                        </button>
+                        <button onClick={()=>removeAdmin(a)} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FDEEEC', border:'none', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:10, padding:'9px 13px', cursor:'pointer' }}>
+                          <Icon name="trash" size={13} color="#B03A2E"/>Remove
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Admin Profile ── */}
       {aTab === 'profile' && (

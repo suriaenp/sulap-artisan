@@ -73,7 +73,7 @@ function AppShell() {
             {view === 'vendor' && vScreen === 'login'     && <VendorLogin />}
             {view === 'vendor' && vScreen === 'register'  && <VendorRegister />}
             {view === 'vendor' && vScreen === 'dashboard' && <VendorDashboard />}
-            {view === 'admin'  && aScreen === 'login'     && <AdminLogin />}
+            {view === 'admin'  && (aScreen === 'login' || aScreen === 'reset') && <AdminLogin />}
             {view === 'admin'  && aScreen === 'dashboard' && <AdminDashboard />}
           </div>
           {showNav && <BottomNav />}

@@ -1,5 +1,6 @@
 import Icon from './Icon';
 import { useStore } from '../lib/store';
+import { ADMIN_TABS } from '../pages/AdminDashboard';
 
 const VENDOR_TABS = [
   { id:'events',   label:'Available Markets', icon:'calendar' },
@@ -14,30 +15,13 @@ const VENDOR_TABS = [
   { id:'profile',  label:'Profile',           icon:'users' },
 ];
 
-const ADMIN_TABS = [
-  { id:'overview',    label:'Overview',         icon:'bars' },
-  { id:'vendors',     label:'Vendor Applications', icon:'users' },
-  { id:'vendorList',  label:'Vendor Listing',   icon:'file' },
-  { id:'events',      label:'Events',           icon:'tent' },
-  { id:'apps',        label:'Event Applications', icon:'clipboard' },
-  { id:'payments',    label:'Payments',         icon:'receipt' },
-  { id:'deposits',    label:'Deposit Record',   icon:'wallet' },
-  { id:'parking',     label:'Parking',          icon:'car' },
-  { id:'photos',      label:'Event Pictures',   icon:'camera' },
-  { id:'pass',        label:'Vendor Pass',      icon:'badge' },
-  { id:'categories',  label:'Categories',       icon:'folder' },
-  { id:'activity',    label:'Activity',         icon:'activity' },
-  { id:'chart',       label:'Vendor Chart',     icon:'trophy' },
-  { id:'compliance',  label:'Compliance',       icon:'shield' },
-  { id:'content',     label:'Content',          icon:'pen' },
-  { id:'settings',    label:'Settings',         icon:'settings' },
-];
-
 export default function Sidebar() {
-  const { state, set, closeModals } = useStore();
+  const { state, set, closeModals, acting, canViewTab } = useStore();
   const { view, vScreen, aScreen, vTab, aTab } = state;
   const isVendor = view === 'vendor' && vScreen === 'dashboard';
   const isAdmin  = view === 'admin'  && aScreen === 'dashboard';
+  const isSuperActing = !acting || acting.role === 'super';
+  const adminTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
 
   const bg    = isAdmin ? '#2A1C1E' : '#FAF8F5';
   const borderC = isAdmin ? '#3d2528' : '#efe7dc';
@@ -106,7 +90,7 @@ export default function Sidebar() {
         {isAdmin && (
           <div style={{ borderTop: '1px solid #3d2528', marginTop: 10, paddingTop: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(250,248,245,0.45)', padding: '4px 12px 6px' }}>CONSOLE</div>
-            {ADMIN_TABS.map(t => (
+            {adminTabs.map(t => (
               <button key={t.id} style={sideNavStyle(aTab===t.id)} onClick={() => { closeModals(); set({ aTab:t.id, page:1 }); }}>
                 <Icon name={t.icon} size={16} color={aTab===t.id ? '#FAF8F5' : 'rgba(250,248,245,0.55)'} />
                 <span>{t.label}</span>

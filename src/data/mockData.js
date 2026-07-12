@@ -142,6 +142,18 @@ export const OFFENSE_TYPES = {
 
 export const CURRENT_VENDOR_ID = 'v1';
 
+// ── Admin accounts ────────────────────────────────────────────────────────────
+// New admins start with the default password and must set their own on first
+// sign-in. perms maps tabId → 'view' | 'edit'; a missing tab means no access
+// (least privilege — newly added console tabs stay off until granted).
+// NOTE: passwords are plain text for the Phase 1 prototype only — Phase 2
+// replaces this with Supabase Auth (hashed, server-side).
+export const DEFAULT_ADMIN_PASSWORD = '00000';
+export const INITIAL_ADMINS = [
+  { id:'admin',   name:'Siti Aminah', role:'super', password:'sulap123', mustReset:false, perms:{} },
+  { id:'staff01', name:'Ahmad Fauzi', role:'staff', password:DEFAULT_ADMIN_PASSWORD, mustReset:true, perms:{ overview:'view', payments:'edit', parking:'view', photos:'view' } },
+];
+
 export const INITIAL_ACTIVITY = [
   { who:'Admin',        what:'approved Nutmeg & Clay as a vendor.',           when:'28 Jun 10:42 AM', tint:'#F8E9EE', icon:'check',    type:'admin' },
   { who:'Borneo Brews', what:'submitted a vendor application.',                when:'28 Jun 9:15 AM',  tint:'#FEF8EC', icon:'pen',      type:'vendor' },
