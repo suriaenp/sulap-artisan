@@ -1,26 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 
-const whyJoin = [
-  { title: 'Prime mall location', body: 'Trade in the heart of Kota Kinabalu with steady daily footfall.' },
-  { title: 'Simple online application', body: 'Apply in minutes and track your application from the vendor portal.' },
-  { title: 'Curated maker community', body: 'Stand alongside quality Sabahan crafts, food, and design.' },
-  { title: 'Flexible booth rates', body: 'Daily rates for F&B and non-F&B booths — pay only for the days you trade.' },
-];
-
 const galleryTiles = [1, 2, 3, 4, 5, 6, 7, 8];
 
-// Renders the hero title as plain text, gradient-highlighting "Sulap Artisan"
-// wherever it appears so admin-edited copy still gets the brand accent.
-function heroTitleParts(title = '') {
-  const i = title.indexOf('Sulap Artisan');
-  if (i === -1) return title;
-  const before = title.slice(0, i);
-  const after = title.slice(i + 'Sulap Artisan'.length);
+// Position-specific corner radius + fallback color for the "Why Join" 2x2
+// photo grid, kept as static layout constants since they're about shape/
+// position, not editable content.
+const whyJoinTileStyle = [
+  { radius: '28px 80px 28px 28px', fallback: '#E8D3B4' },
+  { radius: '80px 28px 28px 28px', fallback: '#DCC49C' },
+  { radius: '28px 28px 28px 80px', fallback: '#DCC49C' },
+  { radius: '28px 28px 80px 28px', fallback: '#E8D3B4' },
+];
+
+// Renders a heading as plain text, gradient-highlighting the given phrase
+// wherever it appears, so admin-edited copy still gets the brand accent.
+function highlightPhrase(text = '', phrase) {
+  const i = text.indexOf(phrase);
+  if (i === -1) return text;
+  const before = text.slice(0, i);
+  const after = text.slice(i + phrase.length);
   return (
     <>
       {before}
-      <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Sulap Artisan</span>
+      <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>{phrase}</span>
       {after}
     </>
   );
@@ -82,7 +85,7 @@ export default function PublicHome() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px 80px', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 420px', minWidth: 300 }}>
             <h1 style={{ fontFamily: "'Marcellus', serif", fontSize: 'clamp(38px, 5.2vw, 60px)', lineHeight: 1.1, margin: '0 0 20px', color: '#3A2210', fontWeight: 400 }}>
-              {heroTitleParts(content.heroTitle)}
+              {highlightPhrase(content.heroTitle, 'Sulap Artisan')}
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.65, color: '#6B4E33', margin: '0 0 32px', maxWidth: 480 }}>{content.heroSubtitle}</p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
@@ -132,19 +135,18 @@ export default function PublicHome() {
       <section id="why-join" style={{ background: '#F7EFE3' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px', display: 'flex', alignItems: 'center', gap: 56, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 380px', minWidth: 300, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div style={{ height: 220, borderRadius: '28px 80px 28px 28px', background: '#E8D3B4' }} />
-            <div style={{ height: 220, borderRadius: '80px 28px 28px 28px', background: '#DCC49C' }} />
-            <div style={{ height: 220, borderRadius: '28px 28px 28px 80px', background: '#DCC49C' }} />
-            <div style={{ height: 220, borderRadius: '28px 28px 80px 28px', background: '#E8D3B4' }} />
+            {content.whyJoinImages.map((tile, i) => (
+              <div key={tile.id} style={{ height: 220, borderRadius: whyJoinTileStyle[i].radius, overflow: 'hidden', background: tile.image ? undefined : whyJoinTileStyle[i].fallback, backgroundImage: tile.image ? `url(${tile.image})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+            ))}
           </div>
           <div style={{ flex: '1 1 420px', minWidth: 300 }}>
             <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 3.6vw, 40px)', margin: '0 0 12px', color: '#3A2210' }}>
-              <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Why join</span> Sulap Artisan?
+              {highlightPhrase(content.whyJoinTitle, 'Why join')}
             </h2>
-            <p style={{ fontSize: 16, lineHeight: 1.6, color: '#6B4E33', margin: '0 0 32px' }}>A market platform built for local makers, run by Suria Sabah Shopping Mall.</p>
+            <p style={{ fontSize: 16, lineHeight: 1.6, color: '#6B4E33', margin: '0 0 32px' }}>{content.whyJoinSubtitle}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
-              {whyJoin.map((item, i) => (
-                <div key={item.title} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+              {content.whyJoinItems.map((item, i) => (
+                <div key={item.id} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                   <div style={{ flex: '0 0 48px', width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, #B97434, #7A431A)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF8EE', fontFamily: "'Marcellus', serif", fontSize: 20 }}>{i + 1}</div>
                   <div>
                     <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>{item.title}</div>

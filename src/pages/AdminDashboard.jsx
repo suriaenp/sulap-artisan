@@ -1771,6 +1771,76 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Why Join section</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The light section with the 2×2 photo grid and 4 numbered reasons to join. Recommended photo size: <strong>600 × 600px</strong> (square) — the tiles display at 220px tall in a 2-column grid, so a square upload crops cleanly regardless of column width. Falls back to a plain color tile if no photo is set.</div>
+
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Title</div>
+                <input value={state.cf?.whyJoinTitle ?? content.whyJoinTitle} onChange={e=>set({cf:{...(state.cf||content),whyJoinTitle:e.target.value}})} style={inp}/>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:5 }}>"Why join" is auto-highlighted wherever it appears in the title.</div>
+              </div>
+              <div style={{ marginTop:14 }}>
+                <div style={lbl}>Subtitle</div>
+                <input value={state.cf?.whyJoinSubtitle ?? content.whyJoinSubtitle} onChange={e=>set({cf:{...(state.cf||content),whyJoinSubtitle:e.target.value}})} style={inp}/>
+              </div>
+
+              <div style={{ marginTop:14 }}>
+                <div style={lbl}>Photo grid (4 tiles)</div>
+                <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>
+                  {(state.cf?.whyJoinImages ?? content.whyJoinImages).map((tile, i) => {
+                    const tiles = state.cf?.whyJoinImages ?? content.whyJoinImages;
+                    const setTile = (patch) => {
+                      const next = tiles.map((x, xi) => xi === i ? { ...x, ...patch } : x);
+                      set({cf:{...(state.cf||content), whyJoinImages: next}});
+                    };
+                    return (
+                      <div key={tile.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                        <div style={{ width:64, height:64, borderRadius:10, overflow:'hidden', background: tile.image ? '#DCC49C' : '#E8D3B4', border:'1px solid var(--border-light)' }}>
+                          {tile.image && <img src={tile.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>}
+                        </div>
+                        <div style={{ display:'flex', gap:4 }}>
+                          <label style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', borderRadius:8, width:28, height:28, cursor:'pointer' }} title="Upload photo">
+                            <Icon name="upload" size={12} color="#9A5B26"/>
+                            <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => setTile({image: reader.result});
+                              reader.readAsDataURL(file);
+                              e.target.value = '';
+                            }}/>
+                          </label>
+                          {tile.image && <button onClick={()=>setTile({image:null})} title="Remove" style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', borderRadius:8, width:28, height:28, cursor:'pointer' }}>×</button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:10 }}>
+                {(state.cf?.whyJoinItems ?? content.whyJoinItems).map((item, i) => {
+                  const items = state.cf?.whyJoinItems ?? content.whyJoinItems;
+                  const setItem = (patch) => {
+                    const next = items.map((x, xi) => xi === i ? { ...x, ...patch } : x);
+                    set({cf:{...(state.cf||content), whyJoinItems: next}});
+                  };
+                  return (
+                    <div key={item.id} style={{ border:'1px solid var(--border-light)', borderRadius:12, padding:12, display:'flex', gap:12, alignItems:'flex-start' }}>
+                      <div style={{ flex:'0 0 26px', width:26, height:26, borderRadius:'50%', background:'linear-gradient(135deg, #B97434, #7A431A)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FFF8EE', fontSize:13, fontWeight:700, marginTop:4 }}>{i+1}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={lbl}>Reason title</div>
+                        <input value={item.title} onChange={e=>setItem({title:e.target.value})} style={inp}/>
+                        <div style={{ ...lbl, marginTop:10 }}>Reason description</div>
+                        <textarea value={item.body} onChange={e=>setItem({body:e.target.value})} style={{ ...inp, minHeight:52, resize:'none' }}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Application — market terms</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
               <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>

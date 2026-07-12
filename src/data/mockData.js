@@ -135,6 +135,23 @@ export const INITIAL_CONTENT = {
     { id: 'cs4', day: '29', month: 'AUG', name: 'Merdeka Craft Fest',  image: null },
   ],
 
+  // "Why Join" section (public home page) — 2x2 photo grid + heading + 4
+  // numbered feature items.
+  whyJoinTitle:    'Why join Sulap Artisan?',
+  whyJoinSubtitle: 'A market platform built for local makers, run by Suria Sabah Shopping Mall.',
+  whyJoinImages: [
+    { id: 'wj-img1', image: null },
+    { id: 'wj-img2', image: null },
+    { id: 'wj-img3', image: null },
+    { id: 'wj-img4', image: null },
+  ],
+  whyJoinItems: [
+    { id: 'wj1', title: 'Prime mall location',        body: 'Trade in the heart of Kota Kinabalu with steady daily footfall.' },
+    { id: 'wj2', title: 'Simple online application',   body: 'Apply in minutes and track your application from the vendor portal.' },
+    { id: 'wj3', title: 'Curated maker community',     body: 'Stand alongside quality Sabahan crafts, food, and design.' },
+    { id: 'wj4', title: 'Flexible booth rates',        body: 'Daily rates for F&B and non-F&B booths — pay only for the days you trade.' },
+  ],
+
   terms: `1. Application & selection
 Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.
 
