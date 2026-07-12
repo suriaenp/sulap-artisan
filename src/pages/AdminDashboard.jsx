@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
@@ -43,6 +43,30 @@ function Pager({ total, perPage, page, onPage }) {
   );
 }
 
+function SearchBox({ value, onChange, placeholder = 'Search by business or owner name' }) {
+  return (
+    <div style={{ position:'relative', marginBottom:14, maxWidth:360 }}>
+      <div style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}>
+        <Icon name="search" size={15} color="#A09890"/>
+      </div>
+      <input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 34px 11px 36px', fontSize:14, color:'#1C1A17', outline:'none' }}/>
+      {value && (
+        <button onClick={()=>onChange('')} style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', background:'#F2EDE6', border:'none', width:22, height:22, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+          <Icon name="x" size={11} color="#6B6560"/>
+        </button>
+      )}
+    </div>
+  );
+}
+
+function NoSearchMatch({ query }) {
+  return (
+    <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13 }}>
+      No vendors match "{query}".
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
   const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType } = state;
@@ -54,12 +78,21 @@ export default function AdminDashboard() {
   const [paySel, setPaySel] = useState({});          // payment-card selection for bulk advice download
   const [payFilter, setPayFilter] = useState('all'); // 'all' | 'new'
   const [payUpMsg, setPayUpMsg] = useState(null);    // bulk invoice/receipt upload summary
+  const [vendorSearch, setVendorSearch] = useState(''); // search box shared across vendor-listing tabs
+  useEffect(() => { setVendorSearch(''); }, [aTab]);
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
   const depRec = id => deposits[id]||{status:'unpaid',inv:'',payDate:'',refundDate:''};
   const payRec = key => payments[key]||{status:'unpaid',paid:0,advice:false,invoice:false,receipt:false};
   const refundRec = key => refunds[key]||{status:'none'};
+
+  // ── Vendor search (used across every tab with a vendor listing) ──
+  const searchQ = vendorSearch.trim().toLowerCase();
+  const vendorMatches = (v) => !searchQ || (v?.business||'').toLowerCase().includes(searchQ) || (v?.owner||'').toLowerCase().includes(searchQ);
+  const searchVendors = (list) => searchQ ? list.filter(vendorMatches) : list;
+  const searchApps    = (list) => searchQ ? list.filter(a => vendorMatches(vById(a.vendorId))) : list;
+  const searchGroups  = (list) => searchQ ? list.filter(g => g.members.some(vid => vendorMatches(vById(vid)))) : list;
 
   const tabStyle = (active) => ({
     display:'inline-flex', alignItems:'center', gap:7, flexShrink:0,
@@ -71,16 +104,17 @@ export default function AdminDashboard() {
   const logout = () => { set({ aScreen:'login' }); showToast('Signed out','leaf'); };
 
   // Derived filtered data for paginated tabs
-  const filteredApps = apps.filter(a => a.eventId === filterEvent);
+  const filteredApps = searchApps(apps.filter(a => a.eventId === filterEvent));
   const approvedApps = apps.filter(a => a.eventId === filterEvent && a.status === 'approved');
+  const searchedApprovedApps = searchApps(approvedApps);
   const pagedApps    = filteredApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const filteredPayApps = payFilter === 'new'
+  const filteredPayApps = searchApps(payFilter === 'new'
     ? approvedApps.filter(a => { const r = payRec(`${a.vendorId}-${a.eventId}`); return (r.advice || r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; })
-    : approvedApps;
+    : approvedApps);
   const pagedPayments= filteredPayApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const selectedPayApps = filteredPayApps.filter(a => paySel[a.id]);
-  const pagedPark    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const pagedPass    = approvedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pagedPark    = searchedApprovedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pagedPass    = searchedApprovedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   // Booth groups for Event Pictures: main vendor + booth sharers together, de-duplicated
   // (partners who also hold their own application row are not shown twice)
@@ -95,14 +129,17 @@ export default function AdminDashboard() {
     return groups;
   })();
   const groupDownloaded = g => g.members.every(vid => photoDownloads[`${vid}-${filterEvent}`]);
-  const filteredGroups  = photoFilter === 'new' ? boothGroups.filter(g => !groupDownloaded(g)) : boothGroups;
+  const filteredGroups  = searchGroups(photoFilter === 'new' ? boothGroups.filter(g => !groupDownloaded(g)) : boothGroups);
   const pagedGroups     = filteredGroups.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const selectedGroups  = filteredGroups.filter(g => photoSel[g.id]);
   const pendingVendors = vendors.filter(v => v.status === 'pending');
   const approvedVendors = vendors.filter(v => v.status === 'approved' || v.status === 'suspended');
   const rejectedVendors = vendors.filter(v => v.status === 'rejected');
-  const pagedVendors = pendingVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
-  const pagedVendorList = approvedVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const searchedPending = searchVendors(pendingVendors);
+  const searchedApprovedList = searchVendors(approvedVendors);
+  const searchedRejected = searchVendors(rejectedVendors);
+  const pagedVendors = searchedPending.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pagedVendorList = searchedApprovedList.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -303,11 +340,13 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export CSV
             </button>
           </div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
           {pendingVendors.length === 0 && (
             <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13 }}>
               No new applications right now.
             </div>
           )}
+          {pendingVendors.length > 0 && searchedPending.length === 0 && <NoSearchMatch query={vendorSearch}/>}
           <div className="admin-cards">
             {pagedVendors.map((v,idx) => (
               <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
@@ -335,16 +374,16 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
-          <Pager total={pendingVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-          {rejectedVendors.length > 0 && (
+          <Pager total={searchedPending.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          {searchedRejected.length > 0 && (
             <div style={{ marginTop:22, paddingTop:16, borderTop:'1px solid #efe7dc' }}>
               <button onClick={()=>setShowRejected(s=>!s)} style={{ background:'none', border:'none', color:'#A09890', fontSize:12, fontWeight:600, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                 <Icon name={showRejected?'x':'eye'} size={13} color="#A09890"/>
-                {showRejected ? 'Hide' : 'Show'} {rejectedVendors.length} rejected application{rejectedVendors.length>1?'s':''}
+                {showRejected ? 'Hide' : 'Show'} {searchedRejected.length} rejected application{searchedRejected.length>1?'s':''}
               </button>
               {showRejected && (
                 <div className="admin-cards" style={{ marginTop:13 }}>
-                  {rejectedVendors.map(v => (
+                  {searchedRejected.map(v => (
                     <div key={v.id} style={{ background:'#FBF7F1', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                         <div style={{ flex:1, minWidth:0 }}>
@@ -375,6 +414,8 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export CSV
             </button>
           </div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+          {approvedVendors.length > 0 && searchedApprovedList.length === 0 && <NoSearchMatch query={vendorSearch}/>}
           <div className="admin-cards">
             {pagedVendorList.map((v,idx) => {
               const vOff = offenses.filter(o=>o.vendorId===v.id);
@@ -417,7 +458,7 @@ export default function AdminDashboard() {
               );
             })}
           </div>
-          <Pager total={approvedVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          <Pager total={searchedApprovedList.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
         </div>
       )}
 
@@ -509,6 +550,8 @@ export default function AdminDashboard() {
               <Icon name="download" size={14} color="#A6364E"/>Export
             </button>
           </div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+          {apps.filter(a=>a.eventId===filterEvent).length > 0 && filteredApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
           <div className="admin-cards">
             {pagedApps.map((a,idx) => {
               const v = vById(a.vendorId);
@@ -609,6 +652,8 @@ export default function AdminDashboard() {
               {pagedPayments.filter(a=>payRec(`${a.vendorId}-${a.eventId}`).status==='paid').length} of {pagedPayments.length} fully paid
             </span>
           </div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+          {searchQ && filteredPayApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
 
           {/* Bulk toolbar */}
           <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
@@ -784,8 +829,10 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div style={{ fontSize:11.5, color:'#A09890', marginBottom:11, lineHeight:1.5 }}>The refundable RM100 deposit is tracked once per vendor. While unpaid, it is automatically added to that vendor's first event invoice.</div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+          {searchQ && searchVendors(vendors).length === 0 && <NoSearchMatch query={vendorSearch}/>}
           <div className="admin-cards">
-            {vendors.map((v,idx) => {
+            {searchVendors(vendors).map((v,idx) => {
               const dep = depRec(v.id);
               return (
                 <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px' }}>
@@ -818,6 +865,7 @@ export default function AdminDashboard() {
           <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:12 }}>
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
           {(() => {
             const ev = curEv;
             const start = ev.startDate ? new Date(ev.startDate) : null;
@@ -835,6 +883,7 @@ export default function AdminDashboard() {
                     {parkOverride ? 'Lock' : 'Override'}
                   </button>
                 </div>
+                {searchQ && searchedApprovedApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
                 <div className="admin-cards">
                   {pagedPark.map((a,idx) => {
                     const v = vById(a.vendorId);
@@ -865,7 +914,7 @@ export default function AdminDashboard() {
                     );
                   })}
                 </div>
-                <Pager total={approvedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+                <Pager total={searchedApprovedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
               </>
             );
           })()}
@@ -880,6 +929,7 @@ export default function AdminDashboard() {
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
           <div style={{ fontSize:11.5, color:'#A09890', marginBottom:12, lineHeight:1.5 }}>Vendor product photos come from their profile — always their latest set. Booth sharers are grouped with the main vendor. Bulk downloads save one folder per business, renamed "Vendor - 001 - Event".</div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
 
           {/* Toolbar */}
           <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
@@ -915,7 +965,7 @@ export default function AdminDashboard() {
 
           {filteredGroups.length === 0 && (
             <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#A09890', fontSize:13 }}>
-              {photoFilter==='new' ? 'All booths for this event have been downloaded — nothing new.' : 'No approved vendors for this event yet.'}
+              {searchQ ? `No vendors match "${vendorSearch}".` : photoFilter==='new' ? 'All booths for this event have been downloaded — nothing new.' : 'No approved vendors for this event yet.'}
             </div>
           )}
 
@@ -995,6 +1045,8 @@ export default function AdminDashboard() {
           <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'12px 13px', fontSize:14, color:'#1C1A17', outline:'none', marginBottom:14 }}>
             {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+          {searchQ && searchedApprovedApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
           <div className="admin-cards">
             {pagedPass.map((a,idx) => {
               const v = vById(a.vendorId);
@@ -1018,7 +1070,7 @@ export default function AdminDashboard() {
               );
             })}
           </div>
-          <Pager total={approvedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          <Pager total={searchedApprovedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
         </div>
       )}
 
@@ -1046,18 +1098,20 @@ export default function AdminDashboard() {
             ))}
           </div>
           <div style={{ fontSize:13, fontWeight:700, color:'#1C1A17', margin:'20px 2px 11px' }}>Vendors by category</div>
+          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
           <div className="admin-cards">
             {cats.map(c => {
               const members = vendors.filter(v=>v.category===c.name);
+              const shownMembers = searchVendors(members);
               return (
                 <div key={c.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:9 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>{c.name}</div>
                     <span style={{ fontSize:11, fontWeight:600, color:'#A6364E', background:'#F8E9EE', borderRadius:999, padding:'3px 9px' }}>{members.length}</span>
                   </div>
-                  {members.length > 0 ? (
+                  {shownMembers.length > 0 ? (
                     <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:11 }}>
-                      {members.map(v => (
+                      {shownMembers.map(v => (
                         <div key={v.id} style={{ display:'flex', alignItems:'center', gap:10, background:'#FBF7F1', borderRadius:11, padding:'9px 11px' }}>
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{v.business}</div>
@@ -1069,7 +1123,7 @@ export default function AdminDashboard() {
                         </div>
                       ))}
                     </div>
-                  ) : <div style={{ fontSize:11.5, color:'#A09890', marginTop:9 }}>No vendors in this category yet.</div>}
+                  ) : <div style={{ fontSize:11.5, color:'#A09890', marginTop:9 }}>{members.length > 0 ? `No vendors match "${vendorSearch}" in this category.` : 'No vendors in this category yet.'}</div>}
                 </div>
               );
             })}
@@ -1116,6 +1170,7 @@ export default function AdminDashboard() {
             const sorted = Object.entries(participation).sort((a,b)=>b[1]-a[1]);
             const top = sorted[0] ? vById(sorted[0][0]) : {};
             const maxCount = sorted[0]?.[1]||1;
+            const shownSorted = searchQ ? sorted.filter(([vid])=>vendorMatches(vById(vid))) : sorted;
             return (
               <>
                 <div style={{ background:'linear-gradient(135deg,#A6364E,#7A2438)', borderRadius:18, padding:18, color:'#FAF8F5' }}>
@@ -1131,27 +1186,33 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17', margin:'2px 2px 11px' }}>Participation ranking</div>
-                <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14, display:'flex', flexDirection:'column', gap:13 }}>
-                  {sorted.map(([vid,count],i) => {
-                    const v = vById(vid);
-                    const pct = Math.round(count/maxCount*100);
-                    const rankColors = ['#E8A04B','#A09890','#B87333'];
-                    return (
-                      <div key={vid} style={{ display:'flex', alignItems:'center', gap:11 }}>
-                        <div style={{ width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, flexShrink:0, background:i<3?rankColors[i]:'#F2EDE6', color:i<3?'#fff':'#6B6560' }}>{i+1}</div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:5 }}>
-                            <span style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{v.business}</span>
-                            <span style={{ fontSize:11.5, fontWeight:600, color:'#A6364E' }}>{count} market{count!==1?'s':''}</span>
-                          </div>
-                          <div style={{ height:6, borderRadius:3, background:'#F2EDE6', overflow:'hidden' }}>
-                            <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#C75C84,#A6364E)', width:`${pct}%` }}/>
+                <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+                {shownSorted.length === 0 ? (
+                  <NoSearchMatch query={vendorSearch}/>
+                ) : (
+                  <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14, display:'flex', flexDirection:'column', gap:13 }}>
+                    {shownSorted.map(([vid,count]) => {
+                      const v = vById(vid);
+                      const pct = Math.round(count/maxCount*100);
+                      const rankColors = ['#E8A04B','#A09890','#B87333'];
+                      const rank = sorted.findIndex(([id])=>id===vid);
+                      return (
+                        <div key={vid} style={{ display:'flex', alignItems:'center', gap:11 }}>
+                          <div style={{ width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, flexShrink:0, background:rank<3?rankColors[rank]:'#F2EDE6', color:rank<3?'#fff':'#6B6560' }}>{rank+1}</div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:5 }}>
+                              <span style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{v.business}</span>
+                              <span style={{ fontSize:11.5, fontWeight:600, color:'#A6364E' }}>{count} market{count!==1?'s':''}</span>
+                            </div>
+                            <div style={{ height:6, borderRadius:3, background:'#F2EDE6', overflow:'hidden' }}>
+                              <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#C75C84,#A6364E)', width:`${pct}%` }}/>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </>
             );
           })()}
@@ -1261,8 +1322,10 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </div>
+              <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
+              {searchQ && searchVendors(vendors).length === 0 && <NoSearchMatch query={vendorSearch}/>}
               <div className="admin-cards">
-                {vendors.map((v,idx) => {
+                {searchVendors(vendors).map((v,idx) => {
                   const vOff = offenses.filter(o=>o.vendorId===v.id);
                   return (
                     <div key={v.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px' }}>
