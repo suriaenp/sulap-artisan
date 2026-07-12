@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import Icon from './Icon';
 import Badge from './Badge';
 import PhotoTile from './PhotoTile';
 import { useStore } from '../lib/store';
 import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE } from '../data/mockData';
-import { dayCount, fmtShort, money } from '../lib/helpers';
+import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
 
@@ -37,11 +38,21 @@ function SheetHeader({ title, sub, onClose }) {
 export function VendorDetailModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
   const { vendorDetailId, vendorDetailReturnAppId, vendors, settings } = state;
+  const [editingSocials, setEditingSocials] = useState(false);
+  const [socialForm, setSocialForm] = useState({ ig:'', fb:'', tiktok:'' });
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
-  const close = () => vendorDetailReturnAppId
+  const close = () => { setEditingSocials(false); vendorDetailReturnAppId
     ? set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId})
-    : set({vendorDetailId:null});
+    : set({vendorDetailId:null}); };
+  const startEditSocials = () => { setSocialForm({ ig:v.ig||'', fb:v.fb||'', tiktok:v.tiktok||'' }); setEditingSocials(true); };
+  const saveSocials = () => {
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,...socialForm}:x) });
+    logActivity('Admin', `updated ${v.business}'s social media links.`, {icon:'pencil', tint:'#F2EDE6'});
+    showToast('Social media updated','check');
+    setEditingSocials(false);
+  };
+  const einvoiceOk = einvoiceComplete(v);
   return (
     <Sheet onClose={close} centered>
       <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close}/>
@@ -50,20 +61,67 @@ export function VendorDetailModal() {
       </div>
       <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:14 }}>{v.desc}</div>
       <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', marginTop:14, display:'flex', flexDirection:'column', gap:9 }}>
-        {[['mail',v.email],['phone',v.phone],['instagram',`${v.ig} · ${v.fb}`]].map(([icon,val]) => (
+        {[['mail',v.email],['phone',v.phone]].map(([icon,val]) => (
           <div key={icon} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'#4a443e' }}>
             <Icon name={icon} size={14} color="#A09890"/>{val}
           </div>
         ))}
         <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12.5, color:'#4a443e' }}>
+          <Icon name="car" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Car plate: {v.plate || '—'}</span>
+        </div>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:8, fontSize:12.5, color:'#4a443e' }}>
           <Icon name="info" size={14} color="#A09890" style={{ marginTop:2 }}/><span>Power: {v.power}</span>
         </div>
+        <div style={{ borderTop:'1px solid #f1ece4', margin:'2px 0 0', paddingTop:9, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Social media</span>
+          {!editingSocials && (
+            <span onClick={startEditSocials} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}>
+              <Icon name="pencil" size={12} color="#A6364E"/>Edit
+            </span>
+          )}
+        </div>
+        {editingSocials ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['tiktok','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
+              <div key={key} style={{ display:'flex', alignItems:'center', gap:8, border:'1px solid #e3d8ca', background:'#fff', borderRadius:10, padding:'0 11px' }}>
+                <Icon name={icon} size={14} color="#A09890"/>
+                <input value={socialForm[key]} onChange={e=>setSocialForm({...socialForm,[key]:e.target.value})} placeholder={ph} style={{ flex:1, border:'none', padding:'9px 0', fontSize:12.5, outline:'none', background:'transparent' }}/>
+              </div>
+            ))}
+            <div style={{ display:'flex', gap:8, marginTop:2 }}>
+              <button onClick={()=>setEditingSocials(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
+              <button onClick={saveSocials} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Save</button>
+            </div>
+          </div>
+        ) : (
+          [['instagram',v.ig],['facebook',v.fb],['tiktok',v.tiktok]].map(([icon,val]) => (
+            <div key={icon} style={{ display:'flex', alignItems:'center', gap:8, fontSize:12.5, color:'#4a443e' }}>
+              <Icon name={icon} size={14} color="#A09890"/>{val || '—'}
+            </div>
+          ))
+        )}
       </div>
       <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'16px 2px 8px' }}>Product photos ({(v.productPhotos||[]).length})</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:9 }}>
         {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={96}/>)}
         {!(v.productPhotos||[]).length && <div style={{ fontSize:12, color:'#A09890' }}>No photos uploaded yet.</div>}
       </div>
+      {v.status === 'approved' && (
+        <>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'16px 2px 8px' }}>
+            <span style={{ fontSize:12, fontWeight:700, color:'#1C1A17' }}>E-Invoice &amp; bank details</span>
+            <span style={{ fontSize:10.5, fontWeight:600, color: einvoiceOk?'#2D6A4F':'#B7770D', background: einvoiceOk?'#E8F5F0':'#FEF8EC', borderRadius:999, padding:'3px 9px' }}>{einvoiceOk ? 'Complete' : 'Incomplete'}</span>
+          </div>
+          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:14, padding:'13px 14px', display:'flex', flexDirection:'column' }}>
+            {EINVOICE_FIELDS.map(([k,label],i,arr) => (
+              <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'9px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
+                <span style={{ fontSize:11.5, color:'#A09890', flexShrink:0 }}>{label}</span>
+                <span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{(v.einvoice&&v.einvoice[k]) || '—'}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       {v.status === 'pending' && (
         <div style={{ display:'flex', gap:10, marginTop:20 }}>
           <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F8E9EE'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>

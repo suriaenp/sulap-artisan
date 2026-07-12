@@ -1,10 +1,24 @@
 import Icon from '../components/Icon';
 import { useStore } from '../lib/store';
+import { CURRENT_VENDOR_ID } from '../data/mockData';
 
 export default function VendorLogin() {
-  const { set, showToast } = useStore();
+  const { state, set, showToast } = useStore();
 
   const login = () => {
+    const me = state.vendors.find(v => v.id === CURRENT_VENDOR_ID);
+    if (!me || me.status === 'pending') {
+      showToast("Your application is still under review — we'll email you once you're approved", 'lock');
+      return;
+    }
+    if (me.status === 'rejected') {
+      showToast('Your vendor application was not approved. Contact Sulap Artisan for details.', 'lock');
+      return;
+    }
+    if (me.status === 'suspended') {
+      showToast('Your vendor account is suspended. Contact Sulap Artisan for details.', 'lock');
+      return;
+    }
     set({ vScreen:'dashboard', vTab:'events' });
     showToast('Signed in to your portal', 'bag');
   };

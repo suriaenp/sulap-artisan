@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc } from '../lib/helpers';
-import { CURRENT_VENDOR_ID } from '../data/mockData';
+import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete } from '../lib/helpers';
+import { CURRENT_VENDOR_ID, EMPTY_EINVOICE } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 
@@ -25,6 +26,18 @@ export default function VendorDashboard() {
   const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes, eventPhotos, offenses, offenseTypes, settings } = state;
   const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
   const today = new Date(); today.setHours(0,0,0,0);
+  const einvoiceOk = einvoiceComplete(me);
+
+  const [editingEI, setEditingEI] = useState(false);
+  const [eiForm, setEiForm] = useState(null);
+  const startEditEI = () => { setEiForm({ ...EMPTY_EINVOICE, ...(me.einvoice||{}) }); setEditingEI(true); };
+  const saveEI = () => {
+    if (EINVOICE_FIELDS.some(([k]) => !eiForm[k].trim())) { showToast('Please fill in every field (use "N/A" for SST if not registered)', 'info'); return; }
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===CURRENT_VENDOR_ID ? { ...v, einvoice: eiForm } : v) });
+    logActivity(me.business, 'updated their E-Invoice & bank details.', { icon:'file', tint:'#F2EDE6', type:'vendor' });
+    showToast('E-Invoice details saved', 'check');
+    setEditingEI(false);
+  };
 
   const depRec = (id) => deposits[id] || { status:'unpaid', inv:'', payDate:'', refundDate:'' };
   const payRec = (key) => payments[key] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
@@ -137,10 +150,21 @@ export default function VendorDashboard() {
               <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer' }}><Icon name="pencil" size={13} color="#A6364E"/>Edit</span>
             </div>
             <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
-              {[['Brand name',me.business],['Contact person',me.owner],['Category',me.category],['Email',me.email],['Phone',me.phone],['Instagram',me.ig]].map(([k,v],i,arr) => (
-                <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
-                  <span style={{ fontSize:12.5, color:'#A09890' }}>{k}</span>
-                  <span style={{ fontSize:13.5, fontWeight:600, color: k==='Instagram'?'#A6364E':'#1C1A17' }}>{v}</span>
+              {[
+                ['Brand name', me.business],
+                ['Contact person', me.owner],
+                ['Category', me.category],
+                ['Email', me.email],
+                ['Phone', me.phone],
+                ['Instagram', me.ig],
+                ['Facebook', me.fb],
+                ['TikTok', me.tiktok],
+                ['Car plate number', me.plate],
+                ['Power supply needs', me.power],
+              ].map(([k,v],i,arr) => (
+                <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
+                  <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{k}</span>
+                  <span style={{ fontSize:13.5, fontWeight:600, color: ['Instagram','Facebook','TikTok'].includes(k)?'#A6364E':'#1C1A17', textAlign:'right' }}>{v || '—'}</span>
                 </div>
               ))}
             </div>
@@ -149,6 +173,61 @@ export default function VendorDashboard() {
             <div style={{ fontSize:13, fontWeight:700, color:'#1C1A17' }}>Product description</div>
             <div style={{ fontSize:13, color:'#6B6560', lineHeight:1.5, marginTop:7 }}>{me.desc}</div>
           </div>
+
+          {/* E-Invoice & bank details — required (once approved) before applying to markets */}
+          {me.status === 'approved' ? (
+            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                <div>
+                  <div style={{ fontFamily:"'Playfair Display',serif", fontSize:18, fontWeight:600, color:'#1C1A17' }}>E-Invoice &amp; bank details</div>
+                  <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>Used for e-invoicing and deposit refunds</div>
+                </div>
+                {!editingEI && (
+                  <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#A6364E', cursor:'pointer', flexShrink:0 }}>
+                    <Icon name="pencil" size={13} color="#A6364E"/>{einvoiceOk ? 'Edit' : 'Complete now'}
+                  </span>
+                )}
+              </div>
+
+              {!einvoiceOk && !editingEI && (
+                <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', marginTop:13, fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
+                  <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }} />
+                  Required before you can apply to any market. Please complete every field — enter "N/A" for SST if you're not SST-registered.
+                </div>
+              )}
+
+              {editingEI ? (
+                <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:12 }}>
+                  {EINVOICE_FIELDS.map(([k,label,hint]) => (
+                    <div key={k}>
+                      <label style={lbl}>{label}</label>
+                      <input value={eiForm[k]} onChange={e=>setEiForm({ ...eiForm, [k]:e.target.value })} placeholder={hint} style={inp} />
+                      {hint && <div style={{ fontSize:10.5, color:'#A09890', marginTop:4 }}>{hint}</div>}
+                    </div>
+                  ))}
+                  <div style={{ display:'flex', gap:9, marginTop:2 }}>
+                    <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
+                    <button onClick={saveEI} style={{ flex:1, background:'#A6364E', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Save</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
+                  {EINVOICE_FIELDS.map(([k,label],i,arr) => (
+                    <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
+                      <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{label}</span>
+                      <span style={{ fontSize:13.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{(me.einvoice&&me.einvoice[k]) || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display:'flex', gap:9, background:'#F2EDE6', border:'1px solid #e3d8ca', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#6B6560', lineHeight:1.45 }}>
+              <Icon name="info" size={15} color="#A09890" style={{ marginTop:1 }} />
+              You'll be asked to complete E-Invoice &amp; bank details here once your vendor registration is approved.
+            </div>
+          )}
+
           <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
             <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }} />
             This is the information Sulap Artisan has on record. Contact admin to update locked fields.
@@ -188,12 +267,13 @@ export default function VendorDashboard() {
                     onClick={() => {
                       if (applied) { showToast('You have already applied','info'); return; }
                       if (!vendorApproved) { showToast('Your vendor registration must be approved before you can apply to markets','lock'); return; }
+                      if (!einvoiceOk) { showToast('Please complete your E-Invoice & bank details in Profile before applying','lock'); return; }
                       if (!open)   { showToast('Applications closed for this market','lock'); return; }
                       set({ showApplyModal:true, applyEventId:ev.id, applyShare:null, applyPartners:[], applyPartnerSearch:'' });
                     }}
-                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):(!vendorApproved?'#F2EDE6':(open?'#A6364E':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):(!vendorApproved?'#A09890':(open?'#FAF8F5':'#A09890')) }}
+                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved||!einvoiceOk)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):((!vendorApproved||!einvoiceOk)?'#F2EDE6':(open?'#A6364E':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):((!vendorApproved||!einvoiceOk)?'#A09890':(open?'#FAF8F5':'#A09890')) }}
                   >
-                    {applied ? (st==='approved'?'Approved': st==='rejected'?'Not selected':'Applied') : (!vendorApproved ? 'Awaiting registration approval' : (open?'Apply to this market':'Applications closed'))}
+                    {applied ? (st==='approved'?'Approved': st==='rejected'?'Not selected':'Applied') : (!vendorApproved ? 'Awaiting registration approval' : !einvoiceOk ? 'Complete E-Invoice info to apply' : (open?'Apply to this market':'Applications closed'))}
                   </button>
                 </div>
               </div>
@@ -583,3 +663,6 @@ export default function VendorDashboard() {
     </div>
   );
 }
+
+const lbl = { display:'block', fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:6 };
+const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'13px 14px', fontSize:14.5, outline:'none', display:'block' };

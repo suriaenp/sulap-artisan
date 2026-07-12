@@ -52,3 +52,23 @@ export function dayCount(start, end) {
   const d = (new Date(end) - new Date(start)) / 86400000;
   return d >= 0 ? d + 1 : 0;
 }
+
+// E-Invoice & bank info collected once a vendor is approved — required before
+// they can apply to any market. Shown/edited from the vendor Profile tab and
+// reflected read-only in the admin Vendor Detail modal.
+export const EINVOICE_FIELDS = [
+  ['companyName', 'Company name', 'Full legal name as per SSM registration'],
+  ['regNo',       'Company registration number (new)', '12-digit number, e.g. 202401123456'],
+  ['tin',         'Tax Identification Number (TIN)', 'No spacing — Company: C1234567890 · Individual: IG12345678901'],
+  ['sstNo',       'Sales and Service Tax (SST) number', 'e.g. S01-2345-67891012 — enter "N/A" if not SST-registered'],
+  ['regAddress',  'Business registration address', ''],
+  ['bankName',    'Bank name', 'e.g. Maybank'],
+  ['bankAccNo',   'Bank account number', ''],
+  ['bankHolder',  'Bank account holder name', 'For deposit refunds'],
+];
+
+export function einvoiceComplete(v) {
+  const e = v?.einvoice;
+  if (!e) return false;
+  return EINVOICE_FIELDS.every(([k]) => (e[k] || '').trim().length > 0);
+}

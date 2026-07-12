@@ -4,6 +4,7 @@ import PhotoTile from '../components/PhotoTile';
 import { useStore } from '../lib/store';
 import { fmtShort } from '../lib/helpers';
 import { fileToPhoto } from '../lib/photoFiles';
+import { EMPTY_EINVOICE } from '../data/mockData';
 
 const STEPS = ['', 'Business details', 'Contact & logistics', 'Product photos', 'Market terms'];
 const PROGRESS = ['', '25%', '50%', '75%', '100%'];
@@ -44,6 +45,7 @@ export default function VendorRegister() {
       power: rf.power.trim() || 'None',
       productPhotos: rf.photos,
       desc: rf.desc.trim(),
+      einvoice: { ...EMPTY_EINVOICE },
     };
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
     logActivity(newVendor.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
@@ -103,7 +105,7 @@ export default function VendorRegister() {
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Tell us about your craft business.</div>
           <div className="form-grid" style={{ marginTop:20 }}>
             <div><label style={lbl}>Business name</label><input value={rf.business} onChange={e=>upd('business',e.target.value)} placeholder="e.g. Nutmeg & Clay" style={inp} /></div>
-            <div><label style={lbl}>Owner name</label><input value={rf.owner} onChange={e=>upd('owner',e.target.value)} placeholder="Full name" style={inp} /></div>
+            <div><label style={lbl}>Contact person (same as NRIC)</label><input value={rf.owner} onChange={e=>upd('owner',e.target.value)} placeholder="Full name as per NRIC" style={inp} /></div>
             <div><label style={lbl}>Email</label><input value={rf.email} onChange={e=>upd('email',e.target.value)} placeholder="you@email.com" style={inp} /></div>
             <div><label style={lbl}>Phone</label><input value={rf.phone} onChange={e=>upd('phone',e.target.value)} placeholder="01x-xxxxxxx" style={inp} /></div>
             <div className="span2">
@@ -141,7 +143,7 @@ export default function VendorRegister() {
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Help shoppers find you and help us plan the day.</div>
           <div className="reg-narrow" style={{ marginTop:20, display:'flex', flexDirection:'column', gap:15 }}>
             <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>Social media</div>
-            {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['camera','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
+            {[['instagram','ig','@instagram_handle'],['facebook','fb','Facebook page name or URL'],['tiktok','tiktok','@tiktok_handle']].map(([icon,key,ph]) => (
               <div key={icon} style={{ display:'flex', alignItems:'center', gap:11, border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'0 14px' }}>
                 <Icon name={icon} size={18} color="#A6364E" />
                 <input value={rf[key]} onChange={e=>upd(key,e.target.value)} placeholder={ph} style={{ flex:1, border:'none', padding:'13px 0', fontSize:14.5, outline:'none', background:'transparent' }} />
