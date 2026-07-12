@@ -17,8 +17,25 @@ const whyJoin = [
 
 const galleryTiles = [1, 2, 3, 4, 5, 6, 7, 8];
 
+// Renders the hero title as plain text, gradient-highlighting "Sulap Artisan"
+// wherever it appears so admin-edited copy still gets the brand accent.
+function heroTitleParts(title = '') {
+  const i = title.indexOf('Sulap Artisan');
+  if (i === -1) return title;
+  const before = title.slice(0, i);
+  const after = title.slice(i + 'Sulap Artisan'.length);
+  return (
+    <>
+      {before}
+      <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Sulap Artisan</span>
+      {after}
+    </>
+  );
+}
+
 export default function PublicHome() {
-  const { closeModals, set } = useStore();
+  const { state, closeModals, set } = useStore();
+  const { content } = state;
   const railRef = useRef(null);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 720);
 
@@ -72,9 +89,9 @@ export default function PublicHome() {
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px 80px', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 420px', minWidth: 300 }}>
             <h1 style={{ fontFamily: "'Marcellus', serif", fontSize: 'clamp(38px, 5.2vw, 60px)', lineHeight: 1.1, margin: '0 0 20px', color: '#3A2210', fontWeight: 400 }}>
-              Showcase your craft at <span style={{ background: 'linear-gradient(135deg, #B97434, #7A431A)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }}>Sulap Artisan</span> markets
+              {heroTitleParts(content.heroTitle)}
             </h1>
-            <p style={{ fontSize: 17, lineHeight: 1.65, color: '#6B4E33', margin: '0 0 32px', maxWidth: 480 }}>Join a curated community of Sabahan makers at Suria Sabah Shopping Mall. Apply online, book your booth, and bring your craft to thousands of visitors.</p>
+            <p style={{ fontSize: 17, lineHeight: 1.65, color: '#6B4E33', margin: '0 0 32px', maxWidth: 480 }}>{content.heroSubtitle}</p>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <button onClick={goRegister} style={solidBtn}>Apply as a Vendor</button>
               <button onClick={goVendor} style={outlineBtn}>Vendor Log In</button>
@@ -83,9 +100,11 @@ export default function PublicHome() {
           <div style={{ flex: '1 1 360px', minWidth: 300, display: 'flex', justifyContent: 'center' }}>
             <div style={{ position: 'relative', width: 'min(400px, 88vw)', height: 'min(400px, 88vw)' }}>
               <div style={{ position: 'absolute', inset: -14, border: '2px dashed rgba(154,91,38,0.5)', borderRadius: '50%' }} />
-              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #E8D3B4, #D9BB8E)' }} />
-              <div style={{ position: 'absolute', top: '8%', right: '-4%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>40+ Artisan Vendors</div>
-              <div style={{ position: 'absolute', bottom: '10%', left: '-6%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>Monthly Markets</div>
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', background: content.heroImage ? '#E8D3B4' : 'linear-gradient(135deg, #E8D3B4, #D9BB8E)' }}>
+                {content.heroImage && <img src={content.heroImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+              </div>
+              <div style={{ position: 'absolute', top: '8%', right: '-4%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>{content.heroTag1}</div>
+              <div style={{ position: 'absolute', bottom: '10%', left: '-6%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>{content.heroTag2}</div>
             </div>
           </div>
         </div>

@@ -118,9 +118,12 @@ export const INITIAL_CATS = [
 ];
 
 export const INITIAL_CONTENT = {
-  title:    'Bringing artisan makers to Sulap Markets',
-  subtitle: 'Apply to become a Sulap vendor, showcase your craft at curated artisan markets, and manage everything from one place.',
-  purpose:  'Now accepting applications',
+  // Hero section (public home page, top of page)
+  heroTitle:    'Showcase your craft at Sulap Artisan markets',
+  heroSubtitle: 'Join a curated community of Sabahan makers at Suria Sabah Shopping Mall. Apply online, book your booth, and bring your craft to thousands of visitors.',
+  heroImage:    null, // data URL from admin upload, else gradient placeholder
+  heroTag1:     '40+ Artisan Vendors',
+  heroTag2:     'Monthly Markets',
   terms: `1. Application & selection
 Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.
 

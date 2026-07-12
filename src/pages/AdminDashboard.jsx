@@ -1670,20 +1670,59 @@ export default function AdminDashboard() {
       {aTab === 'content' && (
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:16 }}>
-            <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Homepage content</div>
-            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Update public-facing branding without code.</div>
+            <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Hero section</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The top banner on the public home page — title, subtitle, photo, and the two floating stat badges.</div>
+
             <div style={{ marginTop:16 }}>
-              <div style={lbl}>Badge / status text</div>
-              <input value={state.cf?.purpose ?? content.purpose} onChange={e=>set({cf:{...(state.cf||content),purpose:e.target.value}})} style={inp}/>
+              <div style={lbl}>Title</div>
+              <textarea value={state.cf?.heroTitle ?? content.heroTitle} onChange={e=>set({cf:{...(state.cf||content),heroTitle:e.target.value}})} style={{ ...inp, minHeight:64, resize:'none' }}/>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:5 }}>"Sulap Artisan" is auto-highlighted wherever it appears in the title.</div>
             </div>
-            <div style={{ marginTop:14 }}><div style={lbl}>Homepage title</div><textarea value={state.cf?.title ?? content.title} onChange={e=>set({cf:{...(state.cf||content),title:e.target.value}})} style={{ ...inp, minHeight:64, resize:'none' }}/></div>
-            <div style={{ marginTop:14 }}><div style={lbl}>Intro / purpose</div><textarea value={state.cf?.subtitle ?? content.subtitle} onChange={e=>set({cf:{...(state.cf||content),subtitle:e.target.value}})} style={{ ...inp, minHeight:84, resize:'none' }}/></div>
+            <div style={{ marginTop:14 }}>
+              <div style={lbl}>Subtitle</div>
+              <textarea value={state.cf?.heroSubtitle ?? content.heroSubtitle} onChange={e=>set({cf:{...(state.cf||content),heroSubtitle:e.target.value}})} style={{ ...inp, minHeight:84, resize:'none' }}/>
+            </div>
+
+            <div style={{ marginTop:14 }}>
+              <div style={lbl}>Hero photo</div>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:64, height:64, borderRadius:'50%', overflow:'hidden', flexShrink:0, background: (state.cf?.heroImage ?? content.heroImage) ? '#E8D3B4' : 'linear-gradient(135deg, #E8D3B4, #D9BB8E)', border:'1px solid var(--border-light)' }}>
+                  {(state.cf?.heroImage ?? content.heroImage) && <img src={state.cf?.heroImage ?? content.heroImage} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>}
+                </div>
+                <label style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', fontSize:13, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                  <Icon name="upload" size={14} color="#9A5B26"/> Upload photo
+                  <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => set({cf:{...(state.cf||content), heroImage: reader.result}});
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }}/>
+                </label>
+                {(state.cf?.heroImage ?? content.heroImage) && (
+                  <button onClick={()=>set({cf:{...(state.cf||content), heroImage:null}})} style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>Remove</button>
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginTop:14, display:'flex', gap:12, flexWrap:'wrap' }}>
+              <div style={{ flex:'1 1 200px' }}>
+                <div style={lbl}>Floating badge 1</div>
+                <input value={state.cf?.heroTag1 ?? content.heroTag1} onChange={e=>set({cf:{...(state.cf||content),heroTag1:e.target.value}})} style={inp}/>
+              </div>
+              <div style={{ flex:'1 1 200px' }}>
+                <div style={lbl}>Floating badge 2</div>
+                <input value={state.cf?.heroTag2 ?? content.heroTag2} onChange={e=>set({cf:{...(state.cf||content),heroTag2:e.target.value}})} style={inp}/>
+              </div>
+            </div>
+
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Application — market terms</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
               <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>
             </div>
-            <button onClick={()=>{ set({content:{...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
+            <button onClick={()=>{ set({content:{...content,...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
           </div>
         </div>
       )}
