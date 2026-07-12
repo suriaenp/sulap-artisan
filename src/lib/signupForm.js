@@ -13,14 +13,25 @@ async function getLogo() {
   try {
     const res = await fetch('/assets/sulap-lockup.png');
     const blob = await res.blob();
-    logoDataUrl = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result);
-      r.onerror = reject;
-      r.readAsDataURL(blob);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const i = new Image();
+        i.onerror = reject;
+        i.onload = () => resolve(i);
+        i.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
     });
+    canvas.width = img.width * 0.5;
+    canvas.height = img.height * 0.5;
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    logoDataUrl = canvas.toDataURL('image/png', 0.8);
   } catch {
-    logoDataUrl = ''; // form still renders, just without the logo image
+    logoDataUrl = '';
   }
   return logoDataUrl;
 }
