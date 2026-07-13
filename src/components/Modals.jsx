@@ -311,6 +311,14 @@ export function AppDetailModal() {
       <span style={{ display:'inline-block', marginTop:8, fontSize:12, fontWeight:600, color: a.status==='approved' ? '#8FB8A4' : a.status==='rejected' ? '#CB9A93' : '#B7770D' }}>
         {a.status==='approved' ? 'Approved' : a.status==='rejected' ? 'Rejected' : 'Awaiting review'}
       </span>
+      <div onClick={()=>set({appDetailId:null, vendorDetailId:v.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', marginTop:13, cursor:'pointer' }}>
+        <Icon name="badge" size={15} color="#9A5B26"/>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{v.business}</div>
+          <div style={{ fontSize:11, color:'#A09890' }}>View full vendor profile</div>
+        </div>
+        <span style={{ fontSize:16, color:'#A09890' }}>›</span>
+      </div>
       <div style={{ fontSize:13.5, color:'#4a443e', lineHeight:1.55, marginTop:13 }}>{v.desc}</div>
       <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'15px 2px 8px' }}>Product photos ({(v.productPhotos||[]).length})</div>
       <div style={{ display:'flex', flexWrap:'wrap', gap:9 }}>
