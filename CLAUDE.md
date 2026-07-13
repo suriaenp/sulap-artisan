@@ -5,16 +5,17 @@
 The user works on this project from two computers (this work desktop + a personal
 computer) and relies on git as the sync point between them.
 
-- **Commit after each completed task.** As soon as a feature/fix is done and
-  verified, create a commit for it — don't batch unrelated work into one commit.
-- **Push at end of day, without asking first.** When the user signals they're
-  done for the session (e.g. "done for today", "wrapping up", "that's it for
-  now"), commit any remaining changes and `git push` to `origin main`
-  immediately — no confirmation needed for this specific action. This is a
-  standing exception to the usual "confirm before pushing" rule, scoped only
-  to this repo and only to end-of-day pushes.
-- Mid-session pushes still follow the normal rule (ask first) unless the user
-  says otherwise.
+- **Commit and push after every completed update, automatically, without
+  asking first.** As soon as a feature/fix/doc update is done and verified
+  (including `PROJECT_NOTES.md` updates), commit it and immediately
+  `git push` to `origin main` — don't wait for end of day and don't batch
+  unrelated work into one commit. This is a standing exception to the usual
+  "confirm before pushing" rule, scoped only to this repo. The user relies on
+  `origin/main` being current after every change so the other machine can
+  pull and continue at any time.
+- Git commits + pushes ARE the backup — no separate local copy/zip is
+  needed. Every commit lives in the local `.git` history on this machine,
+  and pushing mirrors that history to GitHub as the off-machine backup.
 - Before pushing, always make sure the local branch is up to date with
   `origin/main` (pull/rebase if needed) to avoid diverging history between the
   two machines.
