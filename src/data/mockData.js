@@ -99,11 +99,33 @@ export const INITIAL_PARKING = {
   'v1-e1-1':'P-A12', 'v1-e1-2':'P-A12', 'v1-e1-3':'P-A12',
 };
 
-export const INITIAL_PASSES = {
-  v1: { status:'collected', issued:'2', collectDate:'2026-07-12' },
-  v3: { status:'pending' },
-  v5: { status:'returned', issued:'2', returned:'2', returnDate:'2026-07-14' },
-};
+// Digital Vendor Pass — one application per vendor+event, holding up to
+// `2 + extraApproved` people (name + photo each, see EMPTY_PASS_PERSON).
+// Admin must approve the application before its passes are considered
+// valid; asking for more than the default 2 goes through a separate
+// INITIAL_PASS_REQUESTS record instead of editing this one directly (see
+// "Vendor Pass" business rule in PROJECT_NOTES.md).
+export const EMPTY_PASS_PERSON = () => ({ id:'pp'+Date.now()+Math.random().toString(36).slice(2,7), name:'', photo:null });
+
+export const INITIAL_PASS_APPS = [
+  { id:'vp1', vendorId:'v1', eventId:'e1', status:'approved', extraApproved:0,
+    people:[
+      { id:'vp1p1', name:'Aisyah Rahman', photo:P('vp1p1','aisyah-pass.jpg','#E8C5B8','#A56548') },
+      { id:'vp1p2', name:'Farah Idris',   photo:P('vp1p2','farah-pass.jpg','#D9C6A5','#8B6F4E') },
+    ], submittedAt:'10 Jul', decidedAt:'11 Jul' },
+  { id:'vp2', vendorId:'v4', eventId:'e1', status:'pending', extraApproved:0,
+    people:[
+      { id:'vp2p1', name:'Grace Wong', photo:P('vp2p1','grace-pass.jpg','#F0D8DD','#B97434') },
+    ], submittedAt:'12 Jul', decidedAt:null },
+];
+
+// Vendor requests to raise a pass application beyond the default 2 people —
+// approving one increases that application's `extraApproved` count, letting
+// the vendor fill in that many more people directly (no second approval
+// loop on the filled-in details themselves).
+export const INITIAL_PASS_REQUESTS = [
+  { id:'pq1', passAppId:'vp1', vendorId:'v1', eventId:'e1', count:1, status:'pending', submittedAt:'12 Jul' },
+];
 
 export const INITIAL_CATS = [
   { id:'c-fnb',      icon:'utensils', name:'Food & Beverage',                desc:'Coffee, drinks, cakes, cookies, desserts, snacks, meals, packaged food' },

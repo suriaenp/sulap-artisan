@@ -77,7 +77,7 @@ function NoSearchMatch({ query }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passes, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, passRequests, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
@@ -1298,22 +1298,63 @@ export default function AdminDashboard() {
           <div className="admin-cards">
             {pagedPass.map((a,idx) => {
               const v = vById(a.vendorId);
-              const p = passes[a.vendorId]||{status:'pending'};
+              const ev = events.find(e=>e.id===a.eventId) || {};
+              const passApp = passApps.find(p=>p.vendorId===a.vendorId && p.eventId===a.eventId);
+              const pendingReqRec = passApp ? passRequests.find(r=>r.passAppId===passApp.id && r.status==='pending') : null;
+
+              const decideApp = (decision) => {
+                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, status:decision, decidedAt:fmtShort(new Date()) } : p) });
+                logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s Vendor Pass application — ${ev.name}.`, { icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
+                showToast(`Application ${decision}`, decision==='approved'?'check':'x');
+              };
+              const decideReq = (decision) => {
+                dispatch({ type:'MERGE_PASS_REQUESTS', payload: passRequests.map(r=>r.id===pendingReqRec.id ? { ...r, status:decision } : r) });
+                if (decision === 'approved') {
+                  dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:(p.extraApproved||0)+pendingReqRec.count } : p) });
+                }
+                logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s request for ${pendingReqRec.count} additional Vendor Pass${pendingReqRec.count>1?'es':''} — ${ev.name}.`, { icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
+                showToast(`Request ${decision}`, decision==='approved'?'check':'x');
+              };
+
               return (
                 <div key={a.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                       <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:3 }}>
-                        {p.issued ? `${p.issued} tags issued` : 'No tags yet'}
-                        {p.collectDate ? ` · collected ${p.collectDate}` : ''}
+                        {!passApp ? 'No Vendor Pass application yet' : `${passApp.people.length} pass holder${passApp.people.length!==1?'s':''}${passApp.extraApproved?` · +${passApp.extraApproved} extra approved`:''} · submitted ${passApp.submittedAt}`}
                       </div>
                     </div>
-                    <Badge status={p.status}/>
+                    {passApp && <Badge status={passApp.status}/>}
                   </div>
-                  <button onClick={()=>{ const ex=passes[a.vendorId]||{}; set({passModalVendor:a.vendorId,pf:{collector:ex.collector||'',phone:ex.phone||'',issued:ex.issued||'',collectDate:ex.collectDate||'',returned:ex.returned||'',returnDate:ex.returnDate||''}}); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:13, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                    <Icon name="pencil" size={14} color="#9A5B26"/>Record collection / return
-                  </button>
+
+                  {passApp && (
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:11 }}>
+                      {passApp.people.map(p => (
+                        <div key={p.id} style={{ display:'flex', alignItems:'center', gap:7, background:'var(--bg-subtle-alt)', borderRadius:10, padding:'6px 11px 6px 6px' }}>
+                          <PhotoTile photo={p.photo} size={30}/>
+                          <span style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{p.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {passApp?.status === 'pending' && (
+                    <div style={{ display:'flex', gap:9, marginTop:12 }}>
+                      <button onClick={()=>decideApp('approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Approve</button>
+                      <button onClick={()=>decideApp('rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Reject</button>
+                    </div>
+                  )}
+
+                  {pendingReqRec && (
+                    <div style={{ marginTop:12, background:'var(--tint-amber-bg)', border:'1px solid var(--tint-amber-border)', borderRadius:12, padding:'10px 12px' }}>
+                      <div style={{ fontSize:12, color:'var(--tint-amber-text)', fontWeight:600 }}>Requested {pendingReqRec.count} additional pass{pendingReqRec.count>1?'es':''} · {pendingReqRec.submittedAt}</div>
+                      <div style={{ display:'flex', gap:8, marginTop:9 }}>
+                        <button onClick={()=>decideReq('approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve request</button>
+                        <button onClick={()=>decideReq('rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

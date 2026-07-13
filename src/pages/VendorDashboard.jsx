@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
+import DigitalPassCard from '../components/DigitalPassCard';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { CURRENT_VENDOR_ID, EMPTY_EINVOICE } from '../data/mockData';
@@ -24,7 +25,7 @@ const TABS = [
 
 export default function VendorDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passes, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
+  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passApps, passRequests, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
   const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
@@ -75,6 +76,54 @@ export default function VendorDashboard() {
   const logout = () => { set({ vScreen:'login' }); showToast('Signed out','leaf'); };
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeTabLabel = TABS.find(t => t.id === vTab)?.label || 'Menu';
+
+  // ── Vendor Pass (apply / additional-pass request forms) ──
+  const [passForms, setPassForms] = useState({});   // eventId -> [{name,photo}] draft for a first-time application
+  const [extraForms, setExtraForms] = useState({}); // passAppId -> {name,photo} draft for an already-unlocked extra slot
+  const [reqCounts, setReqCounts] = useState({});   // passAppId -> requested additional-pass count
+  const getPassForm = (eventId, existing) => {
+    if (passForms[eventId]) return passForms[eventId];
+    if (existing?.people?.length) {
+      const pre = existing.people.map(p => ({ name:p.name, photo:p.photo }));
+      while (pre.length < 2) pre.push({ name:'', photo:null });
+      return pre;
+    }
+    return [{ name:'', photo:null }, { name:'', photo:null }];
+  };
+  const updatePassForm = (eventId, idx, patch, existing) => {
+    const form = getPassForm(eventId, existing).map((p,i) => i===idx ? { ...p, ...patch } : p);
+    setPassForms(f => ({ ...f, [eventId]: form }));
+  };
+  const submitPassApp = (eventId, ev, existing) => {
+    const filled = getPassForm(eventId, existing).filter(p => p.name.trim() && p.photo);
+    if (!filled.length) { showToast('Add at least one pass holder — name + photo required', 'info'); return; }
+    const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo }));
+    if (existing) {
+      dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(x => x.id===existing.id ? { ...x, status:'pending', people, submittedAt: fmtShort(new Date()), decidedAt:null } : x) });
+    } else {
+      const rec = { id:'vp'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId, status:'pending', extraApproved:0, people, submittedAt: fmtShort(new Date()), decidedAt:null };
+      dispatch({ type:'MERGE_PASS_APPS', payload:[...passApps, rec] });
+    }
+    setPassForms(f => ({ ...f, [eventId]: undefined }));
+    logActivity(me.business, `${existing?'resubmitted':'applied for'} a Vendor Pass — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
+    showToast(existing ? 'Vendor Pass application resubmitted' : 'Vendor Pass application submitted', 'badge');
+  };
+  const submitExtraSlot = (passApp, ev) => {
+    const draft = extraForms[passApp.id] || { name:'', photo:null };
+    if (!draft.name.trim() || !draft.photo) { showToast('Name + photo required', 'info'); return; }
+    const person = { id:`vp${Date.now()}p${passApp.people.length}`, name:draft.name.trim(), photo:draft.photo };
+    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people:[...p.people, person] } : p) });
+    setExtraForms(f => ({ ...f, [passApp.id]: undefined }));
+    logActivity(me.business, `added an additional Vendor Pass holder — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
+    showToast('Pass added', 'badge');
+  };
+  const requestExtraPasses = (passApp, ev) => {
+    const count = Number(reqCounts[passApp.id]) || 1;
+    const rec = { id:'pq'+Date.now(), passAppId:passApp.id, vendorId:CURRENT_VENDOR_ID, eventId:ev.id, count, status:'pending', submittedAt: fmtShort(new Date()) };
+    dispatch({ type:'MERGE_PASS_REQUESTS', payload:[...passRequests, rec] });
+    logActivity(me.business, `requested ${count} additional Vendor Pass(es) — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
+    showToast('Request sent to admin', 'check');
+  };
 
   return (
     <div>
@@ -727,34 +776,158 @@ export default function VendorDashboard() {
 
       {/* ── Vendor Pass ── */}
       {vTab === 'pass' && (
-        <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
-          {apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved').map(a => {
-            const ev = events.find(e => e.id === a.eventId) || {};
-            const p = passes[CURRENT_VENDOR_ID] || { status:'pending' };
-            return (
-              <div key={a.id} style={{ borderRadius:20, overflow:'hidden', boxShadow:'0 6px 20px rgba(120,80,40,0.12)' }}>
-                <div style={{ background:'linear-gradient(150deg,#2A241C,#4A3320)', padding:'18px 18px 16px', color:'#FAF8F5' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                    <div>
-                      <div style={{ fontSize:10, letterSpacing:'0.16em', textTransform:'uppercase', color:'rgba(250,248,245,0.6)' }}>Sulap Artisan</div>
-                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, marginTop:3 }}>Vendor Pass</div>
-                    </div>
-                    <Badge status={p.status} />
-                  </div>
-                  <div style={{ marginTop:18, fontFamily:"'Marcellus',serif", fontSize:22, fontWeight:400 }}>{me.business}</div>
-                  <div style={{ fontSize:12.5, color:'rgba(250,248,245,0.72)', marginTop:3 }}>{ev.name}</div>
-                </div>
-                <div style={{ background:'#fff', padding:'14px 18px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #efe7dc', borderTop:'none' }}>
-                  <div><div style={{ fontSize:10.5, color:'#A09890', letterSpacing:'0.04em' }}>REFERENCE</div><div style={{ fontSize:13, fontWeight:700, color:'#1C1A17', marginTop:2 }}>SA-{ev.id?.toUpperCase()}-{CURRENT_VENDOR_ID.toUpperCase()}</div></div>
-                  <div style={{ textAlign:'right' }}><div style={{ fontSize:10.5, color:'#A09890', letterSpacing:'0.04em' }}>BOOTH</div><div style={{ fontSize:13, fontWeight:700, color:'#1C1A17', marginTop:2 }}>A-07</div></div>
-                </div>
+        <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:16 }}>
+          {(() => {
+            const chain = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved')
+              .map(a => ({ a, ev: events.find(e => e.id === a.eventId) }))
+              .filter(x => x.ev)
+              .sort((x,y) => new Date(x.ev.startDate) - new Date(y.ev.startDate));
+            if (!chain.length) return (
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+                <Icon name="badge" size={34} color="#bcae9c"/>
+                <div style={{ fontSize:14, fontWeight:600, color:'#6B6560', marginTop:13 }}>No Vendor Pass to apply for yet</div>
+                <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Once you're approved for a market, you can apply for your Vendor Pass here.</div>
               </div>
             );
-          })}
-          <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
-            <Icon name="badge" size={15} color="#B7770D" style={{ marginTop:1 }}/>
-            Show this pass at the vendor check-in counter on market day for booth access.
-          </div>
+            const today = new Date(); today.setHours(0,0,0,0);
+            let anyApproved = false;
+            const cards = chain.map((item, idx) => {
+              const { ev } = item;
+              const passApp = passApps.find(p => p.vendorId === CURRENT_VENDOR_ID && p.eventId === ev.id);
+              const prevEnded = idx === 0 || new Date(chain[idx-1].ev.endDate) < today;
+              const canStart = !!passApp || prevEnded;
+              const showForm = (!passApp && canStart) || passApp?.status === 'rejected';
+              const maxSlots = 2 + (passApp?.extraApproved || 0);
+              const pendingReqRec = passApp ? passRequests.find(r => r.passAppId === passApp.id && r.status === 'pending') : null;
+              if (passApp?.status === 'approved') anyApproved = true;
+
+              return (
+                <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
+                      <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange}</div>
+                    </div>
+                    {passApp && <Badge status={passApp.status}/>}
+                  </div>
+
+                  {!passApp && !canStart && (
+                    <div style={{ display:'flex', gap:9, background:'#F2EDE6', borderRadius:12, padding:'12px 13px', fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginTop:13 }}>
+                      <Icon name="lock" size={15} color="#A09890" style={{ marginTop:1 }}/>
+                      You can apply for a Vendor Pass here once {chain[idx-1].ev.name} ({chain[idx-1].ev.dateRange}) has passed.
+                    </div>
+                  )}
+
+                  {passApp?.status === 'rejected' && (
+                    <div style={{ display:'flex', gap:9, background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B03A2E', lineHeight:1.45, marginTop:13 }}>
+                      <Icon name="info" size={15} color="#B03A2E" style={{ marginTop:1 }}/>
+                      Your Vendor Pass application wasn't approved. Revise the details below and resubmit.
+                    </div>
+                  )}
+
+                  {showForm && (
+                    <div style={{ marginTop:14 }}>
+                      {!passApp && <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to 2 people (name + photo each). Need more later? You can request additional passes once this is approved.</div>}
+                      {getPassForm(ev.id, passApp).map((p, i) => (
+                        <div key={i} style={{ display:'flex', gap:10, alignItems:'center', marginBottom:11 }}>
+                          <label style={{ width:52, height:52, borderRadius:12, border:'2px dashed #d8c6b2', background: p.photo?.url ? 'transparent' : '#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }}>
+                            {p.photo?.url
+                              ? <img src={p.photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                              : <Icon name="camera" size={18} color="#9A5B26"/>}
+                            <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+                              const file = e.target.files?.[0]; e.target.value='';
+                              if (!file) return;
+                              const photo = await fileToPhoto(file);
+                              updatePassForm(ev.id, i, { photo }, passApp);
+                            }}/>
+                          </label>
+                          <input value={p.name} onChange={e=>updatePassForm(ev.id, i, { name:e.target.value }, passApp)} placeholder={`Person ${i+1} full name`} style={{ ...inp, flex:1 }}/>
+                        </div>
+                      ))}
+                      <button onClick={()=>submitPassApp(ev.id, ev, passApp)} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer', marginTop:4 }}>{passApp ? 'Resubmit Vendor Pass application' : 'Submit Vendor Pass application'}</button>
+                    </div>
+                  )}
+
+                  {passApp?.status === 'pending' && (
+                    <>
+                      <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginTop:13 }}>
+                        <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }}/>
+                        Submitted {passApp.submittedAt} · awaiting admin review.
+                      </div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:12 }}>
+                        {passApp.people.map(p => (
+                          <div key={p.id} style={{ display:'flex', alignItems:'center', gap:8, background:'#F7F3EC', borderRadius:10, padding:'7px 12px 7px 7px' }}>
+                            <PhotoTile photo={p.photo} size={34}/>
+                            <span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{p.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {passApp?.status === 'approved' && (
+                    <div style={{ marginTop:14 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))', gap:18 }}>
+                        {passApp.people.map(p => (
+                          <DigitalPassCard key={p.id} personName={p.name} vendorName={me.business} marketName={ev.name} validRange={ev.dateRange} photo={p.photo}/>
+                        ))}
+                      </div>
+
+                      {passApp.people.length < maxSlots && (
+                        <div style={{ marginTop:16, background:'#F7F3EC', borderRadius:14, padding:14 }}>
+                          <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:9 }}>Add pass holder {passApp.people.length+1} of {maxSlots}</div>
+                          <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+                            <label style={{ width:48, height:48, borderRadius:11, border:'2px dashed #d8c6b2', background: extraForms[passApp.id]?.photo?.url ? 'transparent' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }}>
+                              {extraForms[passApp.id]?.photo?.url
+                                ? <img src={extraForms[passApp.id].photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                                : <Icon name="camera" size={16} color="#9A5B26"/>}
+                              <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+                                const file = e.target.files?.[0]; e.target.value='';
+                                if (!file) return;
+                                const photo = await fileToPhoto(file);
+                                setExtraForms(f => ({ ...f, [passApp.id]: { ...(f[passApp.id]||{name:''}), photo } }));
+                              }}/>
+                            </label>
+                            <input value={extraForms[passApp.id]?.name||''} onChange={e=>setExtraForms(f=>({ ...f, [passApp.id]: { ...(f[passApp.id]||{photo:null}), name:e.target.value } }))} placeholder="Full name" style={{ ...inp, flex:'1 1 140px' }}/>
+                            <button onClick={()=>submitExtraSlot(passApp, ev)} style={{ background:'#9A5B26', color:'#fff', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'11px 16px', cursor:'pointer', flexShrink:0 }}>Add</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {passApp.people.length >= maxSlots && (
+                        pendingReqRec ? (
+                          <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginTop:16 }}>
+                            <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }}/>
+                            Request for {pendingReqRec.count} additional pass{pendingReqRec.count>1?'es':''} submitted {pendingReqRec.submittedAt} · awaiting admin review.
+                          </div>
+                        ) : (
+                          <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                            <span style={{ fontSize:12.5, color:'#6B6560' }}>Need more than {maxSlots}?</span>
+                            <select value={reqCounts[passApp.id]||1} onChange={e=>setReqCounts(c=>({ ...c, [passApp.id]:e.target.value }))} style={{ border:'1px solid #e3d8ca', borderRadius:9, padding:'8px 10px', fontSize:13, background:'#fff' }}>
+                              <option value={1}>+1 pass</option>
+                              <option value={2}>+2 passes</option>
+                            </select>
+                            <button onClick={()=>requestExtraPasses(passApp, ev)} style={{ background:'#F2EDE6', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Request additional pass{(reqCounts[passApp.id]||1) > 1 ? 'es' : ''}</button>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            });
+            return (
+              <>
+                {cards}
+                {anyApproved && (
+                  <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
+                    <Icon name="badge" size={15} color="#B7770D" style={{ marginTop:1 }}/>
+                    Show a pass (tap to unfold) at the vendor check-in counter on market day for booth access.
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
     </div>

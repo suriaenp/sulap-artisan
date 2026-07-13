@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useRef } from 'reac
 import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
-  INITIAL_PARKING, INITIAL_PASSES, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
+  INITIAL_PARKING, INITIAL_PASS_APPS, INITIAL_PASS_REQUESTS, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
   EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS,
 } from '../data/mockData';
 
@@ -33,7 +33,8 @@ const INIT = {
   photoDownloads: INITIAL_PHOTO_DOWNLOADS,
   payDocDownloads: INITIAL_PAY_DOC_DOWNLOADS,
   parking: INITIAL_PARKING,
-  passes: INITIAL_PASSES,
+  passApps: INITIAL_PASS_APPS,
+  passRequests: INITIAL_PASS_REQUESTS,
   cats: INITIAL_CATS,
   content: INITIAL_CONTENT,
   activity: INITIAL_ACTIVITY,
@@ -54,7 +55,6 @@ const INIT = {
   payModalKey: null,
   refundModalKey: null,
   depModalVendor: null,
-  passModalVendor: null,
   docPreview: null,       // { payKey, field, editable } — payment doc preview modal
   showApplyModal: false,
   applyEventId: null,
@@ -62,7 +62,6 @@ const INIT = {
   applyPartners: [],
   applyPartnerSearch: '',
   // forms
-  pf: {},
   payf: {},
   reff: {},
   depf: {},
@@ -104,7 +103,8 @@ function reducer(state, action) {
     case 'MERGE_DEPOSITS': return { ...state, deposits: { ...state.deposits, ...action.payload } };
     case 'MERGE_OFFENSES': return { ...state, offenses: action.payload };
     case 'MERGE_OFFENSE_TYPES': return { ...state, offenseTypes: action.payload };
-    case 'MERGE_PASSES': return { ...state, passes: { ...state.passes, ...action.payload } };
+    case 'MERGE_PASS_APPS': return { ...state, passApps: action.payload };
+    case 'MERGE_PASS_REQUESTS': return { ...state, passRequests: action.payload };
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
     case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };
@@ -121,7 +121,7 @@ const StoreContext = createContext(null);
 
 // set() payload keys that count as edits when an admin only has view access.
 // Includes the keys that open edit modals, so those never open in view-only.
-const EDIT_SET_KEYS = ['content','settings','parkOverride','compOverrides','payModalKey','refundModalKey','depModalVendor','passModalVendor','eventDetailId'];
+const EDIT_SET_KEYS = ['content','settings','parkOverride','compOverrides','payModalKey','refundModalKey','depModalVendor','eventDetailId'];
 
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, INIT);
@@ -175,7 +175,7 @@ export function StoreProvider({ children }) {
 
   const closeModals = () => set({
     vendorDetailId: null, vendorDetailReturnAppId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
-    refundModalKey: null, depModalVendor: null, passModalVendor: null, docPreview: null, showApplyModal: false,
+    refundModalKey: null, depModalVendor: null, docPreview: null, showApplyModal: false,
     applyEventId: null,
   });
 

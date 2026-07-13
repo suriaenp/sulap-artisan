@@ -512,45 +512,6 @@ export function ApplyModal() {
   );
 }
 
-// ── Vendor Pass Modal ─────────────────────────────────────────────────────────
-export function PassModal() {
-  const { state, dispatch, set, showToast } = useStore();
-  const { passModalVendor, pf, vendors, passes } = state;
-  if (!passModalVendor) return null;
-  const v = vendors.find(x=>x.id===passModalVendor)||{};
-  const close = () => set({passModalVendor:null});
-  const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 12px', fontSize:14, outline:'none' };
-  const upd = (k,val) => set({pf:{...pf,[k]:val}});
-  const save = (status) => {
-    dispatch({type:'MERGE_PASSES',payload:{[passModalVendor]:{...pf,status}}});
-    set({passModalVendor:null});
-    showToast(`Pass marked ${status}`,'badge');
-  };
-  return (
-    <Sheet onClose={close} maxW={460}>
-      <SheetHeader title="Vendor pass" sub={v.business} onClose={close}/>
-      <div style={{ marginTop:18, display:'flex', flexDirection:'column', gap:13 }}>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}><div style={lbl}>Collector name</div><input value={pf.collector||''} onChange={e=>upd('collector',e.target.value)} placeholder="Name" style={inp}/></div>
-          <div style={{ flex:1 }}><div style={lbl}>Phone</div><input value={pf.phone||''} onChange={e=>upd('phone',e.target.value)} placeholder="01x-xxxxxxx" style={inp}/></div>
-        </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}><div style={lbl}>Tags issued</div><input inputMode="numeric" value={pf.issued||''} onChange={e=>upd('issued',e.target.value)} placeholder="0" style={inp}/></div>
-          <div style={{ flex:1 }}><div style={lbl}>Collection date</div><input type="date" value={pf.collectDate||''} onChange={e=>upd('collectDate',e.target.value)} style={inp}/></div>
-        </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}><div style={lbl}>Tags returned</div><input inputMode="numeric" value={pf.returned||''} onChange={e=>upd('returned',e.target.value)} placeholder="0" style={inp}/></div>
-          <div style={{ flex:1 }}><div style={lbl}>Return date</div><input type="date" value={pf.returnDate||''} onChange={e=>upd('returnDate',e.target.value)} style={inp}/></div>
-        </div>
-        <div style={{ display:'flex', gap:10, marginTop:6 }}>
-          <button onClick={()=>save('collected')} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark collected</button>
-          <button onClick={()=>save('returned')} style={{ flex:1, background:'#9A5B26', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Mark returned</button>
-        </div>
-      </div>
-    </Sheet>
-  );
-}
-
 // ── Deposit Modal ─────────────────────────────────────────────────────────────
 export function DepositModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
