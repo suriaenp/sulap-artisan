@@ -875,9 +875,9 @@ export default function VendorDashboard() {
                         </div>
                       ))}
                       {getInitialForm(ev.id).length < PASS_SELF_SERVICE_MAX && (
-                        <span onClick={()=>addInitialFormRow(ev.id)} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:12.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', marginBottom:12 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', marginBottom:12 }} onClick={()=>addInitialFormRow(ev.id)}>
                           <Icon name="plus" size={13} color="#9A5B26"/>Add another pass holder
-                        </span>
+                        </div>
                       )}
                       <button onClick={()=>submitInitialApp(ev.id, ev)} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer', marginTop:4 }}>Submit Vendor Pass application</button>
                     </div>
