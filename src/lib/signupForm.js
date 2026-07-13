@@ -70,7 +70,12 @@ export async function buildSignupFormHtml(vendor, terms) {
   td { border:1px solid #ddd2c4; padding:8px 12px; font-size:13px; vertical-align:top; }
   td.lbl { width:240px; background:#FBF7F1; color:#6B6560; }
   td.val { font-weight:600; }
-  .terms { border:1px solid #ddd2c4; background:#FBF7F1; padding:16px 18px; font-size:11.5px; line-height:1.65; white-space:pre-wrap; }
+  .terms { border:1px solid #ddd2c4; background:#FBF7F1; padding:16px 18px; font-size:11.5px; line-height:1.65; }
+  .terms h2, .terms h3 { margin:10px 0 4px; font-weight:600; }
+  .terms h2:first-child, .terms h3:first-child { margin-top:0; }
+  .terms p { margin:0 0 8px; }
+  .terms ol, .terms ul { margin:0 0 8px; padding-left:20px; }
+  .terms li { margin-bottom:3px; }
   .accept { border:2px solid #2D6A4F; background:#F4FAF7; padding:16px 18px; margin-top:14px; font-size:13px; line-height:1.6; }
   .accept b { color:#2D6A4F; }
   .stamp { margin-top:10px; font-size:12.5px; }
@@ -110,7 +115,7 @@ export async function buildSignupFormHtml(vendor, terms) {
   <table>${eiRows}</table>
 
   <h2>Market terms &amp; conditions</h2>
-  <div class="terms">${esc(terms)}</div>
+  <div class="terms">${terms}</div>
 
   <div class="accept">
     <b>Declaration of acceptance.</b> The applicant named below confirmed that they have read and

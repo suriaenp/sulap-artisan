@@ -169,23 +169,23 @@ export const INITIAL_CONTENT = {
   footerAddress:      'Suria Sabah Shopping Mall\n1, Jalan Tun Fuad Stephens\n88000 Kota Kinabalu, Sabah',
   footerCopyright:    '© 2026 Sulap Artisan · Suria Sabah Shopping Mall. All rights reserved.',
 
-  terms: `1. Application & selection
-Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.
-
-2. Booth fees & payment
-Confirmed vendors pay the booth fee for the event before market day. Spots are released if payment is not received by the stated deadline.
-
-3. Products & accuracy
-You agree to sell only the products described in your application. Major changes must be approved by the Sulap team beforehand.
-
-4. Setup, conduct & teardown
-Vendors keep to their assigned booth and setup/teardown times, follow venue rules, and maintain a clean, safe stall throughout the event.
-
-5. Cancellation
-Cancellations within 7 days of the event may forfeit the booth fee. No-shows may affect future applications.
-
-6. Liability
-Vendors are responsible for their own stock, equipment and insurance. Sulap Artisan is not liable for loss or damage to vendor property.`,
+  // Rich HTML (edited via the Content tab's WYSIWYG editor — see rule 20 in
+  // PROJECT_NOTES.md). Rendered with dangerouslySetInnerHTML in
+  // VendorRegister.jsx and inserted raw into the generated PDF in
+  // lib/signupForm.js, so this must always be admin-authored, never
+  // user-submitted, content.
+  terms: `<p><strong>1. Application &amp; selection</strong></p>
+<p>Submitting this form is an application only. Sulap Artisan reviews every vendor and selects participants per market. Acceptance is confirmed by email.</p>
+<p><strong>2. Booth fees &amp; payment</strong></p>
+<p>Confirmed vendors pay the booth fee for the event before market day. Spots are released if payment is not received by the stated deadline.</p>
+<p><strong>3. Products &amp; accuracy</strong></p>
+<p>You agree to sell only the products described in your application. Major changes must be approved by the Sulap team beforehand.</p>
+<p><strong>4. Setup, conduct &amp; teardown</strong></p>
+<p>Vendors keep to their assigned booth and setup/teardown times, follow venue rules, and maintain a clean, safe stall throughout the event.</p>
+<p><strong>5. Cancellation</strong></p>
+<p>Cancellations within 7 days of the event may forfeit the booth fee. No-shows may affect future applications.</p>
+<p><strong>6. Liability</strong></p>
+<p>Vendors are responsible for their own stock, equipment and insurance. Sulap Artisan is not liable for loss or damage to vendor property.</p>`,
 };
 
 export const OFFENSE_TYPES = {

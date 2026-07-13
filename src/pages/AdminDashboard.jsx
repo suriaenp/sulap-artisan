@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
+import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS } from '../lib/helpers';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
@@ -1922,8 +1923,10 @@ export default function AdminDashboard() {
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Application — market terms</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting.</div>
-              <textarea value={state.cf?.terms ?? content.terms} onChange={e=>set({cf:{...(state.cf||content),terms:e.target.value}})} style={{ ...inp, minHeight:240, marginTop:12, fontSize:13, lineHeight:1.6, resize:'vertical' }}/>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>Shown on the last step of the vendor application. Vendors must accept before submitting. Use the toolbar for headings, bold/italic, and bullet or numbered lists.</div>
+              <div style={{ marginTop:12 }}>
+                <RichTextEditor value={state.cf?.terms ?? content.terms} onChange={val=>set({cf:{...(state.cf||content),terms:val}})} minHeight={240}/>
+              </div>
             </div>
             <button onClick={()=>{ set({content:{...content,...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
           </div>

@@ -23,6 +23,50 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
 .themed-scroll-light::-webkit-scrollbar-thumb { background: #E3CBA0; border-radius: 999px; }
 .themed-scroll-light::-webkit-scrollbar-thumb:hover { background: #C9A876; }
 
+/* Rich text editor (components/RichTextEditor.jsx) — theme the third-party
+   Quill toolbar/body to match the admin's rounded, warm-neutral style
+   instead of its default square gray chrome. */
+.rich-editor .ql-toolbar.ql-snow {
+  border: 1px solid var(--border-medium);
+  border-bottom: none;
+  border-radius: 11px 11px 0 0;
+  background: var(--bg-subtle-alt);
+  padding: 8px 10px;
+}
+.rich-editor .ql-container.ql-snow {
+  border: 1px solid var(--border-medium);
+  border-radius: 0 0 11px 11px;
+  background: var(--bg-card);
+  font-family: 'Karla', sans-serif;
+  font-size: 14px;
+}
+.rich-editor .ql-editor {
+  min-height: var(--rich-editor-min-height, 220px);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+.rich-editor .ql-editor.ql-blank::before { color: var(--text-muted); font-style: normal; }
+.rich-editor .ql-snow .ql-stroke { stroke: var(--text-secondary); }
+.rich-editor .ql-snow .ql-fill { fill: var(--text-secondary); }
+.rich-editor .ql-snow .ql-picker { color: var(--text-secondary); }
+.rich-editor .ql-snow .ql-picker-options { background: var(--bg-card); border-color: var(--border-medium); }
+.rich-editor .ql-snow.ql-toolbar button:hover .ql-stroke,
+.rich-editor .ql-snow.ql-toolbar button.ql-active .ql-stroke { stroke: #9A5B26; }
+.rich-editor .ql-snow.ql-toolbar button:hover .ql-fill,
+.rich-editor .ql-snow.ql-toolbar button.ql-active .ql-fill { fill: #9A5B26; }
+.rich-editor .ql-snow.ql-toolbar button:hover,
+.rich-editor .ql-snow.ql-toolbar button.ql-active { color: #9A5B26; }
+
+/* Rendered output of the rich-text market terms (VendorRegister.jsx step 4,
+   lib/signupForm.js PDF) — sets sane block spacing for the HTML the editor
+   above produces (p/h2/h3/ol/ul), since without it browsers' default
+   heading/list margins look inconsistent packed into a small scroll box. */
+.terms-content h2, .terms-content h3 { margin: 14px 0 6px; font-weight: 700; }
+.terms-content h2:first-child, .terms-content h3:first-child { margin-top: 0; }
+.terms-content p { margin: 0 0 10px; }
+.terms-content ol, .terms-content ul { margin: 0 0 10px; padding-left: 22px; }
+.terms-content li { margin-bottom: 4px; }
+
 /* ── Admin Console theme (day / night mode) ────────────────────────────────── */
 :root {
   --bg-page: #F1E2CC;

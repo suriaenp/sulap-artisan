@@ -200,9 +200,7 @@ export default function VendorRegister() {
           <div style={{ fontFamily:"'Marcellus',serif", fontSize:23, fontWeight:400, color:'#1C1A17' }}>Market terms</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Please read all the way to the end, then accept before submitting your application.</div>
           <div style={{ position:'relative', marginTop:18 }}>
-            <div ref={termsRef} className="scrollarea" onScroll={handleTermsScroll} style={{ border:'1px solid #efe7dc', background:'#FBF7F1', borderRadius:14, padding:16, maxHeight:300, overflowY:'auto', fontSize:12.5, color:'#4a443e', lineHeight:1.6, whiteSpace:'pre-wrap' }}>
-              {content.terms}
-            </div>
+            <div ref={termsRef} className="scrollarea terms-content" onScroll={handleTermsScroll} style={{ border:'1px solid #efe7dc', background:'#FBF7F1', borderRadius:14, padding:16, maxHeight:300, overflowY:'auto', fontSize:12.5, color:'#4a443e', lineHeight:1.6 }} dangerouslySetInnerHTML={{ __html: content.terms }} />
             {!tcScrolled && (
               <div style={{ position:'absolute', left:1, right:1, bottom:1, height:56, borderRadius:'0 0 13px 13px', background:'linear-gradient(rgba(251,247,241,0),#FBF7F1 78%)', pointerEvents:'none', display:'flex', alignItems:'flex-end', justifyContent:'center', paddingBottom:9 }}>
                 <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:'#9A5B26', color:'#FAF8F5', fontSize:11, fontWeight:600, borderRadius:999, padding:'5px 12px', boxShadow:'0 2px 8px rgba(154,91,38,0.25)' }}>Scroll to read all ↓</span>
