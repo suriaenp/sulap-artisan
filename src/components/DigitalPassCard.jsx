@@ -15,8 +15,7 @@ export default function DigitalPassCard({ personName, vendorName, marketName, va
     : 'linear-gradient(135deg,#6B4E33,#3A2210)';
 
   return (
-    <div style={{ position:'relative', width:'100%', maxWidth:340, margin:'0 auto', overflow:'visible' }}>
-      <div style={{ position:'absolute', top:-22, left:-22, width:100, height:100, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, #E8A05C, #B97434 60%, transparent 75%)', filter:'blur(16px)', opacity:0.3, pointerEvents:'none' }}/>
+    <div style={{ position:'relative', width:'100%', maxWidth:340, margin:'0 auto' }}>
       <div onClick={() => setOpen(o => !o)} style={{ position:'relative', cursor:'pointer', paddingTop: open ? 226 : 0, transition:'padding-top 0.7s cubic-bezier(0.45,0,0.2,1)' }}>
         <div style={{ position:'relative', width:'100%', height:226, perspective:1400 }}>
 
@@ -56,12 +55,13 @@ export default function DigitalPassCard({ personName, vendorName, marketName, va
           {/* top flap — folds at the middle */}
           <div style={{ position:'absolute', inset:0, transformOrigin:'top center', transformStyle:'preserve-3d', transition:'transform 0.7s cubic-bezier(0.45,0,0.2,1)', transform: open ? 'rotateX(-180deg)' : 'rotateX(0deg)', zIndex:2 }}>
             {/* front face — cover (visible when folded) */}
-            <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden', borderRadius:20, overflow:'hidden', background:'rgba(255,248,238,0.13)', backdropFilter:'blur(18px)', WebkitBackdropFilter:'blur(18px)', border:'1px solid rgba(255,248,238,0.32)', boxShadow:'0 8px 20px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'18px 20px', boxSizing:'border-box' }}>
-              <img src="/assets/sulap-mark.png" alt="Sulap Artisan" style={{ width:50, height:'auto', marginBottom:10, filter:'brightness(0) invert(0.94) sepia(0.25)' }}/>
-              <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:'0.22em', color:'rgba(255,243,226,0.8)', marginBottom:11 }}>SULAP ARTISAN · VENDOR PASS</div>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, lineHeight:1.25, color:'#FFF3E2', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:10 }}>{marketName}</div>
-              <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:'0.2em', color:'#E8A05C', marginBottom:3 }}>VALID</div>
-              <div style={{ fontSize:13, fontWeight:700, color:'#FFF8EE' }}>{validRange}</div>
+            <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden', borderRadius:20, overflow:'hidden', background:'rgba(255,248,238,0.13)', backdropFilter:'blur(18px)', WebkitBackdropFilter:'blur(18px)', border:'1px solid rgba(255,248,238,0.32)', boxShadow:'0 8px 20px rgba(0,0,0,0.25)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', padding:'16px 18px', boxSizing:'border-box' }}>
+              <img src="/assets/sulap-mark.png" alt="Sulap Artisan" style={{ width:36, height:'auto', marginBottom:8, filter:'brightness(0) invert(0.94) sepia(0.25)' }}/>
+              <div style={{ fontSize:8.5, fontWeight:700, letterSpacing:'0.2em', color:'rgba(255,243,226,0.75)', marginBottom:8 }}>SULAP ARTISAN · VENDOR PASS</div>
+              <div title={personName} style={{ fontFamily:"'Marcellus',serif", fontSize: (personName||'').length > 16 ? 15 : 18, lineHeight:1.2, color:'#FFF3E2', textTransform:'uppercase', letterSpacing:'0.03em', marginBottom:9, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{personName || 'Unnamed pass holder'}</div>
+              <div style={{ fontSize:11, color:'#E8A05C', fontWeight:600, marginBottom:8 }}>{marketName}</div>
+              <div style={{ fontSize:9, fontWeight:700, letterSpacing:'0.2em', color:'#E8A05C', marginBottom:3 }}>VALID</div>
+              <div style={{ fontSize:12.5, fontWeight:700, color:'#FFF8EE' }}>{validRange}</div>
             </div>
             {/* back face — pass holder's photo (visible when unfolded) */}
             <div style={{ position:'absolute', inset:0, backfaceVisibility:'hidden', WebkitBackfaceVisibility:'hidden', transform:'rotateX(180deg)', borderRadius:'20px 20px 0 0', overflow:'hidden', background: photoUrl ? '#2A1708' : photoGrad, border:'1px solid rgba(255,248,238,0.28)', borderBottom:'none' }}>
