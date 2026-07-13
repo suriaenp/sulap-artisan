@@ -100,14 +100,18 @@ export const INITIAL_PARKING = {
 };
 
 // Digital Vendor Pass — one application per vendor+event, holding up to
-// `2 + extraApproved` people (name + photo each, see EMPTY_PASS_PERSON).
-// Each pass holder is approved/rejected **individually** (`person.status`) —
-// there is no single app-wide status; admin decides one person at a time,
-// and a vendor can edit-and-resubmit one person without touching the others.
-// Asking for more than the default 2 goes through a separate
-// INITIAL_PASS_REQUESTS record instead of editing this one directly (see
-// "Vendor Pass" business rule in PROJECT_NOTES.md).
+// `PASS_SELF_SERVICE_MAX + extraApproved` people (name + photo each, see
+// EMPTY_PASS_PERSON). Each pass holder is approved/rejected **individually**
+// (`person.status`) — there is no single app-wide status; admin decides one
+// person at a time, and a vendor can edit-and-resubmit one person without
+// touching the others. A vendor can self-service fill slots up to
+// PASS_SELF_SERVICE_MAX with no admin action needed; going beyond that is
+// admin-initiated only — admin grants extra slots directly (`extraApproved`),
+// there is no vendor-side request to approve (see "Vendor Pass" business
+// rule in PROJECT_NOTES.md).
 export const EMPTY_PASS_PERSON = () => ({ id:'pp'+Date.now()+Math.random().toString(36).slice(2,7), name:'', photo:null });
+
+export const PASS_SELF_SERVICE_MAX = 3;
 
 // Fixed reasons admin can pick when rejecting an individual pass holder's photo —
 // 'other' unlocks a free-text field for anything not covered by the list.
@@ -121,7 +125,7 @@ export const PASS_REJECT_REASONS = {
 };
 
 export const INITIAL_PASS_APPS = [
-  { id:'vp1', vendorId:'v1', eventId:'e1', extraApproved:0, boothNumber:'A12', submittedAt:'10 Jul',
+  { id:'vp1', vendorId:'v1', eventId:'e1', extraApproved:1, boothNumber:'A12', submittedAt:'10 Jul',
     people:[
       { id:'vp1p1', name:'Aisyah Rahman', photo:P('vp1p1','aisyah-pass.jpg','#E8C5B8','#A56548'), status:'approved', rejectReason:null, decidedAt:'11 Jul' },
       { id:'vp1p2', name:'Farah Idris',   photo:P('vp1p2','farah-pass.jpg','#D9C6A5','#8B6F4E'),   status:'approved', rejectReason:null, decidedAt:'11 Jul' },
@@ -130,14 +134,6 @@ export const INITIAL_PASS_APPS = [
     people:[
       { id:'vp2p1', name:'Grace Wong', photo:P('vp2p1','grace-pass.jpg','#F0D8DD','#B97434'), status:'pending', rejectReason:null, decidedAt:null },
     ] },
-];
-
-// Vendor requests to raise a pass application beyond the default 2 people —
-// approving one increases that application's `extraApproved` count, letting
-// the vendor fill in that many more people directly (no second approval
-// loop on the filled-in details themselves).
-export const INITIAL_PASS_REQUESTS = [
-  { id:'pq1', passAppId:'vp1', vendorId:'v1', eventId:'e1', count:1, status:'pending', submittedAt:'12 Jul' },
 ];
 
 export const INITIAL_CATS = [

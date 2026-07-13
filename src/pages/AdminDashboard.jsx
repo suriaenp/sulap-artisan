@@ -10,6 +10,7 @@ import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PA
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
+import { downloadPassReport } from '../lib/passReport';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
 // Admin Roles permission matrix all render from this list, so adding or
@@ -77,7 +78,7 @@ function NoSearchMatch({ query }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, passRequests, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
@@ -105,6 +106,9 @@ export default function AdminDashboard() {
   const [rejectingPersonId, setRejectingPersonId] = useState(null); // pass-holder id currently showing the reject-reason picker
   const [rejectReasonKey, setRejectReasonKey] = useState('');
   const [rejectReasonOther, setRejectReasonOther] = useState('');
+  const [addingPassFor, setAddingPassFor] = useState(null); // passApp id currently showing the "grant extra passes" control
+  const [addPassCount, setAddPassCount] = useState(1);
+  const [passReportBusy, setPassReportBusy] = useState(false);
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
@@ -1292,10 +1296,27 @@ export default function AdminDashboard() {
       {/* ── Vendor Pass ── */}
       {aTab === 'pass' && (
         <div style={{ padding:'14px 16px 20px' }}>
-          <div style={lbl}>Select event</div>
-          <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:14 }}>
-            {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </select>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:14, flexWrap:'wrap' }}>
+            <div style={{ flex:'1 1 240px', minWidth:0 }}>
+              <div style={lbl}>Select event</div>
+              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}>
+                {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+            </div>
+            <button
+              disabled={passReportBusy}
+              onClick={async ()=>{
+                setPassReportBusy(true);
+                try {
+                  await downloadPassReport(curEv, passApps, vendors);
+                  logActivity('Admin', `exported the Vendor Pass report for ${curEv.name}.`, { icon:'download', tint:'var(--tint-blue-bg)' });
+                  showToast('Vendor Pass report downloaded','download');
+                } finally { setPassReportBusy(false); }
+              }}
+              style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'11px 14px', cursor: passReportBusy?'default':'pointer', flexShrink:0 }}>
+              <Icon name="download" size={14} color="#9A5B26"/>{passReportBusy ? 'Preparing…' : 'Export report (PDF)'}
+            </button>
+          </div>
           <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
           {searchQ && searchedApprovedApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
           <div className="admin-cards">
@@ -1303,7 +1324,6 @@ export default function AdminDashboard() {
               const v = vById(a.vendorId);
               const ev = events.find(e=>e.id===a.eventId) || {};
               const passApp = passApps.find(p=>p.vendorId===a.vendorId && p.eventId===a.eventId);
-              const pendingReqRec = passApp ? passRequests.find(r=>r.passAppId===passApp.id && r.status==='pending') : null;
 
               const decidePerson = (person, status, rejectReason=null) => {
                 dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, people: p.people.map(pp=>pp.id===person.id ? { ...pp, status, rejectReason, decidedAt:fmtShort(new Date()) } : pp) } : p) });
@@ -1316,16 +1336,15 @@ export default function AdminDashboard() {
                 if (!reason) { showToast('Pick a reason (or describe one) first','info'); return; }
                 decidePerson(person, 'rejected', reason);
               };
-              const decideReq = (decision) => {
-                dispatch({ type:'MERGE_PASS_REQUESTS', payload: passRequests.map(r=>r.id===pendingReqRec.id ? { ...r, status:decision } : r) });
-                if (decision === 'approved') {
-                  dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:(p.extraApproved||0)+pendingReqRec.count } : p) });
-                }
-                logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s request for ${pendingReqRec.count} additional Vendor Pass${pendingReqRec.count>1?'es':''} — ${ev.name}.`, { icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
-                showToast(`Request ${decision}`, decision==='approved'?'check':'x');
-              };
               const updateBooth = (val) => {
                 dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, boothNumber:val } : p) });
+              };
+              const confirmAddPass = () => {
+                const count = Number(addPassCount) || 1;
+                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:(p.extraApproved||0)+count } : p) });
+                logActivity('Admin', `granted ${v.business} ${count} additional Vendor Pass slot${count>1?'s':''} — ${ev.name}.`, { icon:'badge', tint:'var(--tint-green-bg)' });
+                showToast(`${count} additional pass slot${count>1?'s':''} granted`,'check');
+                setAddingPassFor(null); setAddPassCount(1);
               };
 
               const statusCounts = passApp ? passApp.people.reduce((m,p)=>{ m[p.status]=(m[p.status]||0)+1; return m; }, {}) : {};
@@ -1394,14 +1413,21 @@ export default function AdminDashboard() {
                     </>
                   )}
 
-                  {pendingReqRec && (
-                    <div style={{ marginTop:12, background:'var(--tint-amber-bg)', border:'1px solid var(--tint-amber-border)', borderRadius:12, padding:'10px 12px' }}>
-                      <div style={{ fontSize:12, color:'var(--tint-amber-text)', fontWeight:600 }}>Requested {pendingReqRec.count} additional pass{pendingReqRec.count>1?'es':''} · {pendingReqRec.submittedAt}</div>
-                      <div style={{ display:'flex', gap:8, marginTop:9 }}>
-                        <button onClick={()=>decideReq('approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve request</button>
-                        <button onClick={()=>decideReq('rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                  {passApp && (
+                    addingPassFor === passApp.id ? (
+                      <div style={{ marginTop:12, background:'var(--bg-subtle-alt)', borderRadius:12, padding:10 }}>
+                        <div style={{ fontSize:11, fontWeight:600, color:'var(--text-primary)', marginBottom:7 }}>How many additional pass slots to grant?</div>
+                        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                          <input type="number" min={1} value={addPassCount} onChange={e=>setAddPassCount(e.target.value)} style={{ width:70, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 9px', fontSize:13, color:'var(--text-primary)', outline:'none' }}/>
+                          <button onClick={()=>{ setAddingPassFor(null); setAddPassCount(1); }} style={{ flex:1, background:'var(--bg-subtle)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
+                          <button onClick={confirmAddPass} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Grant</button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <button onClick={()=>{ setAddingPassFor(passApp.id); setAddPassCount(1); }} style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
+                        <Icon name="plus" size={13} color="#9A5B26"/>Add pass
+                      </button>
+                    )
                   )}
                 </div>
               );

@@ -8,7 +8,7 @@ import { EINVOICE_FIELDS, DETAILS_FIELDS, einvoiceComplete } from './helpers';
 // file per vendor, named the same way.
 
 let logoDataUrl = null;
-async function getLogo() {
+export async function getLogo() {
   if (logoDataUrl) return logoDataUrl;
   try {
     const res = await fetch('/assets/sulap-lockup.png');

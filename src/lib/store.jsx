@@ -2,7 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useRef } from 'reac
 import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
-  INITIAL_PARKING, INITIAL_PASS_APPS, INITIAL_PASS_REQUESTS, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
+  INITIAL_PARKING, INITIAL_PASS_APPS, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
   EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS,
 } from '../data/mockData';
 
@@ -34,7 +34,6 @@ const INIT = {
   payDocDownloads: INITIAL_PAY_DOC_DOWNLOADS,
   parking: INITIAL_PARKING,
   passApps: INITIAL_PASS_APPS,
-  passRequests: INITIAL_PASS_REQUESTS,
   cats: INITIAL_CATS,
   content: INITIAL_CONTENT,
   activity: INITIAL_ACTIVITY,
@@ -105,7 +104,6 @@ function reducer(state, action) {
     case 'MERGE_OFFENSES': return { ...state, offenses: action.payload };
     case 'MERGE_OFFENSE_TYPES': return { ...state, offenseTypes: action.payload };
     case 'MERGE_PASS_APPS': return { ...state, passApps: action.payload };
-    case 'MERGE_PASS_REQUESTS': return { ...state, passRequests: action.payload };
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
     case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };

@@ -6,7 +6,7 @@ import MobileNavDrawer from '../components/MobileNavDrawer';
 import DigitalPassCard from '../components/DigitalPassCard';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
-import { CURRENT_VENDOR_ID, EMPTY_EINVOICE } from '../data/mockData';
+import { CURRENT_VENDOR_ID, EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 
@@ -54,7 +54,7 @@ const TABS = [
 
 export default function VendorDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passApps, passRequests, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
+  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passApps, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
   const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
@@ -106,18 +106,25 @@ export default function VendorDashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const activeTabLabel = TABS.find(t => t.id === vTab)?.label || 'Menu';
 
-  // ── Vendor Pass (apply / additional-pass request forms) ──
+  // ── Vendor Pass (apply / additional-pass forms) ──
   // Each pass holder is approved/rejected/edited individually (person.status) — there is
-  // no single whole-application status. See PROJECT_NOTES.md rule 21.
-  const [passForms, setPassForms] = useState({});   // eventId -> [{name,photo}] draft for the first-time application (up to 2 people)
+  // no single whole-application status. See PROJECT_NOTES.md rule 21. A vendor can
+  // self-service fill slots up to PASS_SELF_SERVICE_MAX with no admin action needed —
+  // going beyond that is admin-initiated only (admin grants extra slots directly, no
+  // vendor-side "request more passes" flow to wait on).
+  const [passForms, setPassForms] = useState({});   // eventId -> [{name,photo}] draft for the first-time application (up to PASS_SELF_SERVICE_MAX people)
   const [extraForms, setExtraForms] = useState({}); // passAppId -> {name,photo} draft for an already-unlocked extra slot
-  const [reqCounts, setReqCounts] = useState({});   // passAppId -> requested additional-pass count
   const [editingPersonId, setEditingPersonId] = useState(null); // pass-holder id currently being edited (to swap name/photo & resubmit)
   const [personEditForm, setPersonEditForm] = useState(null);   // {name, photo} draft for editingPersonId
   const getInitialForm = (eventId) => passForms[eventId] || [{ name:'', photo:null }, { name:'', photo:null }];
   const updateInitialForm = (eventId, idx, patch) => {
     const form = getInitialForm(eventId).map((p,i) => i===idx ? { ...p, ...patch } : p);
     setPassForms(f => ({ ...f, [eventId]: form }));
+  };
+  const addInitialFormRow = (eventId) => {
+    const form = getInitialForm(eventId);
+    if (form.length >= PASS_SELF_SERVICE_MAX) return;
+    setPassForms(f => ({ ...f, [eventId]: [...form, { name:'', photo:null }] }));
   };
   const submitInitialApp = (eventId, ev) => {
     const filled = getInitialForm(eventId).filter(p => p.name.trim() && p.photo);
@@ -138,13 +145,6 @@ export default function VendorDashboard() {
     logActivity(me.business, `added an additional Vendor Pass holder — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Pass added — awaiting admin review', 'badge');
   };
-  const requestExtraPasses = (passApp, ev) => {
-    const count = Number(reqCounts[passApp.id]) || 1;
-    const rec = { id:'pq'+Date.now(), passAppId:passApp.id, vendorId:CURRENT_VENDOR_ID, eventId:ev.id, count, status:'pending', submittedAt: fmtShort(new Date()) };
-    dispatch({ type:'MERGE_PASS_REQUESTS', payload:[...passRequests, rec] });
-    logActivity(me.business, `requested ${count} additional Vendor Pass(es) — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
-    showToast('Request sent to admin', 'check');
-  };
   // Editing one pass holder (whether currently approved or rejected) — resets just that
   // person back to 'pending' for re-review, without touching any of the vendor's other
   // pass holders or their approval status.
@@ -157,13 +157,12 @@ export default function VendorDashboard() {
     logActivity(me.business, `updated a Vendor Pass holder's details — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Updated — resubmitted for admin review', 'badge');
   };
-  // Testing helper — clears this vendor's Vendor Pass application + any pass request for an
-  // event so the whole apply → admin approve → digital pass flow can be walked through again
-  // from scratch. Not a real business action; for trying out the flow only.
+  // Testing helper — clears this vendor's Vendor Pass application for an event so the
+  // whole apply → admin approve → digital pass flow can be walked through again from
+  // scratch. Not a real business action; for trying out the flow only.
   const resetMyPassForTesting = (eventId, ev) => {
     if (!window.confirm(`Reset your Vendor Pass for ${ev.name}? This clears your application so you can apply again from scratch (testing only).`)) return;
     dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === CURRENT_VENDOR_ID && p.eventId === eventId)) });
-    dispatch({ type:'MERGE_PASS_REQUESTS', payload: passRequests.filter(r => !(r.vendorId === CURRENT_VENDOR_ID && r.eventId === eventId)) });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
     cancelEditPerson();
     showToast('Vendor Pass reset — try the flow again', 'badge');
@@ -841,8 +840,7 @@ export default function VendorDashboard() {
               const prevEnded = idx === 0 || new Date(chain[idx-1].ev.endDate) < today;
               const canStart = !!passApp || prevEnded;
               const showInitialForm = !passApp && canStart;
-              const maxSlots = 2 + (passApp?.extraApproved || 0);
-              const pendingReqRec = passApp ? passRequests.find(r => r.passAppId === passApp.id && r.status === 'pending') : null;
+              const maxSlots = PASS_SELF_SERVICE_MAX + (passApp?.extraApproved || 0);
               if (passApp?.people.some(p => p.status === 'approved')) anyApproved = true;
 
               return (
@@ -863,7 +861,7 @@ export default function VendorDashboard() {
 
                   {showInitialForm && (
                     <div style={{ marginTop:14 }}>
-                      <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to 2 people (name + photo each). Need more than 2? You can request additional passes right after submitting, without waiting for these to be approved first.</div>
+                      <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to {PASS_SELF_SERVICE_MAX} people (name + photo each).</div>
                       <PassPhotoNotice/>
                       {getInitialForm(ev.id).map((p, i) => (
                         <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
@@ -876,6 +874,11 @@ export default function VendorDashboard() {
                           <input value={p.name} onChange={e=>updateInitialForm(ev.id, i, { name:e.target.value })} placeholder={`Person ${i+1} full name`} style={{ ...inp, flex:1 }}/>
                         </div>
                       ))}
+                      {getInitialForm(ev.id).length < PASS_SELF_SERVICE_MAX && (
+                        <span onClick={()=>addInitialFormRow(ev.id)} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:12.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', marginBottom:12 }}>
+                          <Icon name="plus" size={13} color="#9A5B26"/>Add another pass holder
+                        </span>
+                      )}
                       <button onClick={()=>submitInitialApp(ev.id, ev)} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer', marginTop:4 }}>Submit Vendor Pass application</button>
                     </div>
                   )}
@@ -953,19 +956,10 @@ export default function VendorDashboard() {
                         </div>
                       )}
 
-                      {pendingReqRec ? (
-                        <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginTop:16 }}>
-                          <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }}/>
-                          Request for {pendingReqRec.count} additional pass{pendingReqRec.count>1?'es':''} submitted {pendingReqRec.submittedAt} · awaiting admin review.
-                        </div>
-                      ) : (
-                        <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:12.5, color:'#6B6560' }}>Need more than {maxSlots}?</span>
-                          <select value={reqCounts[passApp.id]||1} onChange={e=>setReqCounts(c=>({ ...c, [passApp.id]:e.target.value }))} style={{ border:'1px solid #e3d8ca', borderRadius:9, padding:'8px 10px', fontSize:13, background:'#fff' }}>
-                            <option value={1}>+1 pass</option>
-                            <option value={2}>+2 passes</option>
-                          </select>
-                          <button onClick={()=>requestExtraPasses(passApp, ev)} style={{ background:'#F2EDE6', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Request additional pass{(reqCounts[passApp.id]||1) > 1 ? 'es' : ''}</button>
+                      {passApp.people.length >= maxSlots && (
+                        <div style={{ display:'flex', gap:9, background:'#F2EDE6', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#6B6560', lineHeight:1.45, marginTop:16 }}>
+                          <Icon name="info" size={15} color="#A09890" style={{ marginTop:1 }}/>
+                          Need more than {maxSlots} passes? Contact the Sulap team — additional slots beyond this are granted by admin.
                         </div>
                       )}
                     </>
