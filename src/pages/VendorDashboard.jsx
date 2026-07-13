@@ -5,7 +5,7 @@ import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import DigitalPassCard from '../components/DigitalPassCard';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, orderTabs, nudgeTabId } from '../lib/helpers';
 import { CURRENT_VENDOR_ID, EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
@@ -39,7 +39,9 @@ function PassPhotoNotice() {
   );
 }
 
-const TABS = [
+// Single source of truth for vendor portal tabs — the sidebar and the mobile
+// drawer both render from this list (same pattern as ADMIN_TABS).
+export const VENDOR_TABS = [
   { id:'events',   label:'Available Markets', icon:'calendar' },
   { id:'apps',     label:'My Applications',   icon:'clipboard' },
   { id:'photos',   label:'Product Photos',    icon:'image' },
@@ -104,7 +106,12 @@ export default function VendorDashboard() {
 
   const logout = () => { set({ vScreen:'login' }); showToast('Signed out','leaf'); };
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const activeTabLabel = TABS.find(t => t.id === vTab)?.label || 'Menu';
+  const orderedTabs = orderTabs(VENDOR_TABS, state.vTabOrder);
+  const activeTabLabel = VENDOR_TABS.find(t => t.id === vTab)?.label || 'Menu';
+  const moveTab = (id, dir) => {
+    const ids = orderedTabs.map(t => t.id);
+    set({ vTabOrder: nudgeTabId(ids, ids, id, dir) });
+  };
 
   // ── Vendor Pass (apply / additional-pass forms) ──
   // Each pass holder is approved/rejected/edited individually (person.status) — there is
@@ -195,9 +202,10 @@ export default function VendorDashboard() {
         onClose={() => setDrawerOpen(false)}
         title="My Portal"
         subtitle={me.business}
-        tabs={TABS}
+        tabs={orderedTabs}
         activeId={vTab}
         onSelect={id => { closeModals(); set({ vTab:id, page:1 }); }}
+        onMove={moveTab}
       />
 
       {/* ── Compliance ── */}

@@ -5,7 +5,7 @@ import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, nudgeTabId } from '../lib/helpers';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
@@ -80,7 +80,12 @@ export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
   const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
-  const visibleTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
+  const visibleTabs = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), state.aTabOrder);
+  const moveTab = (id, dir) => {
+    // full order includes RBAC-hidden tabs so their saved position survives
+    const fullIds = orderTabs(ADMIN_TABS, state.aTabOrder).map(t => t.id);
+    set({ aTabOrder: nudgeTabId(fullIds, visibleTabs.map(t => t.id), id, dir) });
+  };
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
   const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix (or transfer panel) is open
   const [transferTo, setTransferTo] = useState('');
@@ -338,6 +343,7 @@ export default function AdminDashboard() {
         tabs={visibleTabs}
         activeId={aTab}
         onSelect={id => { closeModals(); set({ aTab:id, page:1 }); }}
+        onMove={moveTab}
         dark
       />
 

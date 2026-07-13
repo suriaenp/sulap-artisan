@@ -6,6 +6,13 @@ import {
   EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS,
 } from '../data/mockData';
 
+function readTabOrder(key) {
+  try {
+    const v = JSON.parse(window.localStorage.getItem(key));
+    return Array.isArray(v) && v.length ? v : null;
+  } catch { return null; }
+}
+
 const INIT = {
   // navigation
   view: 'public',       // 'public' | 'vendor' | 'admin'
@@ -46,6 +53,9 @@ const INIT = {
   admins: INITIAL_ADMINS,
   currentAdminId: null,
   darkMode: typeof window !== 'undefined' && window.localStorage.getItem('sulap_admin_dark') === '1',
+  // user-rearranged portal tab order (array of tab ids, null = code-defined order)
+  vTabOrder: readTabOrder('sulap_vtab_order'),
+  aTabOrder: readTabOrder('sulap_atab_order'),
   // modals / drawers
   vendorDetailId: null,
   vendorDetailReturnAppId: null,
@@ -161,6 +171,13 @@ export function StoreProvider({ children }) {
     }
     if ('darkMode' in payload) {
       try { window.localStorage.setItem('sulap_admin_dark', payload.darkMode ? '1' : '0'); } catch {}
+    }
+    // tab order is a per-device UI preference, persisted like darkMode
+    if ('vTabOrder' in payload) {
+      try { window.localStorage.setItem('sulap_vtab_order', JSON.stringify(payload.vTabOrder)); } catch {}
+    }
+    if ('aTabOrder' in payload) {
+      try { window.localStorage.setItem('sulap_atab_order', JSON.stringify(payload.aTabOrder)); } catch {}
     }
     dispatch({ type: 'SET', payload });
   };

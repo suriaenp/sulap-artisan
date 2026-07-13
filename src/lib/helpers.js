@@ -93,3 +93,36 @@ export const DETAILS_FIELDS = [
   ['plate',    'Car plate number'],
   ['desc',     'Product description'],
 ];
+
+// ── Portal tab ordering ──
+// Vendor + admin sidebar/drawer tabs can be rearranged by the user; the saved
+// order is an array of tab ids (vTabOrder / aTabOrder in the store, persisted
+// to localStorage). Ids missing from the saved order (e.g. tabs added after
+// the order was saved) keep their code-defined position at the end.
+
+export function orderTabs(tabs, order) {
+  if (!order || !order.length) return tabs;
+  const pos = new Map(order.map((id, i) => [id, i]));
+  return [...tabs].sort((a, b) => (pos.get(a.id) ?? order.length) - (pos.get(b.id) ?? order.length));
+}
+
+// New order after dragging `dragId` onto `targetId`: dragging downward lands
+// after the target, dragging upward lands before it — matches what the drop
+// indicator shows.
+export function reorderIds(ids, dragId, targetId) {
+  const from = ids.indexOf(dragId), to = ids.indexOf(targetId);
+  if (from < 0 || to < 0 || dragId === targetId) return ids;
+  const next = ids.filter(id => id !== dragId);
+  next.splice(next.indexOf(targetId) + (from < to ? 1 : 0), 0, dragId);
+  return next;
+}
+
+// New order after nudging `id` one step up (dir -1) or down (dir +1) among the
+// tabs currently visible to this user — hidden tabs (RBAC-filtered admin tabs)
+// keep their position in the full order.
+export function nudgeTabId(fullIds, visibleIds, id, dir) {
+  const vIdx = visibleIds.indexOf(id);
+  const neighbor = visibleIds[vIdx + dir];
+  if (vIdx < 0 || !neighbor) return fullIds;
+  return reorderIds(fullIds, id, neighbor);
+}

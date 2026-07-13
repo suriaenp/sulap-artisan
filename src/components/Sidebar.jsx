@@ -1,34 +1,51 @@
+import { useRef, useState } from 'react';
 import Icon from './Icon';
 import { useStore } from '../lib/store';
+import { orderTabs, reorderIds } from '../lib/helpers';
 import { ADMIN_TABS } from '../pages/AdminDashboard';
-
-const VENDOR_TABS = [
-  { id:'events',   label:'Available Markets', icon:'calendar' },
-  { id:'apps',     label:'My Applications',   icon:'clipboard' },
-  { id:'photos',   label:'Product Photos',    icon:'image' },
-  { id:'eventPics',label:'Event Pictures',    icon:'camera' },
-  { id:'docs',     label:'Documents',         icon:'file' },
-  { id:'payments', label:'Payments',          icon:'receipt' },
-  { id:'parking',  label:'Parking',           icon:'car' },
-  { id:'pass',     label:'Vendor Pass',       icon:'badge' },
-  { id:'compliance', label:'Compliance',      icon:'shield' },
-  { id:'profile',  label:'Profile',           icon:'users' },
-];
+import { VENDOR_TABS } from '../pages/VendorDashboard';
 
 export default function Sidebar() {
   const { state, set, closeModals, acting, canViewTab } = useStore();
-  const { view, vScreen, aScreen, vTab, aTab } = state;
+  const { view, vScreen, aScreen, vTab, aTab, vTabOrder, aTabOrder } = state;
   const isVendor = view === 'vendor' && vScreen === 'dashboard';
   const isAdmin  = view === 'admin'  && aScreen === 'dashboard';
   const isSuperActing = !acting || acting.role === 'super';
-  const adminTabs = ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id));
+  const vendorTabs = orderTabs(VENDOR_TABS, vTabOrder);
+  const adminTabs  = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), aTabOrder);
+
+  // ── Drag-to-reorder ──
+  // Any tab row can be dragged onto another to move it there; the new order is
+  // saved per device (vTabOrder/aTabOrder → localStorage). RBAC-hidden admin
+  // tabs keep their position: the drop is applied to the full ADMIN_TABS order.
+  const [dragId, setDragId] = useState(null); // for visual feedback
+  const [overId, setOverId] = useState(null);
+  const dragIdRef = useRef(null); // drop logic reads the ref — state may lag a render behind
+  const dropTab = (targetId) => {
+    const dragId = dragIdRef.current;
+    if (!dragId || dragId === targetId) return;
+    if (isVendor) {
+      set({ vTabOrder: reorderIds(vendorTabs.map(t => t.id), dragId, targetId) });
+    } else {
+      set({ aTabOrder: reorderIds(orderTabs(ADMIN_TABS, aTabOrder).map(t => t.id), dragId, targetId) });
+    }
+  };
+  const dragProps = (t) => ({
+    draggable: true,
+    title: 'Drag to rearrange',
+    onDragStart: (e) => { if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; dragIdRef.current = t.id; setDragId(t.id); },
+    onDragOver: (e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; if (overId !== t.id) setOverId(t.id); },
+    onDragLeave: () => { if (overId === t.id) setOverId(null); },
+    onDrop: (e) => { e.preventDefault(); dropTab(t.id); dragIdRef.current = null; setDragId(null); setOverId(null); },
+    onDragEnd: () => { dragIdRef.current = null; setDragId(null); setOverId(null); },
+  });
 
   const bg    = isAdmin ? '#2A1708' : '#FAF8F5';
   const borderC = isAdmin ? '#4A2A0F' : 'var(--border-light)';
   const headC   = isAdmin ? '#FAF8F5' : 'var(--text-primary)';
   const subC    = isAdmin ? 'rgba(250,248,245,0.45)' : 'var(--text-muted)';
 
-  const sideNavStyle = (active) => ({
+  const sideNavStyle = (active, t) => ({
     width: '100%', display: 'flex', alignItems: 'center', gap: 9,
     padding: '9px 12px', borderRadius: 11,
     fontFamily: "'Karla'", fontSize: 13.5, cursor: 'pointer',
@@ -40,6 +57,9 @@ export default function Sidebar() {
       ? (isAdmin ? '#FAF8F5' : '#9A5B26')
       : (isAdmin ? 'rgba(250,248,245,0.55)' : 'var(--text-secondary)'),
     fontWeight: active ? 600 : 500,
+    // drag feedback: dim the row being dragged, draw an insert line on the drop target
+    opacity: dragId === t.id ? 0.45 : 1,
+    boxShadow: overId === t.id && dragId && dragId !== t.id ? 'inset 0 2px 0 0 #B97434' : 'none',
   });
 
   return (
@@ -65,8 +85,8 @@ export default function Sidebar() {
         {isVendor && (
           <div>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', padding: '4px 12px 6px' }}>MY PORTAL</div>
-            {VENDOR_TABS.map(t => (
-              <button key={t.id} style={sideNavStyle(vTab===t.id)} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }}>
+            {vendorTabs.map(t => (
+              <button key={t.id} {...dragProps(t)} style={sideNavStyle(vTab===t.id, t)} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }}>
                 <Icon name={t.icon} size={16} color={vTab===t.id ? '#9A5B26' : 'var(--text-muted)'} />
                 <span>{t.label}</span>
               </button>
@@ -79,7 +99,7 @@ export default function Sidebar() {
           <div>
             <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(250,248,245,0.45)', padding: '4px 12px 6px' }}>CONSOLE</div>
             {adminTabs.map(t => (
-              <button key={t.id} style={sideNavStyle(aTab===t.id)} onClick={() => { closeModals(); set({ aTab:t.id, page:1 }); }}>
+              <button key={t.id} {...dragProps(t)} style={sideNavStyle(aTab===t.id, t)} onClick={() => { closeModals(); set({ aTab:t.id, page:1 }); }}>
                 <Icon name={t.icon} size={16} color={aTab===t.id ? '#FAF8F5' : 'rgba(250,248,245,0.55)'} />
                 <span>{t.label}</span>
               </button>
