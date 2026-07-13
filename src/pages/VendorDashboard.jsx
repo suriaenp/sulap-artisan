@@ -81,6 +81,7 @@ export default function VendorDashboard() {
   const [passForms, setPassForms] = useState({});   // eventId -> [{name,photo}] draft for a first-time application
   const [extraForms, setExtraForms] = useState({}); // passAppId -> {name,photo} draft for an already-unlocked extra slot
   const [reqCounts, setReqCounts] = useState({});   // passAppId -> requested additional-pass count
+  const [cancelReapply, setCancelReapply] = useState({}); // passAppId -> editing an approved pass to cancel & reapply
   const getPassForm = (eventId, existing) => {
     if (passForms[eventId]) return passForms[eventId];
     if (existing?.people?.length) {
@@ -123,6 +124,43 @@ export default function VendorDashboard() {
     dispatch({ type:'MERGE_PASS_REQUESTS', payload:[...passRequests, rec] });
     logActivity(me.business, `requested ${count} additional Vendor Pass(es) — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Request sent to admin', 'check');
+  };
+  // Shared name+photo input row for a pass holder — upload from gallery, or take a photo directly.
+  const renderPersonInputs = (eventId, existing) => getPassForm(eventId, existing).map((p, i) => (
+    <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
+      <label style={{ width:52, height:52, borderRadius:12, border:'2px dashed #d8c6b2', background: p.photo?.url ? 'transparent' : '#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }} title="Upload from gallery">
+        {p.photo?.url
+          ? <img src={p.photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+          : <Icon name="image" size={18} color="#9A5B26"/>}
+        <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+          const file = e.target.files?.[0]; e.target.value='';
+          if (!file) return;
+          const photo = await fileToPhoto(file);
+          updatePassForm(eventId, i, { photo }, existing);
+        }}/>
+      </label>
+      <label style={{ width:34, height:34, borderRadius:10, border:'1px solid #e3d8ca', background:'#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }} title="Take a photo">
+        <Icon name="camera" size={15} color="#9A5B26"/>
+        <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={async e => {
+          const file = e.target.files?.[0]; e.target.value='';
+          if (!file) return;
+          const photo = await fileToPhoto(file);
+          updatePassForm(eventId, i, { photo }, existing);
+        }}/>
+      </label>
+      <input value={p.name} onChange={e=>updatePassForm(eventId, i, { name:e.target.value }, existing)} placeholder={`Person ${i+1} full name`} style={{ ...inp, flex:1 }}/>
+    </div>
+  ));
+  // Testing helper — clears this vendor's Vendor Pass application + any pass request for an
+  // event so the whole apply → admin approve → digital pass flow can be walked through again
+  // from scratch. Not a real business action; for trying out the flow only.
+  const resetMyPassForTesting = (eventId, ev) => {
+    if (!window.confirm(`Reset your Vendor Pass for ${ev.name}? This clears your application so you can apply again from scratch (testing only).`)) return;
+    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === CURRENT_VENDOR_ID && p.eventId === eventId)) });
+    dispatch({ type:'MERGE_PASS_REQUESTS', payload: passRequests.filter(r => !(r.vendorId === CURRENT_VENDOR_ID && r.eventId === eventId)) });
+    setPassForms(f => ({ ...f, [eventId]: undefined }));
+    setCancelReapply(c => ({ ...c, [eventId]: false }));
+    showToast('Vendor Pass reset — try the flow again', 'badge');
   };
 
   return (
@@ -828,22 +866,7 @@ export default function VendorDashboard() {
                   {showForm && (
                     <div style={{ marginTop:14 }}>
                       {!passApp && <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to 2 people (name + photo each). Need more later? You can request additional passes once this is approved.</div>}
-                      {getPassForm(ev.id, passApp).map((p, i) => (
-                        <div key={i} style={{ display:'flex', gap:10, alignItems:'center', marginBottom:11 }}>
-                          <label style={{ width:52, height:52, borderRadius:12, border:'2px dashed #d8c6b2', background: p.photo?.url ? 'transparent' : '#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }}>
-                            {p.photo?.url
-                              ? <img src={p.photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                              : <Icon name="camera" size={18} color="#9A5B26"/>}
-                            <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
-                              const file = e.target.files?.[0]; e.target.value='';
-                              if (!file) return;
-                              const photo = await fileToPhoto(file);
-                              updatePassForm(ev.id, i, { photo }, passApp);
-                            }}/>
-                          </label>
-                          <input value={p.name} onChange={e=>updatePassForm(ev.id, i, { name:e.target.value }, passApp)} placeholder={`Person ${i+1} full name`} style={{ ...inp, flex:1 }}/>
-                        </div>
-                      ))}
+                      {renderPersonInputs(ev.id, passApp)}
                       <button onClick={()=>submitPassApp(ev.id, ev, passApp)} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer', marginTop:4 }}>{passApp ? 'Resubmit Vendor Pass application' : 'Submit Vendor Pass application'}</button>
                     </div>
                   )}
@@ -865,9 +888,23 @@ export default function VendorDashboard() {
                     </>
                   )}
 
-                  {passApp?.status === 'approved' && (
+                  {passApp?.status === 'approved' && cancelReapply[passApp.id] && (
                     <div style={{ marginTop:14 }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))', gap:18 }}>
+                      <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginBottom:12 }}>
+                        <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }}/>
+                        Update the pass holders below — e.g. if someone's leaving and a new person needs to hold the pass instead. Submitting cancels the current approved pass and sends it back to admin for review.
+                      </div>
+                      {renderPersonInputs(ev.id, passApp)}
+                      <div style={{ display:'flex', gap:9, marginTop:4 }}>
+                        <button onClick={()=>{ setCancelReapply(c=>({ ...c, [passApp.id]:false })); setPassForms(f=>({ ...f, [ev.id]:undefined })); }} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Back</button>
+                        <button onClick={()=>{ submitPassApp(ev.id, ev, passApp); setCancelReapply(c=>({ ...c, [passApp.id]:false })); }} className="cta" style={{ flex:2, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Cancel pass &amp; resubmit</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {passApp?.status === 'approved' && !cancelReapply[passApp.id] && (
+                    <div style={{ marginTop:14 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))', gap:22 }}>
                         {passApp.people.map(p => (
                           <DigitalPassCard key={p.id} personName={p.name} vendorName={me.business} marketName={ev.name} validRange={ev.dateRange} photo={p.photo}/>
                         ))}
@@ -876,12 +913,21 @@ export default function VendorDashboard() {
                       {passApp.people.length < maxSlots && (
                         <div style={{ marginTop:16, background:'#F7F3EC', borderRadius:14, padding:14 }}>
                           <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:9 }}>Add pass holder {passApp.people.length+1} of {maxSlots}</div>
-                          <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
-                            <label style={{ width:48, height:48, borderRadius:11, border:'2px dashed #d8c6b2', background: extraForms[passApp.id]?.photo?.url ? 'transparent' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }}>
+                          <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+                            <label style={{ width:48, height:48, borderRadius:11, border:'2px dashed #d8c6b2', background: extraForms[passApp.id]?.photo?.url ? 'transparent' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }} title="Upload from gallery">
                               {extraForms[passApp.id]?.photo?.url
                                 ? <img src={extraForms[passApp.id].photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                                : <Icon name="camera" size={16} color="#9A5B26"/>}
+                                : <Icon name="image" size={16} color="#9A5B26"/>}
                               <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+                                const file = e.target.files?.[0]; e.target.value='';
+                                if (!file) return;
+                                const photo = await fileToPhoto(file);
+                                setExtraForms(f => ({ ...f, [passApp.id]: { ...(f[passApp.id]||{name:''}), photo } }));
+                              }}/>
+                            </label>
+                            <label style={{ width:34, height:34, borderRadius:10, border:'1px solid #e3d8ca', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }} title="Take a photo">
+                              <Icon name="camera" size={14} color="#9A5B26"/>
+                              <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={async e => {
                                 const file = e.target.files?.[0]; e.target.value='';
                                 if (!file) return;
                                 const photo = await fileToPhoto(file);
@@ -911,6 +957,20 @@ export default function VendorDashboard() {
                           </div>
                         )
                       )}
+
+                      <div style={{ marginTop:16, textAlign:'center' }}>
+                        <span onClick={()=>setCancelReapply(c=>({ ...c, [passApp.id]:true }))} style={{ fontSize:12, fontWeight:600, color:'#9A5B26', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>
+                          Need to change a pass holder? Cancel &amp; reapply
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {passApp && (
+                    <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid #f1ece4', textAlign:'right' }}>
+                      <span onClick={()=>resetMyPassForTesting(ev.id, ev)} style={{ fontSize:11, fontWeight:600, color:'#A09890', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>
+                        Reset my Vendor Pass (testing)
+                      </span>
                     </div>
                   )}
                 </div>

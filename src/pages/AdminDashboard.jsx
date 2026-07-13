@@ -1331,9 +1331,10 @@ export default function AdminDashboard() {
                   {passApp && (
                     <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:11 }}>
                       {passApp.people.map(p => (
-                        <div key={p.id} style={{ display:'flex', alignItems:'center', gap:7, background:'var(--bg-subtle-alt)', borderRadius:10, padding:'6px 11px 6px 6px' }}>
+                        <div key={p.id} onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, background:'var(--bg-subtle-alt)', borderRadius:10, padding:'6px 11px 6px 6px', cursor:'pointer' }}>
                           <PhotoTile photo={p.photo} size={30}/>
                           <span style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{p.name}</span>
+                          <Icon name="eye" size={12} color="var(--text-muted)"/>
                         </div>
                       ))}
                     </div>

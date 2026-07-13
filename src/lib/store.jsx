@@ -56,6 +56,7 @@ const INIT = {
   refundModalKey: null,
   depModalVendor: null,
   docPreview: null,       // { payKey, field, editable } — payment doc preview modal
+  passPhotoPreview: null, // { name, photo } — pass-holder photo preview modal
   showApplyModal: false,
   applyEventId: null,
   applyShare: null,
@@ -175,7 +176,7 @@ export function StoreProvider({ children }) {
 
   const closeModals = () => set({
     vendorDetailId: null, vendorDetailReturnAppId: null, appDetailId: null, eventDetailId: null, payModalKey: null,
-    refundModalKey: null, depModalVendor: null, docPreview: null, showApplyModal: false,
+    refundModalKey: null, depModalVendor: null, docPreview: null, passPhotoPreview: null, showApplyModal: false,
     applyEventId: null,
   });
 

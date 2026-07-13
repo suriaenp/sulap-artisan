@@ -663,4 +663,32 @@ export function DocPreviewModal() {
   );
 }
 
+// ── Pass Holder Photo Preview ─────────────────────────────────────────────────
+// Opened via state.passPhotoPreview = { name, photo }. Lets admin (and vendor)
+// see the uploaded pass-holder photo full-size before AND after approving a
+// Vendor Pass application — the inline thumbnails are only 30-34px.
+export function PassPhotoPreviewModal() {
+  const { state, set } = useStore();
+  const { passPhotoPreview } = state;
+  if (!passPhotoPreview) return null;
+  const { name, photo } = passPhotoPreview;
+  const close = () => set({ passPhotoPreview:null });
+  const grad = `linear-gradient(135deg,${photo?.grad?.[0]||'#F0D8DD'},${photo?.grad?.[1]||'#B97434'})`;
+  return (
+    <Sheet onClose={close} maxW={420}>
+      <SheetHeader title={name||'Pass holder'} sub="Uploaded photo" onClose={close}/>
+      <div style={{ marginTop:14, borderRadius:14, overflow:'hidden', border:'1px solid #efe7dc', background: photo?.url ? '#fff' : grad, minHeight:320, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        {photo?.url
+          ? <img src={photo.url} alt={name} style={{ width:'100%', maxHeight:440, objectFit:'contain', display:'block' }}/>
+          : <span style={{ color:'rgba(255,255,255,0.85)', fontSize:13, fontWeight:600 }}>Sample photo (demo)</span>}
+      </div>
+      {photo?.url && (
+        <button onClick={()=>downloadPhoto(photo, `${safeName(name||'pass-holder')}.${photoExt(photo)}`)} style={{ marginTop:14, width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
+          <Icon name="download" size={14} color="#FAF8F5"/>Download
+        </button>
+      )}
+    </Sheet>
+  );
+}
+
 const lbl = { display:'block', fontSize:12, fontWeight:600, color:'#1C1A17', marginBottom:6 };
