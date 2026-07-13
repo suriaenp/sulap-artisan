@@ -6,7 +6,7 @@ import MobileNavDrawer from '../components/MobileNavDrawer';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS } from '../lib/helpers';
-import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
+import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
@@ -102,6 +102,9 @@ export default function AdminDashboard() {
   const [payUpMsg, setPayUpMsg] = useState(null);    // bulk invoice/receipt upload summary
   const [vendorSearch, setVendorSearch] = useState(''); // search box shared across vendor-listing tabs
   useEffect(() => { setVendorSearch(''); }, [aTab]);
+  const [rejectingPersonId, setRejectingPersonId] = useState(null); // pass-holder id currently showing the reject-reason picker
+  const [rejectReasonKey, setRejectReasonKey] = useState('');
+  const [rejectReasonOther, setRejectReasonOther] = useState('');
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
@@ -1302,10 +1305,16 @@ export default function AdminDashboard() {
               const passApp = passApps.find(p=>p.vendorId===a.vendorId && p.eventId===a.eventId);
               const pendingReqRec = passApp ? passRequests.find(r=>r.passAppId===passApp.id && r.status==='pending') : null;
 
-              const decideApp = (decision) => {
-                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, status:decision, decidedAt:fmtShort(new Date()) } : p) });
-                logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s Vendor Pass application — ${ev.name}.`, { icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
-                showToast(`Application ${decision}`, decision==='approved'?'check':'x');
+              const decidePerson = (person, status, rejectReason=null) => {
+                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, people: p.people.map(pp=>pp.id===person.id ? { ...pp, status, rejectReason, decidedAt:fmtShort(new Date()) } : pp) } : p) });
+                logActivity('Admin', `${status==='approved'?'approved':'rejected'} ${person.name}'s Vendor Pass — ${v.business}, ${ev.name}.${status==='rejected' && rejectReason ? ` Reason: ${rejectReason}` : ''}`, { icon: status==='approved'?'check':'x', tint: status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
+                showToast(`Pass ${status}`, status==='approved'?'check':'x');
+                setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther('');
+              };
+              const confirmReject = (person) => {
+                const reason = rejectReasonKey === 'other' ? rejectReasonOther.trim() : PASS_REJECT_REASONS[rejectReasonKey];
+                if (!reason) { showToast('Pick a reason (or describe one) first','info'); return; }
+                decidePerson(person, 'rejected', reason);
               };
               const decideReq = (decision) => {
                 dispatch({ type:'MERGE_PASS_REQUESTS', payload: passRequests.map(r=>r.id===pendingReqRec.id ? { ...r, status:decision } : r) });
@@ -1315,6 +1324,12 @@ export default function AdminDashboard() {
                 logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v.business}'s request for ${pendingReqRec.count} additional Vendor Pass${pendingReqRec.count>1?'es':''} — ${ev.name}.`, { icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
                 showToast(`Request ${decision}`, decision==='approved'?'check':'x');
               };
+              const updateBooth = (val) => {
+                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, boothNumber:val } : p) });
+              };
+
+              const statusCounts = passApp ? passApp.people.reduce((m,p)=>{ m[p.status]=(m[p.status]||0)+1; return m; }, {}) : {};
+              const summaryParts = ['approved','pending','rejected'].filter(s=>statusCounts[s]).map(s=>`${statusCounts[s]} ${s}`);
 
               return (
                 <div key={a.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
@@ -1322,29 +1337,61 @@ export default function AdminDashboard() {
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                       <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:3 }}>
-                        {!passApp ? 'No Vendor Pass application yet' : `${passApp.people.length} pass holder${passApp.people.length!==1?'s':''}${passApp.extraApproved?` · +${passApp.extraApproved} extra approved`:''} · submitted ${passApp.submittedAt}`}
+                        {!passApp ? 'No Vendor Pass application yet' : `${passApp.people.length} pass holder${passApp.people.length!==1?'s':''}${summaryParts.length?` · ${summaryParts.join(', ')}`:''}${passApp.extraApproved?` · +${passApp.extraApproved} extra approved`:''} · submitted ${passApp.submittedAt}`}
                       </div>
                     </div>
-                    {passApp && <Badge status={passApp.status}/>}
                   </div>
 
                   {passApp && (
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:11 }}>
-                      {passApp.people.map(p => (
-                        <div key={p.id} onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, background:'var(--bg-subtle-alt)', borderRadius:10, padding:'6px 11px 6px 6px', cursor:'pointer' }}>
-                          <PhotoTile photo={p.photo} size={30}/>
-                          <span style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{p.name}</span>
-                          <Icon name="eye" size={12} color="var(--text-muted)"/>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                    <>
+                      <div style={{ marginTop:12 }}>
+                        <label style={{ display:'block', fontSize:11, fontWeight:600, color:'var(--text-secondary)', marginBottom:5 }}>Booth number</label>
+                        <input value={passApp.boothNumber||''} onChange={e=>updateBooth(e.target.value)} placeholder="e.g. A12" style={{ ...inp, maxWidth:180, padding:'9px 11px', fontSize:13 }}/>
+                      </div>
 
-                  {passApp?.status === 'pending' && (
-                    <div style={{ display:'flex', gap:9, marginTop:12 }}>
-                      <button onClick={()=>decideApp('approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Approve</button>
-                      <button onClick={()=>decideApp('rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Reject</button>
-                    </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:9, marginTop:12 }}>
+                        {passApp.people.map(p => (
+                          <div key={p.id} style={{ background:'var(--bg-subtle-alt)', borderRadius:12, padding:'9px 10px' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                              <div onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0, cursor:'pointer' }}>
+                                <PhotoTile photo={p.photo} size={34}/>
+                                <span style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
+                                <Icon name="eye" size={12} color="var(--text-muted)"/>
+                              </div>
+                              <Badge status={p.status}/>
+                            </div>
+
+                            {p.status === 'rejected' && p.rejectReason && (
+                              <div style={{ fontSize:11.5, color:'var(--tint-red-text)', marginTop:7, lineHeight:1.4 }}>Reason: {p.rejectReason}</div>
+                            )}
+
+                            {p.status === 'pending' && rejectingPersonId !== p.id && (
+                              <div style={{ display:'flex', gap:8, marginTop:9 }}>
+                                <button onClick={()=>decidePerson(p, 'approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                                <button onClick={()=>{ setRejectingPersonId(p.id); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                              </div>
+                            )}
+
+                            {rejectingPersonId === p.id && (
+                              <div style={{ marginTop:9, background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:10, padding:10 }}>
+                                <div style={{ fontSize:11, fontWeight:600, color:'var(--text-primary)', marginBottom:7 }}>Why reject {p.name}'s photo?</div>
+                                <select value={rejectReasonKey} onChange={e=>setRejectReasonKey(e.target.value)} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'var(--text-primary)', outline:'none' }}>
+                                  <option value="">Select a reason…</option>
+                                  {Object.entries(PASS_REJECT_REASONS).map(([k,label]) => <option key={k} value={k}>{label}</option>)}
+                                </select>
+                                {rejectReasonKey === 'other' && (
+                                  <textarea value={rejectReasonOther} onChange={e=>setRejectReasonOther(e.target.value)} placeholder="Describe the reason" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'var(--text-primary)', outline:'none', marginTop:8, minHeight:52, resize:'none', boxSizing:'border-box' }}/>
+                                )}
+                                <div style={{ display:'flex', gap:8, marginTop:9 }}>
+                                  <button onClick={()=>{ setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'var(--bg-subtle)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
+                                  <button onClick={()=>confirmReject(p)} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Confirm reject</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
 
                   {pendingReqRec && (

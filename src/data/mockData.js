@@ -101,22 +101,35 @@ export const INITIAL_PARKING = {
 
 // Digital Vendor Pass — one application per vendor+event, holding up to
 // `2 + extraApproved` people (name + photo each, see EMPTY_PASS_PERSON).
-// Admin must approve the application before its passes are considered
-// valid; asking for more than the default 2 goes through a separate
+// Each pass holder is approved/rejected **individually** (`person.status`) —
+// there is no single app-wide status; admin decides one person at a time,
+// and a vendor can edit-and-resubmit one person without touching the others.
+// Asking for more than the default 2 goes through a separate
 // INITIAL_PASS_REQUESTS record instead of editing this one directly (see
 // "Vendor Pass" business rule in PROJECT_NOTES.md).
 export const EMPTY_PASS_PERSON = () => ({ id:'pp'+Date.now()+Math.random().toString(36).slice(2,7), name:'', photo:null });
 
+// Fixed reasons admin can pick when rejecting an individual pass holder's photo —
+// 'other' unlocks a free-text field for anything not covered by the list.
+export const PASS_REJECT_REASONS = {
+  blurry:    'Photo is unclear or blurry',
+  not_real:  'Not an actual photo of a person (e.g. a random image, logo, or drawing)',
+  no_face:   "Face isn't clearly visible in the photo",
+  mismatch:  "Name doesn't appear to match the person in the photo",
+  duplicate: 'This person already has an approved pass for this event',
+  other:     'Other reason',
+};
+
 export const INITIAL_PASS_APPS = [
-  { id:'vp1', vendorId:'v1', eventId:'e1', status:'approved', extraApproved:0,
+  { id:'vp1', vendorId:'v1', eventId:'e1', extraApproved:0, boothNumber:'A12', submittedAt:'10 Jul',
     people:[
-      { id:'vp1p1', name:'Aisyah Rahman', photo:P('vp1p1','aisyah-pass.jpg','#E8C5B8','#A56548') },
-      { id:'vp1p2', name:'Farah Idris',   photo:P('vp1p2','farah-pass.jpg','#D9C6A5','#8B6F4E') },
-    ], submittedAt:'10 Jul', decidedAt:'11 Jul' },
-  { id:'vp2', vendorId:'v4', eventId:'e1', status:'pending', extraApproved:0,
+      { id:'vp1p1', name:'Aisyah Rahman', photo:P('vp1p1','aisyah-pass.jpg','#E8C5B8','#A56548'), status:'approved', rejectReason:null, decidedAt:'11 Jul' },
+      { id:'vp1p2', name:'Farah Idris',   photo:P('vp1p2','farah-pass.jpg','#D9C6A5','#8B6F4E'),   status:'approved', rejectReason:null, decidedAt:'11 Jul' },
+    ] },
+  { id:'vp2', vendorId:'v4', eventId:'e1', extraApproved:0, boothNumber:'', submittedAt:'12 Jul',
     people:[
-      { id:'vp2p1', name:'Grace Wong', photo:P('vp2p1','grace-pass.jpg','#F0D8DD','#B97434') },
-    ], submittedAt:'12 Jul', decidedAt:null },
+      { id:'vp2p1', name:'Grace Wong', photo:P('vp2p1','grace-pass.jpg','#F0D8DD','#B97434'), status:'pending', rejectReason:null, decidedAt:null },
+    ] },
 ];
 
 // Vendor requests to raise a pass application beyond the default 2 people —

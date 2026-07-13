@@ -10,6 +10,35 @@ import { CURRENT_VENDOR_ID, EMPTY_EINVOICE } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 
+// Gallery-upload + direct camera-capture, side by side — reused across every
+// Vendor Pass photo field (initial application, extra slot, single-person edit).
+function PhotoPickerPair({ size = 52, photo, onPick }) {
+  return (
+    <>
+      <label style={{ width:size, height:size, borderRadius:size>=48?12:11, border:'2px dashed #d8c6b2', background: photo?.url ? 'transparent' : '#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }} title="Upload from gallery">
+        {photo?.url
+          ? <img src={photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+          : <Icon name="image" size={size>=48?18:16} color="#9A5B26"/>}
+        <input type="file" accept="image/*" style={{ display:'none' }} onChange={onPick}/>
+      </label>
+      <label style={{ width:34, height:34, borderRadius:10, border:'1px solid #e3d8ca', background:'#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }} title="Take a photo">
+        <Icon name="camera" size={14} color="#9A5B26"/>
+        <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={onPick}/>
+      </label>
+    </>
+  );
+}
+
+// Crucial for mall entry outside operating hours — reused above every pass-photo submit action.
+function PassPhotoNotice() {
+  return (
+    <div style={{ display:'flex', gap:9, background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B03A2E', lineHeight:1.45, marginBottom:12 }}>
+      <Icon name="info" size={15} color="#B03A2E" style={{ marginTop:1 }}/>
+      Only upload a photo of the actual person who'll be at the booth — no random or unrelated pictures. This pass is used to verify entry at the mall outside normal operating hours, so a mismatched photo may be turned away at the door.
+    </div>
+  );
+}
+
 const TABS = [
   { id:'events',   label:'Available Markets', icon:'calendar' },
   { id:'apps',     label:'My Applications',   icon:'clipboard' },
@@ -78,45 +107,36 @@ export default function VendorDashboard() {
   const activeTabLabel = TABS.find(t => t.id === vTab)?.label || 'Menu';
 
   // ── Vendor Pass (apply / additional-pass request forms) ──
-  const [passForms, setPassForms] = useState({});   // eventId -> [{name,photo}] draft for a first-time application
+  // Each pass holder is approved/rejected/edited individually (person.status) — there is
+  // no single whole-application status. See PROJECT_NOTES.md rule 21.
+  const [passForms, setPassForms] = useState({});   // eventId -> [{name,photo}] draft for the first-time application (up to 2 people)
   const [extraForms, setExtraForms] = useState({}); // passAppId -> {name,photo} draft for an already-unlocked extra slot
   const [reqCounts, setReqCounts] = useState({});   // passAppId -> requested additional-pass count
-  const [cancelReapply, setCancelReapply] = useState({}); // passAppId -> editing an approved pass to cancel & reapply
-  const getPassForm = (eventId, existing) => {
-    if (passForms[eventId]) return passForms[eventId];
-    if (existing?.people?.length) {
-      const pre = existing.people.map(p => ({ name:p.name, photo:p.photo }));
-      while (pre.length < 2) pre.push({ name:'', photo:null });
-      return pre;
-    }
-    return [{ name:'', photo:null }, { name:'', photo:null }];
-  };
-  const updatePassForm = (eventId, idx, patch, existing) => {
-    const form = getPassForm(eventId, existing).map((p,i) => i===idx ? { ...p, ...patch } : p);
+  const [editingPersonId, setEditingPersonId] = useState(null); // pass-holder id currently being edited (to swap name/photo & resubmit)
+  const [personEditForm, setPersonEditForm] = useState(null);   // {name, photo} draft for editingPersonId
+  const getInitialForm = (eventId) => passForms[eventId] || [{ name:'', photo:null }, { name:'', photo:null }];
+  const updateInitialForm = (eventId, idx, patch) => {
+    const form = getInitialForm(eventId).map((p,i) => i===idx ? { ...p, ...patch } : p);
     setPassForms(f => ({ ...f, [eventId]: form }));
   };
-  const submitPassApp = (eventId, ev, existing) => {
-    const filled = getPassForm(eventId, existing).filter(p => p.name.trim() && p.photo);
+  const submitInitialApp = (eventId, ev) => {
+    const filled = getInitialForm(eventId).filter(p => p.name.trim() && p.photo);
     if (!filled.length) { showToast('Add at least one pass holder — name + photo required', 'info'); return; }
-    const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo }));
-    if (existing) {
-      dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(x => x.id===existing.id ? { ...x, status:'pending', people, submittedAt: fmtShort(new Date()), decidedAt:null } : x) });
-    } else {
-      const rec = { id:'vp'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId, status:'pending', extraApproved:0, people, submittedAt: fmtShort(new Date()), decidedAt:null };
-      dispatch({ type:'MERGE_PASS_APPS', payload:[...passApps, rec] });
-    }
+    const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo, status:'pending', rejectReason:null, decidedAt:null }));
+    const rec = { id:'vp'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId, extraApproved:0, boothNumber:'', people, submittedAt: fmtShort(new Date()) };
+    dispatch({ type:'MERGE_PASS_APPS', payload:[...passApps, rec] });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
-    logActivity(me.business, `${existing?'resubmitted':'applied for'} a Vendor Pass — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
-    showToast(existing ? 'Vendor Pass application resubmitted' : 'Vendor Pass application submitted', 'badge');
+    logActivity(me.business, `applied for a Vendor Pass — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
+    showToast('Vendor Pass application submitted', 'badge');
   };
   const submitExtraSlot = (passApp, ev) => {
     const draft = extraForms[passApp.id] || { name:'', photo:null };
     if (!draft.name.trim() || !draft.photo) { showToast('Name + photo required', 'info'); return; }
-    const person = { id:`vp${Date.now()}p${passApp.people.length}`, name:draft.name.trim(), photo:draft.photo };
+    const person = { id:`vp${Date.now()}p${passApp.people.length}`, name:draft.name.trim(), photo:draft.photo, status:'pending', rejectReason:null, decidedAt:null };
     dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people:[...p.people, person] } : p) });
     setExtraForms(f => ({ ...f, [passApp.id]: undefined }));
     logActivity(me.business, `added an additional Vendor Pass holder — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
-    showToast('Pass added', 'badge');
+    showToast('Pass added — awaiting admin review', 'badge');
   };
   const requestExtraPasses = (passApp, ev) => {
     const count = Number(reqCounts[passApp.id]) || 1;
@@ -125,32 +145,18 @@ export default function VendorDashboard() {
     logActivity(me.business, `requested ${count} additional Vendor Pass(es) — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Request sent to admin', 'check');
   };
-  // Shared name+photo input row for a pass holder — upload from gallery, or take a photo directly.
-  const renderPersonInputs = (eventId, existing) => getPassForm(eventId, existing).map((p, i) => (
-    <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
-      <label style={{ width:52, height:52, borderRadius:12, border:'2px dashed #d8c6b2', background: p.photo?.url ? 'transparent' : '#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }} title="Upload from gallery">
-        {p.photo?.url
-          ? <img src={p.photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-          : <Icon name="image" size={18} color="#9A5B26"/>}
-        <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
-          const file = e.target.files?.[0]; e.target.value='';
-          if (!file) return;
-          const photo = await fileToPhoto(file);
-          updatePassForm(eventId, i, { photo }, existing);
-        }}/>
-      </label>
-      <label style={{ width:34, height:34, borderRadius:10, border:'1px solid #e3d8ca', background:'#FBF7F1', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }} title="Take a photo">
-        <Icon name="camera" size={15} color="#9A5B26"/>
-        <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={async e => {
-          const file = e.target.files?.[0]; e.target.value='';
-          if (!file) return;
-          const photo = await fileToPhoto(file);
-          updatePassForm(eventId, i, { photo }, existing);
-        }}/>
-      </label>
-      <input value={p.name} onChange={e=>updatePassForm(eventId, i, { name:e.target.value }, existing)} placeholder={`Person ${i+1} full name`} style={{ ...inp, flex:1 }}/>
-    </div>
-  ));
+  // Editing one pass holder (whether currently approved or rejected) — resets just that
+  // person back to 'pending' for re-review, without touching any of the vendor's other
+  // pass holders or their approval status.
+  const startEditPerson = (person) => { setEditingPersonId(person.id); setPersonEditForm({ name:person.name, photo:person.photo }); };
+  const cancelEditPerson = () => { setEditingPersonId(null); setPersonEditForm(null); };
+  const submitPersonEdit = (passApp, person, ev) => {
+    if (!personEditForm.name.trim() || !personEditForm.photo) { showToast('Name + photo required', 'info'); return; }
+    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people: p.people.map(pp => pp.id===person.id ? { ...pp, name:personEditForm.name.trim(), photo:personEditForm.photo, status:'pending', rejectReason:null, decidedAt:null } : pp) } : p) });
+    cancelEditPerson();
+    logActivity(me.business, `updated a Vendor Pass holder's details — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
+    showToast('Updated — resubmitted for admin review', 'badge');
+  };
   // Testing helper — clears this vendor's Vendor Pass application + any pass request for an
   // event so the whole apply → admin approve → digital pass flow can be walked through again
   // from scratch. Not a real business action; for trying out the flow only.
@@ -159,7 +165,7 @@ export default function VendorDashboard() {
     dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === CURRENT_VENDOR_ID && p.eventId === eventId)) });
     dispatch({ type:'MERGE_PASS_REQUESTS', payload: passRequests.filter(r => !(r.vendorId === CURRENT_VENDOR_ID && r.eventId === eventId)) });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
-    setCancelReapply(c => ({ ...c, [eventId]: false }));
+    cancelEditPerson();
     showToast('Vendor Pass reset — try the flow again', 'badge');
   };
 
@@ -834,10 +840,10 @@ export default function VendorDashboard() {
               const passApp = passApps.find(p => p.vendorId === CURRENT_VENDOR_ID && p.eventId === ev.id);
               const prevEnded = idx === 0 || new Date(chain[idx-1].ev.endDate) < today;
               const canStart = !!passApp || prevEnded;
-              const showForm = (!passApp && canStart) || passApp?.status === 'rejected';
+              const showInitialForm = !passApp && canStart;
               const maxSlots = 2 + (passApp?.extraApproved || 0);
               const pendingReqRec = passApp ? passRequests.find(r => r.passAppId === passApp.id && r.status === 'pending') : null;
-              if (passApp?.status === 'approved') anyApproved = true;
+              if (passApp?.people.some(p => p.status === 'approved')) anyApproved = true;
 
               return (
                 <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
@@ -846,7 +852,6 @@ export default function VendorDashboard() {
                       <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
                       <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange}</div>
                     </div>
-                    {passApp && <Badge status={passApp.status}/>}
                   </div>
 
                   {!passApp && !canStart && (
@@ -856,114 +861,114 @@ export default function VendorDashboard() {
                     </div>
                   )}
 
-                  {passApp?.status === 'rejected' && (
-                    <div style={{ display:'flex', gap:9, background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B03A2E', lineHeight:1.45, marginTop:13 }}>
-                      <Icon name="info" size={15} color="#B03A2E" style={{ marginTop:1 }}/>
-                      Your Vendor Pass application wasn't approved. Revise the details below and resubmit.
-                    </div>
-                  )}
-
-                  {showForm && (
+                  {showInitialForm && (
                     <div style={{ marginTop:14 }}>
-                      {!passApp && <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to 2 people (name + photo each). Need more later? You can request additional passes once this is approved.</div>}
-                      {renderPersonInputs(ev.id, passApp)}
-                      <button onClick={()=>submitPassApp(ev.id, ev, passApp)} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer', marginTop:4 }}>{passApp ? 'Resubmit Vendor Pass application' : 'Submit Vendor Pass application'}</button>
+                      <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to 2 people (name + photo each). Need more than 2? You can request additional passes right after submitting, without waiting for these to be approved first.</div>
+                      <PassPhotoNotice/>
+                      {getInitialForm(ev.id).map((p, i) => (
+                        <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
+                          <PhotoPickerPair size={52} photo={p.photo} onPick={async e => {
+                            const file = e.target.files?.[0]; e.target.value='';
+                            if (!file) return;
+                            const photo = await fileToPhoto(file);
+                            updateInitialForm(ev.id, i, { photo });
+                          }}/>
+                          <input value={p.name} onChange={e=>updateInitialForm(ev.id, i, { name:e.target.value })} placeholder={`Person ${i+1} full name`} style={{ ...inp, flex:1 }}/>
+                        </div>
+                      ))}
+                      <button onClick={()=>submitInitialApp(ev.id, ev)} className="cta" style={{ width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer', marginTop:4 }}>Submit Vendor Pass application</button>
                     </div>
                   )}
 
-                  {passApp?.status === 'pending' && (
+                  {passApp && (
                     <>
-                      <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginTop:13 }}>
-                        <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }}/>
-                        Submitted {passApp.submittedAt} · awaiting admin review.
-                      </div>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:12 }}>
-                        {passApp.people.map(p => (
-                          <div key={p.id} style={{ display:'flex', alignItems:'center', gap:8, background:'#F7F3EC', borderRadius:10, padding:'7px 12px 7px 7px' }}>
-                            <PhotoTile photo={p.photo} size={34}/>
-                            <span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{p.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {passApp?.status === 'approved' && cancelReapply[passApp.id] && (
-                    <div style={{ marginTop:14 }}>
-                      <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginBottom:12 }}>
-                        <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }}/>
-                        Update the pass holders below — e.g. if someone's leaving and a new person needs to hold the pass instead. Submitting cancels the current approved pass and sends it back to admin for review.
-                      </div>
-                      {renderPersonInputs(ev.id, passApp)}
-                      <div style={{ display:'flex', gap:9, marginTop:4 }}>
-                        <button onClick={()=>{ setCancelReapply(c=>({ ...c, [passApp.id]:false })); setPassForms(f=>({ ...f, [ev.id]:undefined })); }} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Back</button>
-                        <button onClick={()=>{ submitPassApp(ev.id, ev, passApp); setCancelReapply(c=>({ ...c, [passApp.id]:false })); }} className="cta" style={{ flex:2, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Cancel pass &amp; resubmit</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {passApp?.status === 'approved' && !cancelReapply[passApp.id] && (
-                    <div style={{ marginTop:14 }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(190px,1fr))', gap:22 }}>
-                        {passApp.people.map(p => (
-                          <DigitalPassCard key={p.id} personName={p.name} vendorName={me.business} marketName={ev.name} validRange={ev.dateRange} photo={p.photo}/>
-                        ))}
+                      <div style={{ display:'flex', flexDirection:'column', gap:11, marginTop:14 }}>
+                        {passApp.people.map(p => {
+                          const isEditing = editingPersonId === p.id;
+                          if (isEditing) return (
+                            <div key={p.id} style={{ background:'#F7F3EC', borderRadius:14, padding:14 }}>
+                              <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:9 }}>Edit pass holder</div>
+                              <PassPhotoNotice/>
+                              <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
+                                <PhotoPickerPair size={52} photo={personEditForm?.photo} onPick={async e => {
+                                  const file = e.target.files?.[0]; e.target.value='';
+                                  if (!file) return;
+                                  const photo = await fileToPhoto(file);
+                                  setPersonEditForm(f => ({ ...f, photo }));
+                                }}/>
+                                <input value={personEditForm?.name||''} onChange={e=>setPersonEditForm(f=>({ ...f, name:e.target.value }))} placeholder="Full name" style={{ ...inp, flex:1 }}/>
+                              </div>
+                              <div style={{ display:'flex', gap:9 }}>
+                                <button onClick={cancelEditPerson} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:11, cursor:'pointer' }}>Cancel</button>
+                                <button onClick={()=>submitPersonEdit(passApp, p, ev)} className="cta" style={{ flex:2, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:11, cursor:'pointer' }}>Save &amp; resubmit for review</button>
+                              </div>
+                            </div>
+                          );
+                          if (p.status === 'pending') return (
+                            <div key={p.id} style={{ display:'flex', alignItems:'center', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'10px 12px' }}>
+                              <PhotoTile photo={p.photo} size={40}/>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.name}</div>
+                                <div style={{ fontSize:11.5, color:'#B7770D', marginTop:2 }}>Awaiting admin review</div>
+                              </div>
+                            </div>
+                          );
+                          if (p.status === 'rejected') return (
+                            <div key={p.id} style={{ background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:12, padding:'10px 12px' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+                                <PhotoTile photo={p.photo} size={40}/>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.name}</div>
+                                  <div style={{ fontSize:11.5, color:'#B03A2E', marginTop:2 }}>Not approved{p.rejectReason ? ` — ${p.rejectReason}` : ''}</div>
+                                </div>
+                              </div>
+                              <button onClick={()=>startEditPerson(p)} style={{ marginTop:9, width:'100%', background:'#fff', border:'1px solid #f3d5d0', color:'#B03A2E', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Update photo &amp; resubmit</button>
+                            </div>
+                          );
+                          return (
+                            <div key={p.id}>
+                              <DigitalPassCard personName={p.name} vendorName={me.business} marketName={ev.name} validRange={ev.dateRange} photo={p.photo} boothNumber={passApp.boothNumber}/>
+                              <div style={{ textAlign:'center', marginTop:8 }}>
+                                <span onClick={()=>startEditPerson(p)} style={{ fontSize:11.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Need to change this pass holder? Edit</span>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {passApp.people.length < maxSlots && (
                         <div style={{ marginTop:16, background:'#F7F3EC', borderRadius:14, padding:14 }}>
                           <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:9 }}>Add pass holder {passApp.people.length+1} of {maxSlots}</div>
+                          <PassPhotoNotice/>
                           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-                            <label style={{ width:48, height:48, borderRadius:11, border:'2px dashed #d8c6b2', background: extraForms[passApp.id]?.photo?.url ? 'transparent' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, overflow:'hidden' }} title="Upload from gallery">
-                              {extraForms[passApp.id]?.photo?.url
-                                ? <img src={extraForms[passApp.id].photo.url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                                : <Icon name="image" size={16} color="#9A5B26"/>}
-                              <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
-                                const file = e.target.files?.[0]; e.target.value='';
-                                if (!file) return;
-                                const photo = await fileToPhoto(file);
-                                setExtraForms(f => ({ ...f, [passApp.id]: { ...(f[passApp.id]||{name:''}), photo } }));
-                              }}/>
-                            </label>
-                            <label style={{ width:34, height:34, borderRadius:10, border:'1px solid #e3d8ca', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }} title="Take a photo">
-                              <Icon name="camera" size={14} color="#9A5B26"/>
-                              <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={async e => {
-                                const file = e.target.files?.[0]; e.target.value='';
-                                if (!file) return;
-                                const photo = await fileToPhoto(file);
-                                setExtraForms(f => ({ ...f, [passApp.id]: { ...(f[passApp.id]||{name:''}), photo } }));
-                              }}/>
-                            </label>
+                            <PhotoPickerPair size={48} photo={extraForms[passApp.id]?.photo} onPick={async e => {
+                              const file = e.target.files?.[0]; e.target.value='';
+                              if (!file) return;
+                              const photo = await fileToPhoto(file);
+                              setExtraForms(f => ({ ...f, [passApp.id]: { ...(f[passApp.id]||{name:''}), photo } }));
+                            }}/>
                             <input value={extraForms[passApp.id]?.name||''} onChange={e=>setExtraForms(f=>({ ...f, [passApp.id]: { ...(f[passApp.id]||{photo:null}), name:e.target.value } }))} placeholder="Full name" style={{ ...inp, flex:'1 1 140px' }}/>
                             <button onClick={()=>submitExtraSlot(passApp, ev)} style={{ background:'#9A5B26', color:'#fff', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'11px 16px', cursor:'pointer', flexShrink:0 }}>Add</button>
                           </div>
                         </div>
                       )}
 
-                      {passApp.people.length >= maxSlots && (
-                        pendingReqRec ? (
-                          <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginTop:16 }}>
-                            <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }}/>
-                            Request for {pendingReqRec.count} additional pass{pendingReqRec.count>1?'es':''} submitted {pendingReqRec.submittedAt} · awaiting admin review.
-                          </div>
-                        ) : (
-                          <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-                            <span style={{ fontSize:12.5, color:'#6B6560' }}>Need more than {maxSlots}?</span>
-                            <select value={reqCounts[passApp.id]||1} onChange={e=>setReqCounts(c=>({ ...c, [passApp.id]:e.target.value }))} style={{ border:'1px solid #e3d8ca', borderRadius:9, padding:'8px 10px', fontSize:13, background:'#fff' }}>
-                              <option value={1}>+1 pass</option>
-                              <option value={2}>+2 passes</option>
-                            </select>
-                            <button onClick={()=>requestExtraPasses(passApp, ev)} style={{ background:'#F2EDE6', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Request additional pass{(reqCounts[passApp.id]||1) > 1 ? 'es' : ''}</button>
-                          </div>
-                        )
+                      {pendingReqRec ? (
+                        <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#B7770D', lineHeight:1.45, marginTop:16 }}>
+                          <Icon name="clock" size={15} color="#B7770D" style={{ marginTop:1 }}/>
+                          Request for {pendingReqRec.count} additional pass{pendingReqRec.count>1?'es':''} submitted {pendingReqRec.submittedAt} · awaiting admin review.
+                        </div>
+                      ) : (
+                        <div style={{ marginTop:16, display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:12.5, color:'#6B6560' }}>Need more than {maxSlots}?</span>
+                          <select value={reqCounts[passApp.id]||1} onChange={e=>setReqCounts(c=>({ ...c, [passApp.id]:e.target.value }))} style={{ border:'1px solid #e3d8ca', borderRadius:9, padding:'8px 10px', fontSize:13, background:'#fff' }}>
+                            <option value={1}>+1 pass</option>
+                            <option value={2}>+2 passes</option>
+                          </select>
+                          <button onClick={()=>requestExtraPasses(passApp, ev)} style={{ background:'#F2EDE6', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Request additional pass{(reqCounts[passApp.id]||1) > 1 ? 'es' : ''}</button>
+                        </div>
                       )}
-
-                      <div style={{ marginTop:16, textAlign:'center' }}>
-                        <span onClick={()=>setCancelReapply(c=>({ ...c, [passApp.id]:true }))} style={{ fontSize:12, fontWeight:600, color:'#9A5B26', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>
-                          Need to change a pass holder? Cancel &amp; reapply
-                        </span>
-                      </div>
-                    </div>
+                    </>
                   )}
 
                   {passApp && (

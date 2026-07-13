@@ -7,7 +7,7 @@ import { useState } from 'react';
 // place throughout. Always rendered in the design's own fixed dark/amber
 // gradient — like the old physical-pass card before it, this represents a
 // physical badge and isn't meant to follow the admin day/night toggle.
-export default function DigitalPassCard({ personName, vendorName, marketName, validRange, photo }) {
+export default function DigitalPassCard({ personName, vendorName, marketName, validRange, photo, boothNumber }) {
   const [open, setOpen] = useState(false);
   const photoUrl = photo?.url || null;
   const photoGrad = photo?.grad
@@ -42,6 +42,12 @@ export default function DigitalPassCard({ personName, vendorName, marketName, va
                     <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:'0.16em', color:'#E8A05C', marginBottom:2 }}>MARKET</div>
                     <div style={{ fontSize:13, fontWeight:700, color:'#FFF8EE' }}>{marketName}</div>
                   </div>
+                  {boothNumber && (
+                    <div>
+                      <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:'0.16em', color:'#E8A05C', marginBottom:2 }}>BOOTH</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#FFF8EE' }}>No. {boothNumber}</div>
+                    </div>
+                  )}
                   <div>
                     <div style={{ fontSize:9.5, fontWeight:700, letterSpacing:'0.16em', color:'#E8A05C', marginBottom:2 }}>VALID</div>
                     <div style={{ fontSize:13, fontWeight:700, color:'#FFF8EE' }}>{validRange}</div>
@@ -60,6 +66,7 @@ export default function DigitalPassCard({ personName, vendorName, marketName, va
               <div style={{ fontSize:8.5, fontWeight:700, letterSpacing:'0.2em', color:'rgba(255,243,226,0.75)', marginBottom:8 }}>SULAP ARTISAN · VENDOR PASS</div>
               <div title={personName} style={{ fontFamily:"'Marcellus',serif", fontSize: (personName||'').length > 16 ? 15 : 18, lineHeight:1.2, color:'#FFF3E2', textTransform:'uppercase', letterSpacing:'0.03em', marginBottom:9, overflow:'hidden', display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' }}>{personName || 'Unnamed pass holder'}</div>
               <div style={{ fontSize:11, color:'#E8A05C', fontWeight:600, marginBottom:8 }}>{marketName}</div>
+              {boothNumber && <div style={{ fontSize:13.5, fontWeight:700, color:'#FFF8EE', marginBottom:8 }}>No. {boothNumber}</div>}
               <div style={{ fontSize:9, fontWeight:700, letterSpacing:'0.2em', color:'#E8A05C', marginBottom:3 }}>VALID</div>
               <div style={{ fontSize:12.5, fontWeight:700, color:'#FFF8EE' }}>{validRange}</div>
             </div>
