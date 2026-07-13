@@ -130,7 +130,7 @@ const StoreContext = createContext(null);
 
 // set() payload keys that count as edits when an admin only has view access.
 // Includes the keys that open edit modals, so those never open in view-only.
-const EDIT_SET_KEYS = ['content','settings','parkOverride','compOverrides','payModalKey','refundModalKey','depModalVendor','eventDetailId'];
+const EDIT_SET_KEYS = ['content','settings','parkOverride','compOverrides','payModalKey','refundModalKey','depModalVendor','eventDetailId','vTabOrder','aTabOrder'];
 
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, INIT);

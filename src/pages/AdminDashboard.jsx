@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, nudgeTabId } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
+import { VENDOR_TABS } from './VendorDashboard';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
@@ -35,6 +36,67 @@ export const ADMIN_TABS = [
   { id:'settings',   label:'Settings',            icon:'settings' },
   { id:'roles',      label:'Admin Roles',         icon:'lock', superOnly:true },
 ];
+
+// Settings → "Portal tab order" (super admin only): one reorderable list per portal.
+// Rows can be dragged (desktop) or nudged with the arrows (works on touch too); the
+// resulting order applies globally — every admin's console and every vendor's portal
+// render their tabs in this order, with no reorder controls of their own.
+function TabOrderCard({ title, desc, tabs, onOrder, onReset, isCustom }) {
+  const [dragId, setDragId] = useState(null); // visual feedback
+  const [overId, setOverId] = useState(null);
+  const dragIdRef = useRef(null); // drop logic reads the ref — state may lag a render behind
+  const ids = tabs.map(t => t.id);
+  const drop = (targetId) => {
+    const dragId = dragIdRef.current;
+    if (dragId && dragId !== targetId) onOrder(reorderIds(ids, dragId, targetId));
+  };
+  const nudgeBtn = (disabled) => ({
+    width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border-medium)',
+    background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.3 : 1, flexShrink: 0,
+  });
+  return (
+    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:14 }}>
+      <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)' }}>{title}</div>
+          <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2, lineHeight:1.4 }}>{desc}</div>
+        </div>
+        {isCustom && (
+          <button onClick={onReset} style={{ background:'none', border:'none', color:'#9A5B26', fontSize:11.5, fontWeight:600, cursor:'pointer', padding:'2px 0', flexShrink:0 }}>
+            Reset to default
+          </button>
+        )}
+      </div>
+      <div style={{ marginTop:11, display:'flex', flexDirection:'column', gap:3 }}>
+        {tabs.map((t, i) => (
+          <div key={t.id} draggable title="Drag or use the arrows to rearrange"
+            onDragStart={e => { if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; dragIdRef.current = t.id; setDragId(t.id); }}
+            onDragOver={e => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; if (overId !== t.id) setOverId(t.id); }}
+            onDragLeave={() => { if (overId === t.id) setOverId(null); }}
+            onDrop={e => { e.preventDefault(); drop(t.id); dragIdRef.current = null; setDragId(null); setOverId(null); }}
+            onDragEnd={() => { dragIdRef.current = null; setDragId(null); setOverId(null); }}
+            style={{
+              display:'flex', alignItems:'center', gap:9, padding:'7px 10px', borderRadius:10,
+              border:'1px solid var(--border-light)', background:'var(--bg-subtle)', cursor:'grab',
+              opacity: dragId === t.id ? 0.45 : 1,
+              boxShadow: overId === t.id && dragId && dragId !== t.id ? 'inset 0 2px 0 0 #B97434' : 'none',
+            }}>
+            <span style={{ fontSize:11, color:'var(--text-muted)', width:18, textAlign:'right', flexShrink:0 }}>{i+1}.</span>
+            <Icon name={t.icon} size={15} color="var(--text-muted)" />
+            <span style={{ flex:1, minWidth:0, fontSize:13, fontWeight:500, color:'var(--text-primary)' }}>{t.label}</span>
+            <button onClick={() => { if (i > 0) onOrder(reorderIds(ids, t.id, ids[i-1])); }} disabled={i === 0} style={nudgeBtn(i === 0)} aria-label={`Move ${t.label} up`}>
+              <Icon name="arrowLeft" size={12} color="var(--text-primary)" style={{ transform:'rotate(90deg)' }} />
+            </button>
+            <button onClick={() => { if (i < tabs.length - 1) onOrder(reorderIds(ids, t.id, ids[i+1])); }} disabled={i === tabs.length - 1} style={nudgeBtn(i === tabs.length - 1)} aria-label={`Move ${t.label} down`}>
+              <Icon name="arrowLeft" size={12} color="var(--text-primary)" style={{ transform:'rotate(-90deg)' }} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function Pager({ total, perPage, page, onPage }) {
   const pages = Math.ceil(total / perPage);
@@ -81,11 +143,6 @@ export default function AdminDashboard() {
   const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), state.aTabOrder);
-  const moveTab = (id, dir) => {
-    // full order includes RBAC-hidden tabs so their saved position survives
-    const fullIds = orderTabs(ADMIN_TABS, state.aTabOrder).map(t => t.id);
-    set({ aTabOrder: nudgeTabId(fullIds, visibleTabs.map(t => t.id), id, dir) });
-  };
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
   const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix (or transfer panel) is open
   const [transferTo, setTransferTo] = useState('');
@@ -343,7 +400,6 @@ export default function AdminDashboard() {
         tabs={visibleTabs}
         activeId={aTab}
         onSelect={id => { closeModals(); set({ aTab:id, page:1 }); }}
-        onMove={moveTab}
         dark
       />
 
@@ -2075,6 +2131,32 @@ export default function AdminDashboard() {
               </div>
             );
           })}
+
+          {/* Portal tab order — super admin only. The arrangement set here is what every
+              admin and every vendor sees; they have no reorder controls of their own. */}
+          {isSuperActing && (
+            <>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:17, fontWeight:400, color:'var(--text-primary)', margin:'10px 2px 0' }}>Portal tab order</div>
+              <div className="admin-cards">
+                <TabOrderCard
+                  title="Admin console tabs"
+                  desc="The sidebar/menu order every admin sees, including staff admins (their hidden tabs keep this position too)."
+                  tabs={orderTabs(ADMIN_TABS, state.aTabOrder)}
+                  isCustom={!!state.aTabOrder}
+                  onOrder={ids => set({ aTabOrder: ids })}
+                  onReset={() => { set({ aTabOrder: null }); showToast('Admin tab order reset to default', 'check'); }}
+                />
+                <TabOrderCard
+                  title="Vendor portal tabs"
+                  desc="The sidebar/menu order every vendor sees in their portal."
+                  tabs={orderTabs(VENDOR_TABS, state.vTabOrder)}
+                  isCustom={!!state.vTabOrder}
+                  onOrder={ids => set({ vTabOrder: ids })}
+                  onReset={() => { set({ vTabOrder: null }); showToast('Vendor tab order reset to default', 'check'); }}
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 
