@@ -54,7 +54,7 @@ export default function PublicHome() {
     rail.scrollBy({ left: dir * step, behavior: 'smooth' });
   };
 
-  const navLink = { fontSize: 15, fontWeight: 600, color: '#5C3A1E' };
+  const navLink = { fontSize: 15, fontWeight: 600, color: '#5C3A1E', textDecoration: 'none' };
   const outlineBtn = { padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#9A5B26', border: '1.5px solid #9A5B26', cursor: 'pointer', background: 'transparent' };
   const solidBtn = { padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#FFF8EE', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow: '0 6px 20px rgba(122,67,26,0.4)', border: 'none', cursor: 'pointer' };
 
@@ -192,10 +192,10 @@ export default function PublicHome() {
           <div style={{ flex: '0 1 200px', minWidth: 160 }}>
             <div style={{ fontFamily: "'Marcellus', serif", fontSize: 17, color: '#FFF3E2', marginBottom: 16 }}>Vendors</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <a href="#" onClick={e => { e.preventDefault(); goRegister(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer' }}>Apply as a Vendor</a>
-              <a href="#" onClick={e => { e.preventDefault(); goVendor(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer' }}>Vendor Log In</a>
-              <a href="#coming-soon" style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)' }}>Coming Soon</a>
-              <a href="#" onClick={e => { e.preventDefault(); goAdmin(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer' }}>Admin</a>
+              <a href="#" onClick={e => { e.preventDefault(); goRegister(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer', textDecoration: 'none' }}>Apply as a Vendor</a>
+              <a href="#" onClick={e => { e.preventDefault(); goVendor(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer', textDecoration: 'none' }}>Vendor Log In</a>
+              <a href="#coming-soon" style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', textDecoration: 'none' }}>Coming Soon</a>
+              <a href="#" onClick={e => { e.preventDefault(); goAdmin(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer', textDecoration: 'none' }}>Admin</a>
             </div>
           </div>
           <div style={{ flex: '0 1 280px', minWidth: 220 }}>
