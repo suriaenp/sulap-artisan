@@ -13,7 +13,7 @@ export default function Toast() {
       padding: '12px 18px', borderRadius: 13,
       boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
       whiteSpace: 'nowrap', zIndex: 60,
-      animation: 'toastIn 0.25s ease',
+      animation: 'toastIn 0.3s var(--ease-spring)',
       display: 'flex', alignItems: 'center', gap: 9,
     }}>
       <Icon name={state.toastIcon} size={15} color="#FAF8F5" />

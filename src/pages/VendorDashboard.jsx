@@ -208,6 +208,9 @@ export default function VendorDashboard() {
         onSelect={id => { closeModals(); set({ vTab:id, page:1 }); }}
       />
 
+      {/* Keyed per tab so switching remounts the wrapper and replays the tabIn animation */}
+      <div key={vTab} className="tab-panel">
+
       {/* ── Compliance ── */}
       {vTab === 'compliance' && (
         <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
@@ -1013,6 +1016,8 @@ export default function VendorDashboard() {
           })()}
         </div>
       )}
+
+      </div>{/* /.tab-panel */}
     </div>
   );
 }

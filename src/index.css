@@ -136,10 +136,71 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
 }
 .outer-wrap, .app-shell { transition: background-color .25s ease; }
 
-@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
-@keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+/* ── Motion ─────────────────────────────────────────────────────────────────
+   Apple-style motion pass: feedback on press (not release), enter/exit along
+   the same path, spring-feel curves (--ease-spring ≈ a critically-damped
+   settle, --ease-sheet = Apple's sheet curve), and honoring
+   prefers-reduced-motion with fades instead of movement. */
+:root {
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 14px) scale(0.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+@keyframes modalIn { from { transform: translateY(14px) scale(0.97); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes scrimIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes drawerIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @keyframes pulseTimer { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes tabIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Instant press feedback on every control — highlight lives on pointer-down.
+   The transition only eases the release; the press itself is immediate. */
+button { transition: transform 0.16s var(--ease-spring), opacity 0.16s ease, background-color 0.16s ease; }
+button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05s; }
+
+/* Tab content slides up as it arrives — keyed per tab in both dashboards */
+.tab-panel { animation: tabIn 0.3s var(--ease-spring); }
+
+/* Cards breathe on hover (pointer devices only) */
+@media (hover: hover) {
+  .admin-cards > div, .event-cards > div {
+    transition: transform 0.25s var(--ease-spring), box-shadow 0.25s ease;
+  }
+  .admin-cards > div:hover, .event-cards > div:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(60, 40, 20, 0.10);
+  }
+}
+
+/* Mobile portal menu trigger floats as translucent chrome; content scrolls under it */
+.vendor-tabs-bar, .admin-tabs-bar {
+  position: sticky !important;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg-card) 72%, transparent) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  button:active:not(:disabled) { transform: none; }
+  .admin-cards > div:hover, .event-cards > div:hover { transform: none; }
+  /* Movement becomes a plain cross-fade; the pulse loop goes still. Redefining
+     the keyframes keeps every inline `animation:` reference working untouched. */
+  @keyframes tabIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes drawerIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 0); } to { opacity: 1; transform: translate(-50%, 0); } }
+  @keyframes pulseTimer { 0%, 100% { opacity: 1; } 50% { opacity: 1; } }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vendor-tabs-bar, .admin-tabs-bar {
+    background: var(--bg-card) !important;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 
 .outer-wrap {
   min-height: 100dvh;

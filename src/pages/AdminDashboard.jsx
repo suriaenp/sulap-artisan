@@ -410,6 +410,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {/* Keyed per tab so switching remounts the wrapper and replays the tabIn animation */}
+      <div key={aTab} className="tab-panel">
+
       {/* ── Overview ── */}
       {aTab === 'overview' && (
         <div style={{ padding:'14px 16px 20px' }}>
@@ -2365,6 +2368,8 @@ export default function AdminDashboard() {
           </button>
         </div>
       )}
+
+      </div>{/* /.tab-panel */}
     </div>
   );
 }

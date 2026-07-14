@@ -33,8 +33,8 @@ function PayModal() {
     showToast(amt > calc.total ? 'Payment recorded — overpaid, refund flagged' : `Marked ${status}`, 'check');
   };
   return (
-    <div onClick={close} style={{ position:'absolute', inset:0, zIndex:75, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:380, background:'var(--bg-card)', borderRadius:20, padding:22 }}>
+    <div onClick={close} style={{ position:'absolute', inset:0, zIndex:75, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24, animation:'scrimIn 0.25s ease' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:380, background:'var(--bg-card)', borderRadius:20, padding:22, animation:'modalIn 0.3s var(--ease-spring)' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
           <div>
             <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Record payment</div>

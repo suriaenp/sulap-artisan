@@ -18,8 +18,8 @@ import { scanAndRecord } from '../lib/payScan';
 // inside would make the text unreadable.
 function Sheet({ onClose, children, maxW = 560 }) {
   return (
-    <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius:20, maxHeight:'90%', overflow:'hidden', animation:'modalIn 0.22s ease', display:'flex', flexDirection:'column' }}>
+    <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24, animation:'scrimIn 0.25s ease' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius:20, maxHeight:'90%', overflow:'hidden', animation:'modalIn 0.3s var(--ease-spring)', display:'flex', flexDirection:'column' }}>
         <div className="themed-scroll-light" style={{ overflowY:'auto', padding:'22px 22px 30px' }}>
           {children}
         </div>
