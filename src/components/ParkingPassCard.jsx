@@ -67,7 +67,7 @@ export default function ParkingPassCard({ vendorName, plateNumber, marketName, d
   const hh = Math.floor(diff / 3600000), mm = Math.floor(diff / 60000) % 60, ss = Math.floor(diff / 1000) % 60;
   const pad = n => String(n).padStart(2, '0');
   const timeLeft = diff === 0 ? 'EXPIRED' : (hh > 0 ? pad(hh) + ':' : '') + pad(mm) + ':' + pad(ss);
-  const statusLabel = dayStatus === 'expired' ? 'EXPIRED' : dayStatus === 'locked' ? 'LOCKED' : 'AWAITING PARKING DETAILS';
+  const statusLabel = dayStatus === 'expired' ? 'EXPIRED' : 'LOCKED';
   const vendorNameSize = (vendorName || '').length > 16 ? 17 : 22;
   const plateSize = (plateNumber || '').length > 11 ? 32 : 40;
 
@@ -109,11 +109,11 @@ export default function ParkingPassCard({ vendorName, plateNumber, marketName, d
                   <div style={{ fontSize: 15, fontWeight: 700, color: p.valueDark }}>{untilTimeLabel}</div>
                 </div>
               </div>
-              {showCountdown ? (
+              {interactive ? (
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: p.pillBg, borderRadius: 999, padding: '8px 20px' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.dot, animation: 'pulseTimer 1.6s ease-in-out infinite' }}/>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: p.pillLabel }}>TIME LEFT TO EXIT</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: p.pillValue, fontVariantNumeric: 'tabular-nums', minWidth: 76, textAlign: 'left' }}>{timeLeft}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', color: p.pillLabel }}>{showCountdown ? 'TIME LEFT TO EXIT' : 'AWAITING PARKING DETAILS'}</div>
+                  {showCountdown && <div style={{ fontSize: 16, fontWeight: 700, color: p.pillValue, fontVariantNumeric: 'tabular-nums', minWidth: 76, textAlign: 'left' }}>{timeLeft}</div>}
                 </div>
               ) : (
                 <div style={{ display: 'inline-flex', alignItems: 'center', background: p.pillBg, borderRadius: 999, padding: '8px 20px' }}>

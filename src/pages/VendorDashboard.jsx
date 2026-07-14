@@ -40,6 +40,10 @@ function PassPhotoNotice() {
   );
 }
 
+// Parking Pass exit cutoff — fixed at 11:59PM every market day, independent
+// of that event's actual operating hours (event.startTime/endTime).
+const PARKING_EXIT_TIME = '23:59';
+
 // Single source of truth for vendor portal tabs — the sidebar and the mobile
 // drawer both render from this list (same pattern as ADMIN_TABS).
 export const VENDOR_TABS = [
@@ -794,6 +798,8 @@ export default function VendorDashboard() {
                     return { dayIndex, dDate, dayStatus, serial: parking[`${CURRENT_VENDOR_ID}-${ev.id}-${dayIndex}`] || '' };
                   });
                   const hasTicket = dayInfo.some(d => d.serial);
+                  // Today's pass leads the row; the rest keep their day order behind it.
+                  const orderedDayInfo = [...dayInfo].sort((a,b) => (a.dayStatus==='active'?0:1) - (b.dayStatus==='active'?0:1));
                   return (
                     <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -807,7 +813,7 @@ export default function VendorDashboard() {
                         <Icon name="car" size={15} color="#9A5B26"/><span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{me.plate}</span>
                       </div>
                       <div style={{ display:'flex', flexWrap:'wrap', gap:16, marginTop:14, justifyContent:'center' }}>
-                        {dayInfo.map(d => (
+                        {orderedDayInfo.map(d => (
                           <div key={d.dayIndex} style={{ flex:'1 1 300px', maxWidth:360 }}>
                             <ParkingPassCard
                               vendorName={me.business}
@@ -818,8 +824,8 @@ export default function VendorDashboard() {
                               validDateLabel={monthDayLabel(d.dDate)}
                               validYear={String(d.dDate.getFullYear())}
                               dayNumber={d.dayIndex}
-                              untilTimeLabel={fmtTime12(ev.endTime)}
-                              validUntilISO={isoLocal(d.dDate, ev.endTime)}
+                              untilTimeLabel={fmtTime12(PARKING_EXIT_TIME)}
+                              validUntilISO={isoLocal(d.dDate, PARKING_EXIT_TIME)}
                               serial={d.serial}
                               dayStatus={d.dayStatus}
                             />
