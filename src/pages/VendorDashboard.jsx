@@ -790,7 +790,8 @@ export default function VendorDashboard() {
                   const dayInfo = Array.from({length:ev.days||1},(_,i)=>{
                     const dayIndex = i+1;
                     const dDate = eventDayDate(ev.startDate, dayIndex);
-                    return { dayIndex, dDate, serial: parking[`${CURRENT_VENDOR_ID}-${ev.id}-${dayIndex}`] || '' };
+                    const dayStatus = dDate.getTime() < today.getTime() ? 'expired' : dDate.getTime() > today.getTime() ? 'locked' : 'active';
+                    return { dayIndex, dDate, dayStatus, serial: parking[`${CURRENT_VENDOR_ID}-${ev.id}-${dayIndex}`] || '' };
                   });
                   const hasTicket = dayInfo.some(d => d.serial);
                   return (
@@ -805,8 +806,8 @@ export default function VendorDashboard() {
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, background:'#F2EDE6', borderRadius:10, padding:'8px 12px', width:'fit-content' }}>
                         <Icon name="car" size={15} color="#9A5B26"/><span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{me.plate}</span>
                       </div>
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:16, marginTop:14, justifyContent: hasTicket ? 'center' : 'flex-start' }}>
-                        {dayInfo.map(d => d.serial ? (
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:16, marginTop:14, justifyContent:'center' }}>
+                        {dayInfo.map(d => (
                           <div key={d.dayIndex} style={{ flex:'1 1 300px', maxWidth:360 }}>
                             <ParkingPassCard
                               vendorName={me.business}
@@ -820,12 +821,8 @@ export default function VendorDashboard() {
                               untilTimeLabel={fmtTime12(ev.endTime)}
                               validUntilISO={isoLocal(d.dDate, ev.endTime)}
                               serial={d.serial}
+                              dayStatus={d.dayStatus}
                             />
-                          </div>
-                        ) : (
-                          <div key={d.dayIndex} style={{ flex:'1 1 220px', textAlign:'center', background:'#F7F3EC', border:'1px dashed #d8c6b2', borderRadius:14, padding:'16px 12px', fontSize:12, color:'#8A7B68', lineHeight:1.5 }}>
-                            <div style={{ fontSize:12.5, fontWeight:600, color:'#6B6560' }}>Day {d.dayIndex} · {monthDayLabel(d.dDate)}</div>
-                            Parking pass not yet assigned by admin.
                           </div>
                         ))}
                       </div>
