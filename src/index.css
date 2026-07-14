@@ -139,6 +139,7 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
 @keyframes modalIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes drawerIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes pulseTimer { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 
 .outer-wrap {
   min-height: 100dvh;

@@ -1194,7 +1194,7 @@ export default function AdminDashboard() {
                 <div style={{ display:'flex', alignItems:'center', gap:9, background:editable?'var(--tint-green-bg)':'var(--tint-amber-bg)', border:`1px solid ${editable?'var(--tint-green-border)':'var(--tint-amber-border)'}`, borderRadius:12, padding:'11px 13px', marginBottom:14 }}>
                   <Icon name={editable?'check':'lock'} size={15} color={editable?'var(--tint-green-text)':'var(--tint-amber-text)'}/>
                   <div style={{ flex:1, fontSize:12, fontWeight:500, color:editable?'var(--tint-green-text)':'var(--tint-amber-text)', lineHeight:1.4 }}>
-                    {editable ? 'Entry is open — market is currently in progress.' : 'Locked — ticket entry is only available during the event dates.'}
+                    {editable ? 'Entry is open — market is currently in progress.' : 'Locked — serial entry is only available during the event dates.'}
                   </div>
                   <button onClick={()=>set({parkOverride:!parkOverride})} style={{ flexShrink:0, background:'rgba(255,255,255,0.65)', border:`1px solid ${editable?'var(--tint-green-border)':'var(--tint-amber-border)'}`, color:editable?'var(--tint-green-text)':'var(--tint-amber-text)', fontSize:11, fontWeight:600, borderRadius:8, padding:'6px 10px', cursor:'pointer' }}>
                     {parkOverride ? 'Lock' : 'Override'}
@@ -1222,7 +1222,7 @@ export default function AdminDashboard() {
                         <div style={{ display:'flex', gap:8, marginTop:11 }}>
                           {cells.map(c => (
                             <div key={c.key} style={{ flex:1 }}>
-                              <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, textAlign:'center' }}>{c.dayLabel} ticket</div>
+                              <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, textAlign:'center' }}>{c.dayLabel} serial</div>
                               <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} placeholder="—" style={{ width:'100%', border:'1px solid var(--border-medium)', background:editable?'var(--bg-card)':'var(--bg-subtle)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:600, textAlign:'center', outline:'none', color:'var(--text-primary)', cursor:editable?'text':'not-allowed' }}/>
                             </div>
                           ))}

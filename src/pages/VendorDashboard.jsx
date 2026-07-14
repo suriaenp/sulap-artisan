@@ -4,8 +4,9 @@ import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import DigitalPassCard from '../components/DigitalPassCard';
+import ParkingPassCard from '../components/ParkingPassCard';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, orderTabs } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, orderTabs, eventDayDate, monthDayLabel, fmtTime12, isoLocal, parseDateOnly } from '../lib/helpers';
 import { CURRENT_VENDOR_ID, EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
@@ -786,11 +787,12 @@ export default function VendorDashboard() {
               <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
                 {myParkApps.map(a => {
                   const ev = events.find(e => e.id === a.eventId) || {};
-                  const cells = Array.from({length:ev.days||1},(_,i)=>({
-                    dayLabel:`Day ${i+1}`,
-                    value: parking[`${CURRENT_VENDOR_ID}-${ev.id}-${i+1}`] || '—',
-                  }));
-                  const hasTicket = cells.some(c => c.value !== '—');
+                  const dayInfo = Array.from({length:ev.days||1},(_,i)=>{
+                    const dayIndex = i+1;
+                    const dDate = eventDayDate(ev.startDate, dayIndex);
+                    return { dayIndex, dDate, serial: parking[`${CURRENT_VENDOR_ID}-${ev.id}-${dayIndex}`] || '' };
+                  });
+                  const hasTicket = dayInfo.some(d => d.serial);
                   return (
                     <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
@@ -803,11 +805,27 @@ export default function VendorDashboard() {
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, background:'#F2EDE6', borderRadius:10, padding:'8px 12px', width:'fit-content' }}>
                         <Icon name="car" size={15} color="#9A5B26"/><span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{me.plate}</span>
                       </div>
-                      <div style={{ display:'flex', gap:8, marginTop:12 }}>
-                        {cells.map((c,i) => (
-                          <div key={i} style={{ flex:1, textAlign:'center', background:'#E8F5F0', border:'1px solid #cfe9df', borderRadius:10, padding:'10px 4px' }}>
-                            <div style={{ fontSize:10, color:'#2D6A4F', fontWeight:600 }}>{c.dayLabel}</div>
-                            <div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:3 }}>{c.value}</div>
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:16, marginTop:14, justifyContent: hasTicket ? 'center' : 'flex-start' }}>
+                        {dayInfo.map(d => d.serial ? (
+                          <div key={d.dayIndex} style={{ flex:'1 1 300px', maxWidth:360 }}>
+                            <ParkingPassCard
+                              vendorName={me.business}
+                              plateNumber={me.plate}
+                              marketName={ev.name}
+                              dateFromLabel={monthDayLabel(parseDateOnly(ev.startDate))}
+                              dateToLabel={monthDayLabel(parseDateOnly(ev.endDate))}
+                              validDateLabel={monthDayLabel(d.dDate)}
+                              validYear={String(d.dDate.getFullYear())}
+                              dayNumber={d.dayIndex}
+                              untilTimeLabel={fmtTime12(ev.endTime)}
+                              validUntilISO={isoLocal(d.dDate, ev.endTime)}
+                              serial={d.serial}
+                            />
+                          </div>
+                        ) : (
+                          <div key={d.dayIndex} style={{ flex:'1 1 220px', textAlign:'center', background:'#F7F3EC', border:'1px dashed #d8c6b2', borderRadius:14, padding:'16px 12px', fontSize:12, color:'#8A7B68', lineHeight:1.5 }}>
+                            <div style={{ fontSize:12.5, fontWeight:600, color:'#6B6560' }}>Day {d.dayIndex} · {monthDayLabel(d.dDate)}</div>
+                            Parking pass not yet assigned by admin.
                           </div>
                         ))}
                       </div>

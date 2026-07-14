@@ -61,6 +61,48 @@ export function dayCount(start, end) {
   return d >= 0 ? d + 1 : 0;
 }
 
+// ── Parking Pass date/time helpers ──
+// Parses a "YYYY-MM-DD" date-only string as local midnight — avoids the
+// UTC-vs-local off-by-one `new Date('YYYY-MM-DD')` can cause in negative-UTC
+// timezones (that form is spec'd as UTC, but .getDate()/.getMonth() below read
+// it back in local time).
+export function parseDateOnly(d) {
+  const [y, m, day] = String(d).split('-').map(Number);
+  return new Date(y, (m || 1) - 1, day || 1);
+}
+
+// The calendar date for day N (1-based) of a multi-day event.
+export function eventDayDate(startDate, dayIndex) {
+  const dt = parseDateOnly(startDate);
+  dt.setDate(dt.getDate() + (dayIndex - 1));
+  return dt;
+}
+
+// "26 JULY" — day number + full uppercase month name, for the Parking Pass design.
+export function monthDayLabel(dateObj) {
+  const month = dateObj.toLocaleDateString('en-GB', { month: 'long' }).toUpperCase();
+  return `${dateObj.getDate()} ${month}`;
+}
+
+// "16:00" -> "4:00 PM" — 12-hour with minutes always shown, for the Parking Pass design.
+export function fmtTime12(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ap = h >= 12 ? 'PM' : 'AM';
+  const hh = ((h + 11) % 12) + 1;
+  return `${hh}:${String(m).padStart(2, '0')} ${ap}`;
+}
+
+// Local-time (no timezone designator, so `new Date(...)` parses it back as
+// local) datetime string for the given date + "HH:MM" time — the Parking
+// Pass countdown target.
+export function isoLocal(dateObj, timeHHMM) {
+  const yyyy = dateObj.getFullYear();
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${timeHHMM || '23:59'}:00`;
+}
+
 // E-Invoice & bank info collected once a vendor is approved — required before
 // they can apply to any market. Shown/edited from the vendor Profile tab and
 // reflected read-only in the admin Vendor Detail modal.
