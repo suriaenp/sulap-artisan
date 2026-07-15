@@ -138,20 +138,6 @@ function NoSearchMatch({ query }) {
   );
 }
 
-// Small uppercase icon-chip header — breaks the Create Event form (and its
-// Edit Event modal twin in Modals.jsx) into labeled groups instead of one
-// long stack of fields.
-function SectionHead({ icon, text }) {
-  return (
-    <div style={{ display:'flex', alignItems:'center', gap:9, margin:'4px 0 13px' }}>
-      <div style={{ width:26, height:26, borderRadius:8, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-        <Icon name={icon} size={13} color="#9A5B26"/>
-      </div>
-      <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-muted)', textTransform:'uppercase' }}>{text}</div>
-    </div>
-  );
-}
-
 // Events carry no stored status field (unlike vendor/application records) —
 // derived at render time from today vs. the event's own start/end dates.
 function eventStatus(ev) {
@@ -196,6 +182,9 @@ export default function AdminDashboard() {
   const [addingPassFor, setAddingPassFor] = useState(null); // passApp id currently showing the "grant extra passes" control
   const [addPassCount, setAddPassCount] = useState(1);
   const [passReportBusy, setPassReportBusy] = useState(false);
+  const [eventStep, setEventStep] = useState(0); // Create Event wizard step (0=Picture,1=Details,2=Schedule,3=Pricing) — presentational only
+  const eventRailRef = useRef(null); // Existing-events horizontal rail scroll container
+  useEffect(() => { setEventStep(0); }, [aTab]);
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
@@ -716,140 +705,191 @@ export default function AdminDashboard() {
       })()}
 
       {/* ── Events ── */}
-      {aTab === 'events' && (
+      {aTab === 'events' && (() => {
+        const stepLabels = ['Picture','Details','Schedule','Pricing'];
+        const d = dayCount(state.ef.start,state.ef.end)||1;
+        const fnbTotal = Number(state.ef.fnb||0)*d*1.06;
+        const nfTotal  = Number(state.ef.nonfnb||0)*d*1.06;
+        const openEdit = (ev) => set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||'',img:ev.img||EVENT_IMG_PALETTE[0]}});
+        const scrollRail = (dir) => { const el = eventRailRef.current; if (el) el.scrollBy({left: dir*208, behavior:'smooth'}); };
+        const createEvent = () => {
+          if (!state.ef.name) { showToast('Add an event name first','info'); return; }
+          const dd = dayCount(state.ef.start,state.ef.end)||1;
+          const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:dd, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
+          dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
+          set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
+          setEventStep(0);
+          logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'var(--tint-green-bg)'});
+          showToast('Event created','tent');
+        };
+        return (
         <div style={{ padding:'14px 16px 24px' }}>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:20, padding:'18px 18px 20px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:11 }}>
-              <div style={{ width:38, height:38, borderRadius:11, background:'linear-gradient(135deg,#E8A05C,#9A5B26)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <Icon name="tent" size={18} color="#FFF8EE"/>
-              </div>
-              <div>
-                <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Create event</div>
-                <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:1 }}>Set up a new market for vendors to apply to.</div>
-              </div>
-            </div>
+          <div className="event-wizard-wrap">
 
-            <div style={{ marginTop:22 }}>
-              <SectionHead icon="pencil" text="Basics"/>
-              <div style={{ height:64, borderRadius:14, background:state.ef.img||EVENT_IMG_PALETTE[0], position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-end', padding:'10px 14px', marginBottom:13 }}>
-                <Icon name="tent" size={46} color="rgba(255,255,255,0.16)" style={{ position:'absolute', top:6, right:8 }}/>
-                <div style={{ fontFamily:"'Marcellus',serif", fontSize:16.5, color:'#FFF8EE', textShadow:'0 1px 4px rgba(0,0,0,0.3)', position:'relative', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{state.ef.name || 'Your event name'}</div>
-              </div>
-              <div style={{ marginBottom:13 }}><div style={lbl}>Event name</div><input value={state.ef.name} onChange={e=>set({ef:{...state.ef,name:e.target.value}})} placeholder="e.g. Harvest Night Market" style={inp}/></div>
-              <div>
-                <div style={lbl}>Theme color</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:11 }}>
-                  {EVENT_IMG_PALETTE.map((g,i) => {
-                    const selected = (state.ef.img||EVENT_IMG_PALETTE[0])===g;
-                    return (
-                      <button key={i} onClick={()=>set({ef:{...state.ef,img:g}})} style={{ width:32, height:32, borderRadius:10, background:g, border:'2px solid transparent', boxShadow:selected?'0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-primary)':'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                        {selected && <Icon name="check" size={14} color="#fff" style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}/>}
-                      </button>
-                    );
-                  })}
+            {/* CREATE EVENT — layered wizard card */}
+            <div className="event-wizard-card" style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:22, padding:'18px 18px 20px', boxShadow:'0 20px 44px -20px rgba(60,40,20,0.4)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:11 }}>
+                <div style={{ width:38, height:38, borderRadius:11, background:'linear-gradient(135deg,#E8A05C,#9A5B26)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  <Icon name="tent" size={18} color="#FFF8EE"/>
                 </div>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:9, lineHeight:1.4 }}>Shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Create event</div>
+                  <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:1 }}>Step {eventStep+1} of 4 · {stepLabels[eventStep]}</div>
+                </div>
               </div>
-            </div>
 
-            <div style={{ height:1, background:'var(--border-light)', margin:'20px 0' }}/>
+              <div style={{ display:'flex', alignItems:'center', margin:'18px 0 2px' }}>
+                {stepLabels.map((label,i) => {
+                  const done = i < eventStep, active = i === eventStep;
+                  return (
+                    <div key={label} style={{ display:'flex', alignItems:'center', flex: i<stepLabels.length-1 ? '1 1 0' : '0 0 auto' }}>
+                      <button onClick={()=>setEventStep(i)} title={label} style={{ flexShrink:0, width:26, height:26, borderRadius:'50%', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, background: done?'#B97434':active?'#7A431A':'var(--border-light)', color:(done||active)?'#FFF8EE':'var(--text-muted)', boxShadow: active?'0 4px 10px rgba(122,67,26,0.4)':'none' }}>
+                        {done ? <Icon name="check" size={12} color="#FFF8EE"/> : i+1}
+                      </button>
+                      {i < stepLabels.length-1 && <div style={{ flex:1, height:2, background: i<eventStep ? '#B97434' : 'var(--border-light)', margin:'0 4px', borderRadius:2 }}/>}
+                    </div>
+                  );
+                })}
+              </div>
 
-            <div>
-              <SectionHead icon="calendar" text="Schedule"/>
-              <div className="form-grid">
-                <div><div style={lbl}>Start date</div><input type="date" value={state.ef.start} onChange={e=>set({ef:{...state.ef,start:e.target.value}})} style={inp}/></div>
-                <div><div style={lbl}>End date</div><input type="date" value={state.ef.end} onChange={e=>set({ef:{...state.ef,end:e.target.value}})} style={inp}/></div>
-                <div><div style={lbl}>Daily start time</div><input type="time" value={state.ef.startTime} onChange={e=>set({ef:{...state.ef,startTime:e.target.value}})} style={inp}/></div>
-                <div><div style={lbl}>Daily end time</div><input type="time" value={state.ef.endTime} onChange={e=>set({ef:{...state.ef,endTime:e.target.value}})} style={inp}/></div>
-                {state.ef.start && state.ef.end && (
-                  <div className="span2" style={{ display:'flex', alignItems:'center', gap:7, background:'var(--tint-pink-bg)', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#9A5B26', fontWeight:600 }}>
-                    <Icon name="calendar" size={15} color="#9A5B26"/>Duration: {dayCount(state.ef.start,state.ef.end)} day(s)
+              <div key={eventStep} className="tab-panel" style={{ minHeight:264, display:'flex', flexDirection:'column', justifyContent:'center', padding:'16px 0 4px' }}>
+
+                {eventStep === 0 && (
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
+                    <div style={{ position:'relative', width:164, aspectRatio:'4 / 5', borderRadius:16, overflow:'hidden', background:state.ef.img||EVENT_IMG_PALETTE[0], boxShadow:'0 10px 26px rgba(90,55,20,0.22)' }}>
+                      <Icon name="tent" size={70} color="rgba(255,255,255,0.16)" style={{ position:'absolute', right:-14, bottom:-14 }}/>
+                      <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(29,16,6,0) 55%, rgba(29,16,6,0.6) 100%)' }}/>
+                      <div style={{ position:'absolute', left:12, right:12, bottom:12, fontSize:13.5, fontWeight:700, color:'#FFF8EE', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{state.ef.name || 'Your event name'}</div>
+                    </div>
+                    <div style={{ marginTop:16, display:'flex', flexWrap:'wrap', gap:11, justifyContent:'center', maxWidth:220 }}>
+                      {EVENT_IMG_PALETTE.map((g,i) => {
+                        const selected = (state.ef.img||EVENT_IMG_PALETTE[0])===g;
+                        return (
+                          <button key={i} onClick={()=>set({ef:{...state.ef,img:g}})} style={{ width:32, height:32, borderRadius:10, background:g, border:'2px solid transparent', boxShadow:selected?'0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-primary)':'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                            {selected && <Icon name="check" size={14} color="#fff" style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}/>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:12, textAlign:'center', lineHeight:1.4 }}>Shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
                   </div>
                 )}
-                <div className="span2">
-                  <div style={lbl}>Last date to apply</div>
-                  <input type="date" value={state.ef.lastApp} onChange={e=>set({ef:{...state.ef,lastApp:e.target.value}})} style={inp}/>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:5 }}>Applications close automatically after this date.</div>
-                </div>
+
+                {eventStep === 1 && (
+                  <div>
+                    <div style={lbl}>Event name</div>
+                    <input value={state.ef.name} onChange={e=>set({ef:{...state.ef,name:e.target.value}})} placeholder="e.g. Harvest Night Market" style={inp}/>
+                  </div>
+                )}
+
+                {eventStep === 2 && (
+                  <div className="form-grid">
+                    <div><div style={lbl}>Start date</div><input type="date" value={state.ef.start} onChange={e=>set({ef:{...state.ef,start:e.target.value}})} style={inp}/></div>
+                    <div><div style={lbl}>End date</div><input type="date" value={state.ef.end} onChange={e=>set({ef:{...state.ef,end:e.target.value}})} style={inp}/></div>
+                    <div><div style={lbl}>Daily start time</div><input type="time" value={state.ef.startTime} onChange={e=>set({ef:{...state.ef,startTime:e.target.value}})} style={inp}/></div>
+                    <div><div style={lbl}>Daily end time</div><input type="time" value={state.ef.endTime} onChange={e=>set({ef:{...state.ef,endTime:e.target.value}})} style={inp}/></div>
+                    {state.ef.start && state.ef.end && (
+                      <div className="span2" style={{ display:'flex', alignItems:'center', gap:7, background:'var(--tint-pink-bg)', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#9A5B26', fontWeight:600 }}>
+                        <Icon name="calendar" size={15} color="#9A5B26"/>Duration: {dayCount(state.ef.start,state.ef.end)} day(s)
+                      </div>
+                    )}
+                    <div className="span2">
+                      <div style={lbl}>Last date to apply</div>
+                      <input type="date" value={state.ef.lastApp} onChange={e=>set({ef:{...state.ef,lastApp:e.target.value}})} style={inp}/>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:5 }}>Applications close automatically after this date.</div>
+                    </div>
+                  </div>
+                )}
+
+                {eventStep === 3 && (
+                  <div>
+                    <div className="form-grid">
+                      <div><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.fnb} onChange={e=>set({ef:{...state.ef,fnb:e.target.value}})} placeholder="300" style={inp}/></div>
+                      <div><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.nonfnb} onChange={e=>set({ef:{...state.ef,nonfnb:e.target.value}})} placeholder="250" style={inp}/></div>
+                    </div>
+                    {(state.ef.fnb || state.ef.nonfnb) && (
+                      <div style={{ marginTop:13, border:'1px solid var(--border-light)', borderRadius:14, padding:13, background:'var(--bg-subtle-alt)' }}>
+                        <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="var(--text-muted)"/>Pricing preview · {d} day(s)</div>
+                        <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
+                          <div style={{ flex:'1 1 140px', background:'var(--tint-green-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'var(--tint-green-text)', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'var(--tint-green-text)', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
+                          <div style={{ flex:'1 1 140px', background:'var(--tint-pink-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:6 }}>
+                {eventStep > 0 && (
+                  <button onClick={()=>setEventStep(s=>s-1)} style={{ flexShrink:0, display:'flex', alignItems:'center', gap:6, padding:'13px 16px', borderRadius:999, border:'1px solid var(--border-medium)', background:'var(--bg-subtle)', color:'#7A431A', fontSize:13.5, fontWeight:700, cursor:'pointer' }}>
+                    <Icon name="arrowLeft" size={14} color="#7A431A"/>Back
+                  </button>
+                )}
+                <button onClick={()=> eventStep===3 ? createEvent() : setEventStep(s=>s+1)} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:7, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:999, padding:14, cursor:'pointer' }}>
+                  {eventStep===3 ? <><Icon name="plus" size={15} color="#FAF8F5"/>Create event</> : <>Next<Icon name="arrowLeft" size={14} color="#FAF8F5" style={{ transform:'rotate(180deg)' }}/></>}
+                </button>
               </div>
             </div>
 
-            <div style={{ height:1, background:'var(--border-light)', margin:'20px 0' }}/>
-
-            <div>
-              <SectionHead icon="wallet" text="Pricing"/>
-              <div className="form-grid">
-                <div><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.fnb} onChange={e=>set({ef:{...state.ef,fnb:e.target.value}})} placeholder="300" style={inp}/></div>
-                <div><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.nonfnb} onChange={e=>set({ef:{...state.ef,nonfnb:e.target.value}})} placeholder="250" style={inp}/></div>
+            {/* EXISTING EVENTS — horizontal rail, tucked behind the wizard card on wide screens */}
+            <div className="event-rail-panel" style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:22, padding:'18px 16px' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-secondary)', textTransform:'uppercase' }}>Existing events</div>
+                <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>{events.length} total</div>
               </div>
-              {(state.ef.fnb || state.ef.nonfnb) && (() => {
-                const d = dayCount(state.ef.start,state.ef.end)||1;
-                const fnbTotal = Number(state.ef.fnb||0)*d*1.06;
-                const nfTotal  = Number(state.ef.nonfnb||0)*d*1.06;
-                return (
-                  <div style={{ marginTop:13, border:'1px solid var(--border-light)', borderRadius:14, padding:13, background:'var(--bg-subtle-alt)' }}>
-                    <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="var(--text-muted)"/>Pricing preview · {d} day(s)</div>
-                    <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
-                      <div style={{ flex:'1 1 140px', background:'var(--tint-green-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'var(--tint-green-text)', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'var(--tint-green-text)', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
-                      <div style={{ flex:'1 1 140px', background:'var(--tint-pink-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
-                    </div>
-                  </div>
-                );
-              })()}
+              <div style={{ position:'relative' }}>
+                <div ref={eventRailRef} className="event-rail">
+                  {events.map(ev => {
+                    const st = eventStatus(ev);
+                    const appsClosed = ev.lastApp && new Date() > new Date(ev.lastApp);
+                    return (
+                      <div key={ev.id} className="event-rail-card" style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, overflow:'hidden' }}>
+                        <div style={{ position:'relative', width:'100%', aspectRatio:'4 / 5', background:ev.img }}>
+                          <Icon name="tent" size={60} color="rgba(255,255,255,0.16)" style={{ position:'absolute', right:-12, bottom:-12 }}/>
+                          <span style={{ position:'absolute', top:9, right:9, fontSize:10, fontWeight:700, borderRadius:999, padding:'4px 9px', background:st.bg, color:st.color, boxShadow:'0 1px 5px rgba(0,0,0,0.18)' }}>{st.label}</span>
+                          <button onClick={()=>openEdit(ev)} aria-label={`Edit ${ev.name}`} style={{ position:'absolute', top:9, left:9, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(29,16,6,0.45)', backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)', color:'#FFF8EE', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                            <Icon name="pencil" size={12} color="#FFF8EE"/>
+                          </button>
+                        </div>
+                        <div onClick={()=>openEdit(ev)} style={{ padding:'12px 12px 14px', cursor:'pointer' }}>
+                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:14.5, fontWeight:400, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.name}</div>
+                          <div style={{ display:'flex', flexDirection:'column', gap:4, marginTop:7 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--text-secondary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><Icon name="pin" size={11} color="var(--text-muted)"/>{ev.location || 'Location TBC'}</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--text-muted)' }}><Icon name="calendar" size={11} color="var(--text-muted)"/>{ev.dateRange}</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--text-muted)' }}><Icon name="clock" size={11} color="var(--text-muted)"/>{ev.startTime && ev.endTime ? `${fmtTime(ev.startTime)} – ${fmtTime(ev.endTime)}` : 'Time TBC'}</div>
+                          </div>
+                          <div style={{ height:1, background:'var(--border-light)', margin:'10px 0' }}/>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
+                            <div><div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}>{apps.filter(a=>a.eventId===ev.id).length}</div><div style={{ fontSize:9, color:'var(--text-muted)' }}>Applied</div></div>
+                            <div><div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}>{ev.days||1}</div><div style={{ fontSize:9, color:'var(--text-muted)' }}>Day(s)</div></div>
+                          </div>
+                          <div style={{ marginTop:8, padding:'4px 10px', borderRadius:999, fontSize:9.5, fontWeight:700, textAlign:'center', background:appsClosed?'var(--bg-subtle)':'var(--tint-green-bg)', color:appsClosed?'var(--text-muted)':'var(--tint-green-text)' }}>{appsClosed?'Applications closed':'Applications open'}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {events.length===0 && (
+                    <div style={{ flex:'1 1 auto', textAlign:'center', color:'var(--text-muted)', fontSize:13, padding:'30px 10px' }}>No events yet — create one to get started.</div>
+                  )}
+                </div>
+                {events.length > 1 && (
+                  <>
+                    <button onClick={()=>scrollRail(-1)} aria-label="Previous events" style={{ position:'absolute', left:2, top:'50%', transform:'translateY(-50%)', width:34, height:34, borderRadius:'50%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', boxShadow:'0 8px 18px rgba(58,34,16,0.18)', color:'#7A431A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:3 }}>
+                      <Icon name="arrowLeft" size={15} color="#7A431A"/>
+                    </button>
+                    <button onClick={()=>scrollRail(1)} aria-label="Next events" style={{ position:'absolute', right:2, top:'50%', transform:'translateY(-50%)', width:34, height:34, borderRadius:'50%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', boxShadow:'0 8px 18px rgba(58,34,16,0.18)', color:'#7A431A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:3 }}>
+                      <Icon name="arrowLeft" size={15} color="#7A431A" style={{ transform:'rotate(180deg)' }}/>
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
 
-            <button onClick={() => {
-              if (!state.ef.name) { showToast('Add an event name first','info'); return; }
-              const d = dayCount(state.ef.start,state.ef.end)||1;
-              const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:d, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
-              dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
-              set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
-              logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'var(--tint-green-bg)'});
-              showToast('Event created','tent');
-            }} className="cta" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:20 }}>
-              <Icon name="plus" size={15} color="#FAF8F5"/>Create event
-            </button>
-          </div>
-
-          <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', margin:'20px 2px 12px' }}>Existing events</div>
-          <div className="event-cards">
-            {events.map(ev => {
-              const st = eventStatus(ev);
-              const appsClosed = ev.lastApp && new Date() > new Date(ev.lastApp);
-              return (
-                <div key={ev.id} onClick={()=>set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||'',img:ev.img||EVENT_IMG_PALETTE[0]}})} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, overflow:'hidden', cursor:'pointer' }}>
-                  <div style={{ height:64, background:ev.img, position:'relative', display:'flex', alignItems:'flex-start', justifyContent:'flex-end', padding:10 }}>
-                    <span style={{ fontSize:10.5, fontWeight:700, borderRadius:999, padding:'4px 10px', background:st.bg, color:st.color, boxShadow:'0 1px 5px rgba(0,0,0,0.18)' }}>{st.label}</span>
-                  </div>
-                  <div style={{ padding:14 }}>
-                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>{ev.name}</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'var(--text-secondary)', marginTop:6 }}>
-                      <Icon name="pin" size={12} color="var(--text-muted)"/>{ev.location || 'Location TBC'}
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'var(--text-muted)', marginTop:3 }}>
-                      <Icon name="calendar" size={12} color="var(--text-muted)"/>{ev.dateRange}
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'var(--text-muted)', marginTop:3 }}>
-                      <Icon name="clock" size={12} color="var(--text-muted)"/>{ev.startTime && ev.endTime ? `${fmtTime(ev.startTime)} – ${fmtTime(ev.endTime)}` : 'Time TBC'}
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:12, paddingTop:12, borderTop:'1px dashed var(--border-light)' }}>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{apps.filter(a=>a.eventId===ev.id).length}</div>
-                        <div style={{ fontSize:9.5, color:'var(--text-muted)', marginTop:1 }}>Applied</div>
-                      </div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{ev.days||1}</div>
-                        <div style={{ fontSize:9.5, color:'var(--text-muted)', marginTop:1 }}>Day(s)</div>
-                      </div>
-                      <span style={{ fontSize:10, fontWeight:600, borderRadius:999, padding:'4px 9px', background:appsClosed?'var(--bg-subtle)':'var(--tint-green-bg)', color:appsClosed?'var(--text-muted)':'var(--tint-green-text)', whiteSpace:'nowrap' }}>{appsClosed?'Applications closed':'Applications open'}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Event Applications ── */}
       {aTab === 'apps' && (

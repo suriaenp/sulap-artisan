@@ -408,9 +408,10 @@ export function EventDetailModal() {
       <SheetHeader title="Edit event" sub={ev.name} onClose={close}/>
       <div style={{ marginTop:18 }}>
         <ModalSectionHead icon="pencil" text="Basics"/>
-        <div style={{ height:64, borderRadius:14, background:eef.img||EVENT_IMG_PALETTE[0], position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-end', padding:'10px 14px', marginBottom:13 }}>
-          <Icon name="tent" size={46} color="rgba(255,255,255,0.16)" style={{ position:'absolute', top:6, right:8 }}/>
-          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16.5, color:'#FFF8EE', textShadow:'0 1px 4px rgba(0,0,0,0.3)', position:'relative', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eef.name || 'Your event name'}</div>
+        <div style={{ position:'relative', width:'100%', maxWidth:200, aspectRatio:'4 / 5', borderRadius:16, overflow:'hidden', margin:'0 auto 16px', background:eef.img||EVENT_IMG_PALETTE[0], boxShadow:'0 10px 26px rgba(90,55,20,0.22)' }}>
+          <Icon name="tent" size={72} color="rgba(255,255,255,0.16)" style={{ position:'absolute', right:-16, bottom:-16 }}/>
+          <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(29,16,6,0) 50%, rgba(29,16,6,0.62) 100%)' }}/>
+          <div style={{ position:'absolute', left:14, right:14, bottom:12, fontFamily:"'Marcellus',serif", fontSize:15.5, color:'#FFF8EE', textShadow:'0 1px 4px rgba(0,0,0,0.3)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eef.name || 'Your event name'}</div>
         </div>
         <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
           <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
