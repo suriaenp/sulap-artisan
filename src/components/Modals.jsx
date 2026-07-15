@@ -461,18 +461,16 @@ export function EventDetailModal() {
 
         <ModalSectionHead icon="wallet" text="Pricing"/>
         <div className="form-grid">
-          <div><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.fnb} onChange={e=>upd('fnb',e.target.value)} placeholder="300" style={inp}/></div>
-          <div><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.nonfnb} onChange={e=>upd('nonfnb',e.target.value)} placeholder="250" style={inp}/></div>
+          <div><div style={{ ...lbl, minHeight:32 }}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.fnb} onChange={e=>upd('fnb',e.target.value)} placeholder="300" style={inp}/></div>
+          <div><div style={{ ...lbl, minHeight:32 }}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.nonfnb} onChange={e=>upd('nonfnb',e.target.value)} placeholder="250" style={inp}/></div>
         </div>
-        {(eef.fnb || eef.nonfnb) && (
-          <div style={{ marginTop:13, border:'1px solid #EFE0C7', borderRadius:14, padding:13, background:'#F7EFE3' }}>
-            <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'#A09890', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="#A09890"/>Pricing preview · {d} day(s)</div>
-            <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
-              <div style={{ flex:'1 1 140px', background:'#E8F5F0', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#2D6A4F', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
-              <div style={{ flex:'1 1 140px', background:'#F3E4CC', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
-            </div>
+        <div style={{ marginTop:13, border:'1px solid #EFE0C7', borderRadius:14, padding:13, background:'#F7EFE3' }}>
+          <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'#A09890', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="#A09890"/>Pricing preview · {d} day(s)</div>
+          <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
+            <div style={{ flex:'1 1 140px', background:'#E8F5F0', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#2D6A4F', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
+            <div style={{ flex:'1 1 140px', background:'#F3E4CC', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
           </div>
-        )}
+        </div>
 
         <button onClick={save} className="cta" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:20 }}>
           <Icon name="check" size={15} color="#FAF8F5"/>Save changes

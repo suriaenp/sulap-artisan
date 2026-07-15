@@ -803,18 +803,16 @@ export default function AdminDashboard() {
                 {eventStep === 3 && (
                   <div>
                     <div className="form-grid">
-                      <div><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.fnb} onChange={e=>set({ef:{...state.ef,fnb:e.target.value}})} placeholder="300" style={inp}/></div>
-                      <div><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.nonfnb} onChange={e=>set({ef:{...state.ef,nonfnb:e.target.value}})} placeholder="250" style={inp}/></div>
+                      <div><div style={{ ...lbl, minHeight:32 }}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.fnb} onChange={e=>set({ef:{...state.ef,fnb:e.target.value}})} placeholder="300" style={inp}/></div>
+                      <div><div style={{ ...lbl, minHeight:32 }}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={state.ef.nonfnb} onChange={e=>set({ef:{...state.ef,nonfnb:e.target.value}})} placeholder="250" style={inp}/></div>
                     </div>
-                    {(state.ef.fnb || state.ef.nonfnb) && (
-                      <div style={{ marginTop:13, border:'1px solid var(--border-light)', borderRadius:14, padding:13, background:'var(--bg-subtle-alt)' }}>
-                        <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="var(--text-muted)"/>Pricing preview · {d} day(s)</div>
-                        <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
-                          <div style={{ flex:'1 1 140px', background:'var(--tint-green-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'var(--tint-green-text)', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'var(--tint-green-text)', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
-                          <div style={{ flex:'1 1 140px', background:'var(--tint-pink-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
-                        </div>
+                    <div style={{ marginTop:13, border:'1px solid var(--border-light)', borderRadius:14, padding:13, background:'var(--bg-subtle-alt)' }}>
+                      <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'var(--text-muted)', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="var(--text-muted)"/>Pricing preview · {d} day(s)</div>
+                      <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
+                        <div style={{ flex:'1 1 140px', background:'var(--tint-green-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'var(--tint-green-text)', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'var(--tint-green-text)', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
+                        <div style={{ flex:'1 1 140px', background:'var(--tint-pink-bg)', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>

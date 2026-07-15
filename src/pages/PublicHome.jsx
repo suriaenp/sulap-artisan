@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 import { eventStatus } from '../lib/helpers';
+
+// "Coming Soon" carousel card sizing — the centered/focused card is bigger
+// than the rest. Shared as constants (not measured off the DOM) because the
+// card widths themselves animate via CSS transition when focus changes;
+// measuring mid-transition geometry to compute the centering offset would
+// read stale sizes, so the offset is derived analytically instead.
+const CS_CARD_W = 300, CS_FOCUS_W = 348, CS_GAP = 24;
 
 // Position-specific corner radius + fallback color for the "Why Join" 2x2
 // photo grid, kept as static layout constants since they're about shape/
@@ -39,17 +46,19 @@ function dayMonth(dateStr) {
 export default function PublicHome() {
   const { state, closeModals, set } = useStore();
   const { content, events, settings } = state;
-  const railRef = useRef(null);
-  const comingSoonCardRefs = useRef([]);
+  const comingSoonViewportRef = useRef(null);
+  const [comingSoonOffset, setComingSoonOffset] = useState(0);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 720);
 
   // Oldest-first so past events sit left (greyed) and future events sit right
-  // of whichever card is focused. Focus = nearest ongoing, else nearest
-  // upcoming, else (everything already concluded) the most recent past event.
+  // of whichever card is centered. Default center = nearest ongoing, else
+  // nearest upcoming, else (everything already concluded) the most recent
+  // past event — after that, prev/next or clicking a card moves it, and
+  // whichever card is centered is always the highlighted one (see below).
   const comingSoonEvents = [...events]
     .sort((a, b) => (a.startDate ? new Date(a.startDate).getTime() : Infinity) - (b.startDate ? new Date(b.startDate).getTime() : Infinity))
     .map(ev => ({ ...ev, _status: eventStatus(ev) }));
-  const comingSoonFocusIdx = (() => {
+  const comingSoonDefaultIdx = (() => {
     if (!comingSoonEvents.length) return -1;
     const ongoing = comingSoonEvents.findIndex(e => e._status.key === 'ongoing');
     if (ongoing !== -1) return ongoing;
@@ -57,15 +66,31 @@ export default function PublicHome() {
     if (upcoming !== -1) return upcoming;
     return comingSoonEvents.length - 1;
   })();
+  const [comingSoonCenter, setComingSoonCenter] = useState(-1);
+  const centerIdx = comingSoonCenter === -1 ? comingSoonDefaultIdx : Math.min(comingSoonCenter, comingSoonEvents.length - 1);
   const showComingSoon = settings.publicEvents !== false && comingSoonEvents.length > 0;
 
-  // Center the focused card in the rail on load (and whenever the focused
-  // event changes) — no animated scroll on mount, just land there directly.
-  useEffect(() => {
-    if (comingSoonFocusIdx < 0) return;
-    const el = comingSoonCardRefs.current[comingSoonFocusIdx];
-    if (el) el.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
-  }, [comingSoonFocusIdx, comingSoonEvents.length]);
+  const comingSoonGo = (dir) => setComingSoonCenter(Math.max(0, Math.min(comingSoonEvents.length - 1, centerIdx + dir)));
+
+  // Slide the track (a transform, not native scrolling) so whichever card is
+  // centerIdx sits exactly in the middle of the viewport — smooth and exact
+  // regardless of how many cards there are. Card position is computed
+  // analytically (every card left of centerIdx is always CS_CARD_W wide,
+  // since only one card is ever focused at a time) rather than measured off
+  // the DOM, because the cards' own widths are mid-CSS-transition right when
+  // centerIdx changes — measuring then would read stale, pre-transition sizes.
+  useLayoutEffect(() => {
+    const recompute = () => {
+      const viewport = comingSoonViewportRef.current;
+      if (!viewport || centerIdx < 0) return;
+      const cardLeft = centerIdx * (CS_CARD_W + CS_GAP);
+      const cardCenter = cardLeft + CS_FOCUS_W / 2;
+      setComingSoonOffset(viewport.clientWidth / 2 - cardCenter);
+    };
+    recompute();
+    window.addEventListener('resize', recompute);
+    return () => window.removeEventListener('resize', recompute);
+  }, [centerIdx, comingSoonEvents.length]);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 720);
@@ -76,17 +101,6 @@ export default function PublicHome() {
   const goRegister = () => { closeModals(); set({ view:'vendor', vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false }); };
   const goVendor   = () => { closeModals(); set({ view:'vendor' }); };
   const goAdmin    = () => { closeModals(); set({ view:'admin' }); };
-
-  const scrollRail = (dir, wrap) => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const step = 344;
-    if (wrap && rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 8) {
-      rail.scrollTo({ left: 0, behavior: 'smooth' });
-      return;
-    }
-    rail.scrollBy({ left: dir * step, behavior: 'smooth' });
-  };
 
   const navLink = { fontSize: 15, fontWeight: 600, color: '#5C3A1E', textDecoration: 'none' };
   const outlineBtn = { padding: '15px 32px', borderRadius: 999, fontSize: 16, fontWeight: 700, color: '#9A5B26', border: '1.5px solid #9A5B26', cursor: 'pointer', background: 'transparent' };
@@ -148,49 +162,52 @@ export default function PublicHome() {
         <div style={{ position: 'absolute', bottom: -70, right: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.5, filter: 'blur(2px)' }} />
         <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>{content.comingSoonHeading}</h2>
         <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
-          <button onClick={() => scrollRail(-1)} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8249;</button>
-          <div ref={railRef} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '30px 4px 26px', scrollbarWidth: 'none' }}>
-            {comingSoonEvents.map((ev, i) => {
-              const isFocus = i === comingSoonFocusIdx;
-              const isPast = ev._status.key === 'concluded';
-              const isLive = ev._status.key === 'ongoing';
-              const { day, month } = dayMonth(ev.startDate);
-              return (
-                <div key={ev.id} ref={el => (comingSoonCardRefs.current[i] = el)}
-                  className={`coming-soon-card${isFocus ? ' coming-soon-card--focus' : ''}`}
-                  style={{
-                    position: 'relative', flexBasis: isFocus ? 348 : 300, flexGrow: 0, flexShrink: 0, height: isFocus ? 468 : 416,
-                    borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'center',
-                    background: ev.img || 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundSize: 'cover', backgroundPosition: 'center',
-                    boxShadow: isFocus ? '0 24px 56px rgba(184,116,52,0.5), 0 0 0 2px #E8A05C' : '0 12px 32px rgba(0,0,0,0.5)',
-                    filter: isPast ? 'saturate(0.55) brightness(0.68)' : 'none',
-                    opacity: isPast ? 0.85 : 1,
-                    zIndex: isFocus ? 2 : 1,
-                  }}>
-                  <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: isPast
-                    ? 'linear-gradient(180deg, rgba(29,16,6,0.35) 25%, rgba(20,11,4,0.94) 100%)'
-                    : 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)' }} />
-                  {isLive && (
-                    <div style={{ position: 'absolute', top: 16, left: 16, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(184,58,46,0.92)', borderRadius: 999, padding: '6px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
-                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FFF3E2', animation: 'pulseTimer 1.4s ease-in-out infinite' }} />
-                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#FFF3E2' }}>LIVE NOW</div>
+          <button onClick={() => comingSoonGo(-1)} disabled={centerIdx <= 0} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: centerIdx <= 0 ? 'default' : 'pointer', opacity: centerIdx <= 0 ? 0.35 : 1, lineHeight: 1, transition: 'opacity 0.25s ease' }}>&#8249;</button>
+          <div ref={comingSoonViewportRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', padding: '30px 4px 26px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: CS_GAP, transform: `translateX(${comingSoonOffset}px)`, transition: 'transform 0.5s var(--ease-spring, cubic-bezier(0.2,0.9,0.3,1))', width: 'max-content' }}>
+              {comingSoonEvents.map((ev, i) => {
+                const isFocus = i === centerIdx;
+                const isPast = ev._status.key === 'concluded';
+                const isLive = ev._status.key === 'ongoing';
+                const { day, month } = dayMonth(ev.startDate);
+                return (
+                  <div key={ev.id}
+                    className={`coming-soon-card${isFocus ? ' coming-soon-card--focus' : ''}`}
+                    onClick={() => setComingSoonCenter(i)}
+                    style={{
+                      position: 'relative', flexBasis: isFocus ? CS_FOCUS_W : CS_CARD_W, flexGrow: 0, flexShrink: 0, height: isFocus ? 468 : 416,
+                      borderRadius: 18, overflow: 'hidden', cursor: isFocus ? 'default' : 'pointer',
+                      background: ev.img || 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundSize: 'cover', backgroundPosition: 'center',
+                      boxShadow: isFocus ? '0 24px 56px rgba(184,116,52,0.5), 0 0 0 2px #E8A05C' : '0 12px 32px rgba(0,0,0,0.5)',
+                      filter: isPast ? 'saturate(0.55) brightness(0.68)' : 'none',
+                      opacity: isPast ? 0.85 : 1,
+                      zIndex: isFocus ? 2 : 1,
+                    }}>
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: isPast
+                      ? 'linear-gradient(180deg, rgba(29,16,6,0.35) 25%, rgba(20,11,4,0.94) 100%)'
+                      : 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)' }} />
+                    <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
+                      <div style={{ fontSize: isFocus ? 44 : 40, fontWeight: 700, lineHeight: 1 }}>{day}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em' }}>{month}</div>
                     </div>
-                  )}
-                  <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
-                    <div style={{ fontSize: isFocus ? 44 : 40, fontWeight: 700, lineHeight: 1 }}>{day}</div>
-                    <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em' }}>{month}</div>
+                    <div style={{ position: 'absolute', left: 20, right: 20, bottom: isPast ? 56 : 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, pointerEvents: 'none' }}>
+                      {isLive && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(184,58,46,0.92)', borderRadius: 999, padding: '6px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
+                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FFF3E2', animation: 'pulseTimer 1.4s ease-in-out infinite' }} />
+                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#FFF3E2' }}>LIVE NOW</div>
+                        </div>
+                      )}
+                      <div style={{ color: '#FFF8EE', fontSize: isFocus ? 18 : 16, fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.5, textTransform: 'uppercase' }}>{ev.name}</div>
+                    </div>
+                    {isPast && (
+                      <div style={{ position: 'absolute', left: 20, bottom: 18, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,248,238,0.6)', textTransform: 'uppercase', pointerEvents: 'none' }}>Concluded</div>
+                    )}
                   </div>
-                  <div style={{ position: 'absolute', left: 20, right: 20, bottom: isPast ? 56 : 40, color: '#FFF8EE', fontSize: isFocus ? 18 : 16, fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.5, textTransform: 'uppercase', pointerEvents: 'none' }}>
-                    {ev.name}
-                  </div>
-                  {isPast && (
-                    <div style={{ position: 'absolute', left: 20, bottom: 18, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,248,238,0.6)', textTransform: 'uppercase', pointerEvents: 'none' }}>Concluded</div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-          <button onClick={() => scrollRail(1, true)} aria-label="Next" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8250;</button>
+          <button onClick={() => comingSoonGo(1)} disabled={centerIdx >= comingSoonEvents.length - 1} aria-label="Next" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: centerIdx >= comingSoonEvents.length - 1 ? 'default' : 'pointer', opacity: centerIdx >= comingSoonEvents.length - 1 ? 0.35 : 1, lineHeight: 1, transition: 'opacity 0.25s ease' }}>&#8250;</button>
         </div>
       </section>
       )}
