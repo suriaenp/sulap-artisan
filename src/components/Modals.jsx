@@ -42,6 +42,19 @@ function SheetHeader({ title, sub, onClose }) {
   );
 }
 
+// Small uppercase icon-chip header, mirrors AdminDashboard's SectionHead but
+// with fixed light-mode colors (Sheet content doesn't follow admin night mode).
+function ModalSectionHead({ icon, text }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:9, margin:'4px 0 13px' }}>
+      <div style={{ width:26, height:26, borderRadius:8, background:'#F3E4CC', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+        <Icon name={icon} size={13} color="#9A5B26"/>
+      </div>
+      <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#A09890', textTransform:'uppercase' }}>{text}</div>
+    </div>
+  );
+}
+
 // Locked-on-the-vendor-side fields — admin can edit any of these directly at any time.
 const ADMIN_DETAIL_FIELDS = [
   ['business', 'Brand name'],
@@ -391,44 +404,73 @@ export function EventDetailModal() {
     close();
   };
   return (
-    <Sheet onClose={close} maxW={520}>
+    <Sheet onClose={close} maxW={560}>
       <SheetHeader title="Edit event" sub={ev.name} onClose={close}/>
-      <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:13 }}>
-        <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
-        <div><div style={lbl}>Location</div><input value={eef.location} onChange={e=>upd('location',e.target.value)} placeholder="e.g. Suria Sabah Mall" style={inp}/></div>
-        <div>
-          <div style={lbl}>Event image</div>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:76, height:46, borderRadius:9, background:eef.img||EVENT_IMG_PALETTE[0], flexShrink:0 }}/>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-              {EVENT_IMG_PALETTE.map((g,i) => (
-                <button key={i} onClick={()=>upd('img',g)} style={{ width:28, height:28, borderRadius:8, background:g, border:(eef.img||EVENT_IMG_PALETTE[0])===g?'2px solid #1C1A17':'2px solid transparent', padding:0, cursor:'pointer' }}/>
-              ))}
+      <div style={{ marginTop:18 }}>
+        <ModalSectionHead icon="pencil" text="Basics"/>
+        <div style={{ height:64, borderRadius:14, background:eef.img||EVENT_IMG_PALETTE[0], position:'relative', overflow:'hidden', display:'flex', alignItems:'flex-end', padding:'10px 14px', marginBottom:13 }}>
+          <Icon name="tent" size={46} color="rgba(255,255,255,0.16)" style={{ position:'absolute', top:6, right:8 }}/>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16.5, color:'#FFF8EE', textShadow:'0 1px 4px rgba(0,0,0,0.3)', position:'relative', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eef.name || 'Your event name'}</div>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
+          <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
+          <div><div style={lbl}>Location</div><input value={eef.location} onChange={e=>upd('location',e.target.value)} placeholder="e.g. Suria Sabah Mall" style={inp}/></div>
+          <div>
+            <div style={lbl}>Theme color</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:11 }}>
+              {EVENT_IMG_PALETTE.map((g,i) => {
+                const selected = (eef.img||EVENT_IMG_PALETTE[0])===g;
+                return (
+                  <button key={i} onClick={()=>upd('img',g)} style={{ width:32, height:32, borderRadius:10, background:g, border:'2px solid transparent', boxShadow:selected?'0 0 0 2px #FAF8F5, 0 0 0 4px #1C1A17':'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    {selected && <Icon name="check" size={14} color="#fff" style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}/>}
+                  </button>
+                );
+              })}
             </div>
+            <div style={{ fontSize:11, color:'#A09890', marginTop:9, lineHeight:1.4 }}>Shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
           </div>
-          <div style={{ fontSize:11, color:'#A09890', marginTop:7, lineHeight:1.4 }}>Pick a thumbnail color — shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
         </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}><div style={lbl}>Daily start time</div><input type="time" value={eef.startTime} onChange={e=>upd('startTime',e.target.value)} style={inp}/></div>
-          <div style={{ flex:1 }}><div style={lbl}>Daily end time</div><input type="time" value={eef.endTime} onChange={e=>upd('endTime',e.target.value)} style={inp}/></div>
+
+        <div style={{ height:1, background:'#EFE0C7', margin:'20px 0' }}/>
+
+        <ModalSectionHead icon="calendar" text="Schedule"/>
+        <div className="form-grid">
+          <div><div style={lbl}>Start date</div><input type="date" value={eef.start} onChange={e=>upd('start',e.target.value)} style={inp}/></div>
+          <div><div style={lbl}>End date</div><input type="date" value={eef.end} onChange={e=>upd('end',e.target.value)} style={inp}/></div>
+          <div><div style={lbl}>Daily start time</div><input type="time" value={eef.startTime} onChange={e=>upd('startTime',e.target.value)} style={inp}/></div>
+          <div><div style={lbl}>Daily end time</div><input type="time" value={eef.endTime} onChange={e=>upd('endTime',e.target.value)} style={inp}/></div>
+          {eef.start && eef.end && (
+            <div className="span2" style={{ display:'flex', alignItems:'center', gap:7, background:'#F3E4CC', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#9A5B26', fontWeight:600 }}>
+              <Icon name="calendar" size={15} color="#9A5B26"/>Duration: {d} day(s)
+            </div>
+          )}
+          <div className="span2">
+            <div style={lbl}>Last date to apply</div>
+            <input type="date" value={eef.lastApp} onChange={e=>upd('lastApp',e.target.value)} style={inp}/>
+            <div style={{ fontSize:11, color:'#A09890', marginTop:5 }}>Applications close automatically after this date.</div>
+          </div>
         </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}><div style={lbl}>Start date</div><input type="date" value={eef.start} onChange={e=>upd('start',e.target.value)} style={inp}/></div>
-          <div style={{ flex:1 }}><div style={lbl}>End date</div><input type="date" value={eef.end} onChange={e=>upd('end',e.target.value)} style={inp}/></div>
-        </div>
-        {eef.start && eef.end && <div style={{ display:'flex', alignItems:'center', gap:7, background:'#F3E4CC', borderRadius:10, padding:'9px 12px', fontSize:12.5, color:'#9A5B26', fontWeight:600 }}><Icon name="calendar" size={15} color="#9A5B26"/>Duration: {d} day(s)</div>}
-        <div><div style={lbl}>Last date to apply</div><input type="date" value={eef.lastApp} onChange={e=>upd('lastApp',e.target.value)} style={inp}/><div style={{ fontSize:11, color:'#A09890', marginTop:5 }}>Applications close automatically after this date.</div></div>
-        <div style={{ display:'flex', gap:10 }}>
-          <div style={{ flex:1 }}><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.fnb} onChange={e=>upd('fnb',e.target.value)} placeholder="300" style={inp}/></div>
-          <div style={{ flex:1 }}><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.nonfnb} onChange={e=>upd('nonfnb',e.target.value)} placeholder="250" style={inp}/></div>
+
+        <div style={{ height:1, background:'#EFE0C7', margin:'20px 0' }}/>
+
+        <ModalSectionHead icon="wallet" text="Pricing"/>
+        <div className="form-grid">
+          <div><div style={lbl}>F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.fnb} onChange={e=>upd('fnb',e.target.value)} placeholder="300" style={inp}/></div>
+          <div><div style={lbl}>Non-F&amp;B / day (RM) + 6% SST</div><input inputMode="numeric" value={eef.nonfnb} onChange={e=>upd('nonfnb',e.target.value)} placeholder="250" style={inp}/></div>
         </div>
         {(eef.fnb || eef.nonfnb) && (
-          <div style={{ display:'flex', gap:9 }}>
-            <div style={{ flex:1, background:'#E8F5F0', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#2D6A4F', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
-            <div style={{ flex:1, background:'#F3E4CC', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
+          <div style={{ marginTop:13, border:'1px solid #EFE0C7', borderRadius:14, padding:13, background:'#F7EFE3' }}>
+            <div style={{ fontSize:10.5, fontWeight:700, letterSpacing:'0.05em', color:'#A09890', textTransform:'uppercase', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}><Icon name="receipt" size={12} color="#A09890"/>Pricing preview · {d} day(s)</div>
+            <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
+              <div style={{ flex:'1 1 140px', background:'#E8F5F0', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#2D6A4F', fontWeight:600 }}>F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#2D6A4F', marginTop:2 }}>RM {money(fnbTotal)}</div><div style={{ fontSize:9.5, color:'#6f9d8a', marginTop:1 }}>inclusive of 6% SST</div></div>
+              <div style={{ flex:'1 1 140px', background:'#F3E4CC', borderRadius:10, padding:'10px 12px' }}><div style={{ fontSize:10.5, color:'#9A5B26', fontWeight:600 }}>Non-F&amp;B rental total</div><div style={{ fontSize:15, fontWeight:700, color:'#9A5B26', marginTop:2 }}>RM {money(nfTotal)}</div><div style={{ fontSize:9.5, color:'#A9834D', marginTop:1 }}>inclusive of 6% SST</div></div>
+            </div>
           </div>
         )}
-        <button onClick={save} className="cta" style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:2 }}>Save changes</button>
+
+        <button onClick={save} className="cta" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer', marginTop:20 }}>
+          <Icon name="check" size={15} color="#FAF8F5"/>Save changes
+        </button>
       </div>
     </Sheet>
   );
