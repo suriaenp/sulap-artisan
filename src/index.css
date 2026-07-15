@@ -152,6 +152,12 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
 @keyframes drawerIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @keyframes pulseTimer { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 @keyframes tabIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes focusPop { from { transform: scale(0.94) translateY(6px); opacity: 0.85; } to { transform: scale(1) translateY(0); opacity: 1; } }
+
+/* Public home "Coming Soon" carousel — the nearest upcoming/ongoing event is
+   sized up and pops in; every card eases size/glow/filter changes smoothly. */
+.coming-soon-card { transition: flex-basis 0.45s var(--ease-spring), height 0.45s var(--ease-spring), box-shadow 0.45s ease, filter 0.45s ease, opacity 0.45s ease; }
+.coming-soon-card--focus { animation: focusPop 0.6s var(--ease-spring); }
 
 /* Instant press feedback on every control — highlight lives on pointer-down.
    The transition only eases the release; the press itself is immediate. */
@@ -194,6 +200,8 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
   @keyframes drawerIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 0); } to { opacity: 1; transform: translate(-50%, 0); } }
   @keyframes pulseTimer { 0%, 100% { opacity: 1; } 50% { opacity: 1; } }
+  @keyframes focusPop { from { opacity: 0.85; } to { opacity: 1; } }
+  .coming-soon-card { transition: box-shadow 0.3s ease, filter 0.3s ease, opacity 0.3s ease; }
 }
 @media (prefers-reduced-transparency: reduce) {
   .vendor-tabs-bar, .admin-tabs-bar {

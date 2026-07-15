@@ -161,15 +161,9 @@ export const INITIAL_CONTENT = {
   heroTag1:     '40+ Artisan Vendors',
   heroTag2:     'Monthly Markets',
 
-  // "Coming Soon" carousel (public home page) — static placeholder cards,
-  // intentionally not wired to the live events store (see PROJECT_NOTES.md).
+  // "Coming Soon" carousel (public home page) — cards are generated live from
+  // state.events (see PublicHome.jsx); only the section heading is admin-authored.
   comingSoonHeading: 'COMING SOON',
-  comingSoonEvents: [
-    { id: 'cs1', day: '12', month: 'JUL', name: 'Tamu Weekend Bazaar', image: null },
-    { id: 'cs2', day: '26', month: 'JUL', name: 'Borneo Makers Fair',  image: null },
-    { id: 'cs3', day: '02', month: 'AUG', name: 'Harvest Night Market', image: null },
-    { id: 'cs4', day: '29', month: 'AUG', name: 'Merdeka Craft Fest',  image: null },
-  ],
 
   // "Why Join" section (public home page) — 2x2 photo grid + heading + 4
   // numbered feature items.

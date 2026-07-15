@@ -5,7 +5,7 @@ import PhotoTile from '../components/PhotoTile';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
 import { VENDOR_TABS } from './VendorDashboard';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
@@ -136,17 +136,6 @@ function NoSearchMatch({ query }) {
       No vendors match "{query}".
     </div>
   );
-}
-
-// Events carry no stored status field (unlike vendor/application records) —
-// derived at render time from today vs. the event's own start/end dates.
-function eventStatus(ev) {
-  if (!ev.startDate || !ev.endDate) return { label:'Dates TBC', bg:'var(--bg-subtle)', color:'var(--text-muted)' };
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(ev.startDate), end = new Date(ev.endDate);
-  if (today < start) return { label:'Upcoming', bg:'var(--tint-amber-bg)', color:'var(--tint-amber-text)' };
-  if (today > end) return { label:'Concluded', bg:'var(--bg-subtle)', color:'var(--text-muted)' };
-  return { label:'Ongoing', bg:'var(--tint-green-bg)', color:'var(--tint-green-text)' };
 }
 
 export default function AdminDashboard() {
@@ -2062,54 +2051,11 @@ export default function AdminDashboard() {
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Coming Soon carousel</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The dark scrolling strip of event cards under the hero. Recommended photo size: <strong>800 × 1100px</strong> (portrait, ~4:5.5 ratio) — matches the card's on-screen 320×440 size at a sharp resolution. Falls back to a plain gradient card if no photo is set.</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The dark scrolling strip under the hero now pulls its cards straight from the <b>Events</b> tab — name, date, and photo. Add or edit an event's photo there and it appears here automatically; nothing to manage on this page besides the heading. Toggle visibility entirely via Settings → "Show events publicly".</div>
 
               <div style={{ marginTop:12 }}>
                 <div style={lbl}>Section heading</div>
                 <input value={state.cf?.comingSoonHeading ?? content.comingSoonHeading} onChange={e=>set({cf:{...(state.cf||content),comingSoonHeading:e.target.value}})} style={inp}/>
-              </div>
-
-              <div style={{ marginTop:14, display:'flex', flexDirection:'column', gap:12 }}>
-                {(state.cf?.comingSoonEvents ?? content.comingSoonEvents).map((ev, i) => {
-                  const evList = state.cf?.comingSoonEvents ?? content.comingSoonEvents;
-                  const setEv = (patch) => {
-                    const next = evList.map((x, xi) => xi === i ? { ...x, ...patch } : x);
-                    set({cf:{...(state.cf||content), comingSoonEvents: next}});
-                  };
-                  return (
-                    <div key={ev.id} style={{ border:'1px solid var(--border-light)', borderRadius:12, padding:12, display:'flex', gap:12, alignItems:'center', flexWrap:'wrap' }}>
-                      <div style={{ width:52, height:72, borderRadius:9, overflow:'hidden', flexShrink:0, background: ev.image ? '#8A5322' : 'linear-gradient(180deg, #8A5322, #3A2210)' }}>
-                        {ev.image && <img src={ev.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>}
-                      </div>
-                      <div style={{ flex:'1 1 100px', minWidth:100 }}>
-                        <div style={lbl}>Event name</div>
-                        <input value={ev.name} onChange={e=>setEv({name:e.target.value})} style={inp}/>
-                      </div>
-                      <div style={{ width:70 }}>
-                        <div style={lbl}>Day</div>
-                        <input value={ev.day} onChange={e=>setEv({day:e.target.value})} style={inp}/>
-                      </div>
-                      <div style={{ width:80 }}>
-                        <div style={lbl}>Month</div>
-                        <input value={ev.month} onChange={e=>setEv({month:e.target.value})} style={inp}/>
-                      </div>
-                      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                        <label style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>
-                          <Icon name="upload" size={13} color="#9A5B26"/> Photo
-                          <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => setEv({image: reader.result});
-                            reader.readAsDataURL(file);
-                            e.target.value = '';
-                          }}/>
-                        </label>
-                        {ev.image && <button onClick={()=>setEv({image:null})} style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:10, padding:'9px 10px', cursor:'pointer' }}>Remove</button>}
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 

@@ -61,6 +61,23 @@ export function dayCount(start, end) {
   return d >= 0 ? d + 1 : 0;
 }
 
+// Events carry no stored status field (unlike vendor/application records) —
+// derived at render time from today vs. the event's own start/end dates.
+// `key` is the stable machine-readable form; `label`/`bg`/`color` are the
+// admin-console badge presentation. Shared by the admin Events tab and the
+// public home page's "Coming Soon" carousel so both agree on what's live.
+export function eventStatus(ev) {
+  if (!ev.startDate || !ev.endDate) return { key:'tbc', label:'Dates TBC', bg:'var(--bg-subtle)', color:'var(--text-muted)' };
+  const today = new Date(); today.setHours(0,0,0,0);
+  // parseDateOnly (not `new Date('YYYY-MM-DD')`, which is UTC-anchored) so an
+  // event starting "today" reads as ongoing rather than upcoming in positive-
+  // UTC-offset timezones, where the UTC-parsed start time lands hours into today.
+  const start = parseDateOnly(ev.startDate), end = parseDateOnly(ev.endDate);
+  if (today < start) return { key:'upcoming', label:'Upcoming', bg:'var(--tint-amber-bg)', color:'var(--tint-amber-text)' };
+  if (today > end) return { key:'concluded', label:'Concluded', bg:'var(--bg-subtle)', color:'var(--text-muted)' };
+  return { key:'ongoing', label:'Ongoing', bg:'var(--tint-green-bg)', color:'var(--tint-green-text)' };
+}
+
 // ── Parking Pass date/time helpers ──
 // Parses a "YYYY-MM-DD" date-only string as local midnight — avoids the
 // UTC-vs-local off-by-one `new Date('YYYY-MM-DD')` can cause in negative-UTC

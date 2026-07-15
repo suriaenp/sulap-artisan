@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
+import { eventStatus } from '../lib/helpers';
 
 // Position-specific corner radius + fallback color for the "Why Join" 2x2
 // photo grid, kept as static layout constants since they're about shape/
@@ -27,11 +28,44 @@ function highlightPhrase(text = '', phrase) {
   );
 }
 
+// "12"/"JUL" for the carousel's date badge — falls back to a TBC placeholder
+// for the rare event with no dates set yet.
+function dayMonth(dateStr) {
+  if (!dateStr) return { day: '--', month: 'TBC' };
+  const d = new Date(dateStr);
+  return { day: String(d.getDate()), month: d.toLocaleDateString('en-GB', { month: 'short' }).toUpperCase() };
+}
+
 export default function PublicHome() {
   const { state, closeModals, set } = useStore();
-  const { content } = state;
+  const { content, events, settings } = state;
   const railRef = useRef(null);
+  const comingSoonCardRefs = useRef([]);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 720);
+
+  // Oldest-first so past events sit left (greyed) and future events sit right
+  // of whichever card is focused. Focus = nearest ongoing, else nearest
+  // upcoming, else (everything already concluded) the most recent past event.
+  const comingSoonEvents = [...events]
+    .sort((a, b) => (a.startDate ? new Date(a.startDate).getTime() : Infinity) - (b.startDate ? new Date(b.startDate).getTime() : Infinity))
+    .map(ev => ({ ...ev, _status: eventStatus(ev) }));
+  const comingSoonFocusIdx = (() => {
+    if (!comingSoonEvents.length) return -1;
+    const ongoing = comingSoonEvents.findIndex(e => e._status.key === 'ongoing');
+    if (ongoing !== -1) return ongoing;
+    const upcoming = comingSoonEvents.findIndex(e => e._status.key === 'upcoming');
+    if (upcoming !== -1) return upcoming;
+    return comingSoonEvents.length - 1;
+  })();
+  const showComingSoon = settings.publicEvents !== false && comingSoonEvents.length > 0;
+
+  // Center the focused card in the rail on load (and whenever the focused
+  // event changes) — no animated scroll on mount, just land there directly.
+  useEffect(() => {
+    if (comingSoonFocusIdx < 0) return;
+    const el = comingSoonCardRefs.current[comingSoonFocusIdx];
+    if (el) el.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+  }, [comingSoonFocusIdx, comingSoonEvents.length]);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 720);
@@ -67,7 +101,7 @@ export default function PublicHome() {
             <img src="/assets/sulap-lockup.png" alt="Sulap Artisan by Suria Sabah Shopping Mall" style={{ height: 46, width: 'auto', display: 'block', maxWidth: '100%', objectFit: 'contain' }} />
           </a>
           <nav style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 28 }}>
-            <a href="#coming-soon" style={navLink}>Coming Soon</a>
+            {showComingSoon && <a href="#coming-soon" style={navLink}>Coming Soon</a>}
             <a href="#why-join" style={navLink}>Why Join</a>
             <a href="#contact" style={navLink}>Contact</a>
           </nav>
@@ -104,30 +138,62 @@ export default function PublicHome() {
         </div>
       </section>
 
-      {/* Coming Soon */}
+      {/* Coming Soon — cards are live events, oldest to newest. The nearest
+          upcoming/ongoing one is centered and sized up; past events sit to
+          its left, desaturated toward the site's own dark palette (not a
+          flat grey) instead of scrubbed to neutral grayscale. */}
+      {showComingSoon && (
       <section id="coming-soon" style={{ position: 'relative', background: '#1D1006', overflow: 'hidden', padding: '72px 0 64px' }}>
         <div style={{ position: 'absolute', top: -60, left: -80, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.55, filter: 'blur(2px)' }} />
         <div style={{ position: 'absolute', bottom: -70, right: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.5, filter: 'blur(2px)' }} />
         <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>{content.comingSoonHeading}</h2>
         <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
           <button onClick={() => scrollRail(-1)} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8249;</button>
-          <div ref={railRef} style={{ flex: 1, display: 'flex', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '8px 4px 20px', scrollbarWidth: 'none' }}>
-            {content.comingSoonEvents.map(ev => (
-              <div key={ev.id} style={{ position: 'relative', flex: '0 0 320px', height: 440, borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'start', backgroundImage: ev.image ? `url(${ev.image})` : 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 12px 32px rgba(0,0,0,0.5)' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)', pointerEvents: 'none' }} />
-                <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
-                  <div style={{ fontSize: 40, fontWeight: 700, lineHeight: 1 }}>{ev.day}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em' }}>{ev.month}</div>
+          <div ref={railRef} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '30px 4px 26px', scrollbarWidth: 'none' }}>
+            {comingSoonEvents.map((ev, i) => {
+              const isFocus = i === comingSoonFocusIdx;
+              const isPast = ev._status.key === 'concluded';
+              const isLive = ev._status.key === 'ongoing';
+              const { day, month } = dayMonth(ev.startDate);
+              return (
+                <div key={ev.id} ref={el => (comingSoonCardRefs.current[i] = el)}
+                  className={`coming-soon-card${isFocus ? ' coming-soon-card--focus' : ''}`}
+                  style={{
+                    position: 'relative', flexBasis: isFocus ? 348 : 300, flexGrow: 0, flexShrink: 0, height: isFocus ? 468 : 416,
+                    borderRadius: 18, overflow: 'hidden', scrollSnapAlign: 'center',
+                    background: ev.img || 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundSize: 'cover', backgroundPosition: 'center',
+                    boxShadow: isFocus ? '0 24px 56px rgba(184,116,52,0.5), 0 0 0 2px #E8A05C' : '0 12px 32px rgba(0,0,0,0.5)',
+                    filter: isPast ? 'saturate(0.55) brightness(0.68)' : 'none',
+                    opacity: isPast ? 0.85 : 1,
+                    zIndex: isFocus ? 2 : 1,
+                  }}>
+                  <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: isPast
+                    ? 'linear-gradient(180deg, rgba(29,16,6,0.35) 25%, rgba(20,11,4,0.94) 100%)'
+                    : 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)' }} />
+                  {isLive && (
+                    <div style={{ position: 'absolute', top: 16, left: 16, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(184,58,46,0.92)', borderRadius: 999, padding: '6px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FFF3E2', animation: 'pulseTimer 1.4s ease-in-out infinite' }} />
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#FFF3E2' }}>LIVE NOW</div>
+                    </div>
+                  )}
+                  <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
+                    <div style={{ fontSize: isFocus ? 44 : 40, fontWeight: 700, lineHeight: 1 }}>{day}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em' }}>{month}</div>
+                  </div>
+                  <div style={{ position: 'absolute', left: 20, right: 20, bottom: isPast ? 56 : 40, color: '#FFF8EE', fontSize: isFocus ? 18 : 16, fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.5, textTransform: 'uppercase', pointerEvents: 'none' }}>
+                    {ev.name}
+                  </div>
+                  {isPast && (
+                    <div style={{ position: 'absolute', left: 20, bottom: 18, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,248,238,0.6)', textTransform: 'uppercase', pointerEvents: 'none' }}>Concluded</div>
+                  )}
                 </div>
-                <div style={{ position: 'absolute', left: 20, bottom: 40, color: '#FFF8EE', fontSize: 16, fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.5, textTransform: 'uppercase', pointerEvents: 'none' }}>
-                  {ev.name.split(' ').map((w, i, arr) => i === arr.length - 1 ? w : <span key={i}>{w} </span>)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <button onClick={() => scrollRail(1, true)} aria-label="Next" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: 'pointer', lineHeight: 1 }}>&#8250;</button>
         </div>
       </section>
+      )}
 
       {/* Why Join */}
       <section id="why-join" style={{ background: '#F7EFE3' }}>
@@ -194,7 +260,7 @@ export default function PublicHome() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <a href="#" onClick={e => { e.preventDefault(); goRegister(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer', textDecoration: 'none' }}>Apply as a Vendor</a>
               <a href="#" onClick={e => { e.preventDefault(); goVendor(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer', textDecoration: 'none' }}>Vendor Log In</a>
-              <a href="#coming-soon" style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', textDecoration: 'none' }}>Coming Soon</a>
+              {showComingSoon && <a href="#coming-soon" style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', textDecoration: 'none' }}>Coming Soon</a>}
               <a href="#" onClick={e => { e.preventDefault(); goAdmin(); }} style={{ fontSize: 14, color: 'rgba(233,213,184,0.85)', cursor: 'pointer', textDecoration: 'none' }}>Admin</a>
             </div>
           </div>
