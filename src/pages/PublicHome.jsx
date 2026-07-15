@@ -3,11 +3,20 @@ import { useStore } from '../lib/store';
 import { eventStatus } from '../lib/helpers';
 
 // "Coming Soon" carousel card sizing — the centered/focused card is bigger
-// than the rest. Shared as constants (not measured off the DOM) because the
-// card widths themselves animate via CSS transition when focus changes;
-// measuring mid-transition geometry to compute the centering offset would
-// read stale sizes, so the offset is derived analytically instead.
-const CS_CARD_W = 300, CS_FOCUS_W = 348, CS_GAP = 24;
+// than the rest, and both scale down on narrow viewports (as a fraction of
+// window width, not a fixed px) so neighboring cards stay visibly "peeking"
+// on mobile instead of the focus card alone overflowing the screen. Derived
+// from window width rather than measured off the DOM, because the card
+// widths themselves animate via CSS transition when focus changes — reading
+// mid-transition layout geometry to compute the centering offset would give
+// stale sizes, so both the render and the offset math use this same
+// function as their single source of truth.
+function csSizes(vw) {
+  const cardW = Math.round(Math.min(300, Math.max(148, vw * 0.62)));
+  const focusW = Math.round(Math.min(348, Math.max(184, vw * 0.74)));
+  const gap = vw < 480 ? 14 : 24;
+  return { cardW, focusW, gap };
+}
 
 // Position-specific corner radius + fallback color for the "Why Join" 2x2
 // photo grid, kept as static layout constants since they're about shape/
@@ -48,7 +57,9 @@ export default function PublicHome() {
   const { content, events, settings } = state;
   const comingSoonViewportRef = useRef(null);
   const [comingSoonOffset, setComingSoonOffset] = useState(0);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 720);
+  const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1280);
+  const isMobile = windowWidth < 720;
+  const { cardW: CS_CARD_W, focusW: CS_FOCUS_W, gap: CS_GAP } = csSizes(windowWidth);
 
   // Oldest-first so past events sit left (greyed) and future events sit right
   // of whichever card is centered. Default center = nearest ongoing, else
@@ -79,21 +90,18 @@ export default function PublicHome() {
   // since only one card is ever focused at a time) rather than measured off
   // the DOM, because the cards' own widths are mid-CSS-transition right when
   // centerIdx changes — measuring then would read stale, pre-transition sizes.
+  // Re-runs on window resize via the windowWidth state below (which changes
+  // CS_CARD_W/CS_FOCUS_W/CS_GAP), so no separate resize listener is needed here.
   useLayoutEffect(() => {
-    const recompute = () => {
-      const viewport = comingSoonViewportRef.current;
-      if (!viewport || centerIdx < 0) return;
-      const cardLeft = centerIdx * (CS_CARD_W + CS_GAP);
-      const cardCenter = cardLeft + CS_FOCUS_W / 2;
-      setComingSoonOffset(viewport.clientWidth / 2 - cardCenter);
-    };
-    recompute();
-    window.addEventListener('resize', recompute);
-    return () => window.removeEventListener('resize', recompute);
-  }, [centerIdx, comingSoonEvents.length]);
+    const viewport = comingSoonViewportRef.current;
+    if (!viewport || centerIdx < 0) return;
+    const cardLeft = centerIdx * (CS_CARD_W + CS_GAP);
+    const cardCenter = cardLeft + CS_FOCUS_W / 2;
+    setComingSoonOffset(viewport.clientWidth / 2 - cardCenter);
+  }, [centerIdx, comingSoonEvents.length, CS_CARD_W, CS_FOCUS_W, CS_GAP]);
 
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 720);
+    const onResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -161,9 +169,8 @@ export default function PublicHome() {
         <div style={{ position: 'absolute', top: -60, left: -80, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.55, filter: 'blur(2px)' }} />
         <div style={{ position: 'absolute', bottom: -70, right: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.5, filter: 'blur(2px)' }} />
         <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>{content.comingSoonHeading}</h2>
-        <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px' }}>
-          <button onClick={() => comingSoonGo(-1)} disabled={centerIdx <= 0} aria-label="Previous" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: centerIdx <= 0 ? 'default' : 'pointer', opacity: centerIdx <= 0 ? 0.35 : 1, lineHeight: 1, transition: 'opacity 0.25s ease' }}>&#8249;</button>
-          <div ref={comingSoonViewportRef} style={{ position: 'relative', flex: 1, overflow: 'hidden', padding: '30px 4px 26px' }}>
+        <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 6px' }}>
+          <div ref={comingSoonViewportRef} className="coming-soon-viewport" style={{ position: 'relative', overflow: 'hidden', padding: '36px 4px 78px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: CS_GAP, transform: `translateX(${comingSoonOffset}px)`, transition: 'transform 0.5s var(--ease-spring, cubic-bezier(0.2,0.9,0.3,1))', width: 'max-content' }}>
               {comingSoonEvents.map((ev, i) => {
                 const isFocus = i === centerIdx;
@@ -175,10 +182,10 @@ export default function PublicHome() {
                     className={`coming-soon-card${isFocus ? ' coming-soon-card--focus' : ''}`}
                     onClick={() => setComingSoonCenter(i)}
                     style={{
-                      position: 'relative', flexBasis: isFocus ? CS_FOCUS_W : CS_CARD_W, flexGrow: 0, flexShrink: 0, height: isFocus ? 468 : 416,
+                      position: 'relative', flexBasis: isFocus ? CS_FOCUS_W : CS_CARD_W, flexGrow: 0, flexShrink: 0, aspectRatio: '3 / 4.15',
                       borderRadius: 18, overflow: 'hidden', cursor: isFocus ? 'default' : 'pointer',
                       background: ev.img || 'linear-gradient(180deg, #8A5322, #3A2210)', backgroundSize: 'cover', backgroundPosition: 'center',
-                      boxShadow: isFocus ? '0 24px 56px rgba(184,116,52,0.5), 0 0 0 2px #E8A05C' : '0 12px 32px rgba(0,0,0,0.5)',
+                      boxShadow: isFocus ? '0 18px 46px rgba(184,116,52,0.5), 0 0 0 2px #E8A05C' : '0 12px 32px rgba(0,0,0,0.5)',
                       filter: isPast ? 'saturate(0.55) brightness(0.68)' : 'none',
                       opacity: isPast ? 0.85 : 1,
                       zIndex: isFocus ? 2 : 1,
@@ -186,28 +193,29 @@ export default function PublicHome() {
                     <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: isPast
                       ? 'linear-gradient(180deg, rgba(29,16,6,0.35) 25%, rgba(20,11,4,0.94) 100%)'
                       : 'linear-gradient(180deg, rgba(29,16,6,0) 45%, rgba(29,16,6,0.85) 100%)' }} />
-                    <div style={{ position: 'absolute', top: 18, right: 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
-                      <div style={{ fontSize: isFocus ? 44 : 40, fontWeight: 700, lineHeight: 1 }}>{day}</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em' }}>{month}</div>
+                    <div style={{ position: 'absolute', top: isMobile ? 12 : 18, right: isMobile ? 12 : 20, textAlign: 'right', color: '#FFF8EE', pointerEvents: 'none' }}>
+                      <div style={{ fontSize: isMobile ? (isFocus ? 30 : 26) : (isFocus ? 44 : 40), fontWeight: 700, lineHeight: 1 }}>{day}</div>
+                      <div style={{ fontSize: isMobile ? 11 : 15, fontWeight: 700, letterSpacing: '0.12em' }}>{month}</div>
                     </div>
-                    <div style={{ position: 'absolute', left: 20, right: 20, bottom: isPast ? 56 : 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, pointerEvents: 'none' }}>
+                    <div style={{ position: 'absolute', left: isMobile ? 12 : 20, right: isMobile ? 12 : 20, bottom: isPast ? (isMobile ? 40 : 56) : (isMobile ? 26 : 40), display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: isMobile ? 6 : 10, pointerEvents: 'none' }}>
                       {isLive && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(184,58,46,0.92)', borderRadius: 999, padding: '6px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(184,58,46,0.92)', borderRadius: 999, padding: isMobile ? '4px 9px' : '6px 12px', boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
                           <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FFF3E2', animation: 'pulseTimer 1.4s ease-in-out infinite' }} />
-                          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: '#FFF3E2' }}>LIVE NOW</div>
+                          <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 700, letterSpacing: '0.1em', color: '#FFF3E2' }}>LIVE NOW</div>
                         </div>
                       )}
-                      <div style={{ color: '#FFF8EE', fontSize: isFocus ? 18 : 16, fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.5, textTransform: 'uppercase' }}>{ev.name}</div>
+                      <div style={{ color: '#FFF8EE', fontSize: isMobile ? (isFocus ? 14 : 12.5) : (isFocus ? 18 : 16), fontWeight: 700, letterSpacing: '0.05em', lineHeight: 1.4, textTransform: 'uppercase' }}>{ev.name}</div>
                     </div>
                     {isPast && (
-                      <div style={{ position: 'absolute', left: 20, bottom: 18, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,248,238,0.6)', textTransform: 'uppercase', pointerEvents: 'none' }}>Concluded</div>
+                      <div style={{ position: 'absolute', left: isMobile ? 12 : 20, bottom: isMobile ? 10 : 18, fontSize: isMobile ? 9 : 10.5, fontWeight: 700, letterSpacing: '0.14em', color: 'rgba(255,248,238,0.6)', textTransform: 'uppercase', pointerEvents: 'none' }}>Concluded</div>
                     )}
                   </div>
                 );
               })}
             </div>
           </div>
-          <button onClick={() => comingSoonGo(1)} disabled={centerIdx >= comingSoonEvents.length - 1} aria-label="Next" style={{ flex: '0 0 auto', width: 48, height: 48, border: 'none', background: 'transparent', color: '#FFF3E2', fontSize: 30, cursor: centerIdx >= comingSoonEvents.length - 1 ? 'default' : 'pointer', opacity: centerIdx >= comingSoonEvents.length - 1 ? 0.35 : 1, lineHeight: 1, transition: 'opacity 0.25s ease' }}>&#8250;</button>
+          <button onClick={() => comingSoonGo(-1)} disabled={centerIdx <= 0} aria-label="Previous" style={{ position: 'absolute', left: 4, top: '50%', transform: 'translateY(-50%)', zIndex: 5, width: 42, height: 42, borderRadius: '50%', border: 'none', background: 'rgba(29,16,6,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF3E2', fontSize: 26, cursor: centerIdx <= 0 ? 'default' : 'pointer', opacity: centerIdx <= 0 ? 0.35 : 1, lineHeight: 1, transition: 'opacity 0.25s ease' }}>&#8249;</button>
+          <button onClick={() => comingSoonGo(1)} disabled={centerIdx >= comingSoonEvents.length - 1} aria-label="Next" style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', zIndex: 5, width: 42, height: 42, borderRadius: '50%', border: 'none', background: 'rgba(29,16,6,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF3E2', fontSize: 26, cursor: centerIdx >= comingSoonEvents.length - 1 ? 'default' : 'pointer', opacity: centerIdx >= comingSoonEvents.length - 1 ? 0.35 : 1, lineHeight: 1, transition: 'opacity 0.25s ease' }}>&#8250;</button>
         </div>
       </section>
       )}
