@@ -3,7 +3,7 @@ import Icon from './Icon';
 import Badge from './Badge';
 import PhotoTile from './PhotoTile';
 import { useStore } from '../lib/store';
-import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, EMPTY_EINVOICE } from '../data/mockData';
+import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } from '../data/mockData';
 import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
@@ -409,7 +409,7 @@ export function EventDetailModal() {
       <div style={{ marginTop:18 }}>
         <ModalSectionHead icon="pencil" text="Basics"/>
         <div style={{ position:'relative', width:'100%', maxWidth:200, aspectRatio:'4 / 5', borderRadius:16, overflow:'hidden', margin:'0 auto 16px', background:eef.img||EVENT_IMG_PALETTE[0], boxShadow:'0 10px 26px rgba(90,55,20,0.22)' }}>
-          <Icon name="tent" size={72} color="rgba(255,255,255,0.16)" style={{ position:'absolute', right:-16, bottom:-16 }}/>
+          {!isEventPhoto(eef.img) && <Icon name="image" size={44} color="rgba(255,255,255,0.35)" style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)' }}/>}
           <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(29,16,6,0) 50%, rgba(29,16,6,0.62) 100%)' }}/>
           <div style={{ position:'absolute', left:14, right:14, bottom:12, fontFamily:"'Marcellus',serif", fontSize:15.5, color:'#FFF8EE', textShadow:'0 1px 4px rgba(0,0,0,0.3)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{eef.name || 'Your event name'}</div>
         </div>
@@ -417,18 +417,23 @@ export function EventDetailModal() {
           <div><div style={lbl}>Event name</div><input value={eef.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. Harvest Night Market" style={inp}/></div>
           <div><div style={lbl}>Location</div><input value={eef.location} onChange={e=>upd('location',e.target.value)} placeholder="e.g. Suria Sabah Mall" style={inp}/></div>
           <div>
-            <div style={lbl}>Theme color</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:11 }}>
-              {EVENT_IMG_PALETTE.map((g,i) => {
-                const selected = (eef.img||EVENT_IMG_PALETTE[0])===g;
-                return (
-                  <button key={i} onClick={()=>upd('img',g)} style={{ width:32, height:32, borderRadius:10, background:g, border:'2px solid transparent', boxShadow:selected?'0 0 0 2px #FAF8F5, 0 0 0 4px #1C1A17':'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    {selected && <Icon name="check" size={14} color="#fff" style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}/>}
-                  </button>
-                );
-              })}
+            <div style={lbl}>Event photo</div>
+            <div style={{ display:'flex', gap:9 }}>
+              <label style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e3d8ca', background:'#fff', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                <Icon name="upload" size={13} color="#9A5B26"/>{isEventPhoto(eef.img) ? 'Change photo' : 'Upload photo'}
+                <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => upd('img', eventImgFromFile(reader.result));
+                  reader.readAsDataURL(file);
+                  e.target.value='';
+                }}/>
+              </label>
+              {isEventPhoto(eef.img) && (
+                <button onClick={()=>upd('img',EVENT_IMG_PALETTE[0])} style={{ background:'#F3EDE3', border:'none', color:'#5C5348', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>Remove</button>
+              )}
             </div>
-            <div style={{ fontSize:11, color:'#A09890', marginTop:9, lineHeight:1.4 }}>Shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
+            <div style={{ fontSize:11, color:'#A09890', marginTop:9, lineHeight:1.4 }}>Shown wherever this event is listed.</div>
           </div>
         </div>
 

@@ -7,7 +7,7 @@ import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
 import { VENDOR_TABS } from './VendorDashboard';
-import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
+import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
@@ -176,6 +176,9 @@ export default function AdminDashboard() {
   const [payUpMsg, setPayUpMsg] = useState(null);    // bulk invoice/receipt upload summary
   const [vendorSearch, setVendorSearch] = useState(''); // search box shared across vendor-listing tabs
   useEffect(() => { setVendorSearch(''); }, [aTab]);
+  const [eventSearch, setEventSearch] = useState('');
+  const [eventSearchOpen, setEventSearchOpen] = useState(false);
+  useEffect(() => { setEventSearch(''); setEventSearchOpen(false); }, [aTab]);
   const [rejectingPersonId, setRejectingPersonId] = useState(null); // pass-holder id currently showing the reject-reason picker
   const [rejectReasonKey, setRejectReasonKey] = useState('');
   const [rejectReasonOther, setRejectReasonOther] = useState('');
@@ -712,6 +715,8 @@ export default function AdminDashboard() {
         const nfTotal  = Number(state.ef.nonfnb||0)*d*1.06;
         const openEdit = (ev) => set({eventDetailId:ev.id,eef:{name:ev.name,location:ev.location||'',start:ev.startDate||'',end:ev.endDate||'',startTime:ev.startTime||'',endTime:ev.endTime||'',lastApp:ev.lastApp||'',fnb:ev.fnb||'',nonfnb:ev.nonfnb||'',img:ev.img||EVENT_IMG_PALETTE[0]}});
         const scrollRail = (dir) => { const el = eventRailRef.current; if (el) el.scrollBy({left: dir*208, behavior:'smooth'}); };
+        const eventSearchQ = eventSearch.trim().toLowerCase();
+        const railEvents = eventSearchQ ? events.filter(ev => (ev.name||'').toLowerCase().includes(eventSearchQ)) : events;
         const createEvent = () => {
           if (!state.ef.name) { showToast('Add an event name first','info'); return; }
           const dd = dayCount(state.ef.start,state.ef.end)||1;
@@ -757,21 +762,26 @@ export default function AdminDashboard() {
                 {eventStep === 0 && (
                   <div style={{ display:'flex', flexDirection:'column', alignItems:'center' }}>
                     <div style={{ position:'relative', width:164, aspectRatio:'4 / 5', borderRadius:16, overflow:'hidden', background:state.ef.img||EVENT_IMG_PALETTE[0], boxShadow:'0 10px 26px rgba(90,55,20,0.22)' }}>
-                      <Icon name="tent" size={70} color="rgba(255,255,255,0.16)" style={{ position:'absolute', right:-14, bottom:-14 }}/>
+                      {!isEventPhoto(state.ef.img) && <Icon name="image" size={40} color="rgba(255,255,255,0.35)" style={{ position:'absolute', top:'40%', left:'50%', transform:'translate(-50%,-50%)' }}/>}
                       <div style={{ position:'absolute', inset:0, background:'linear-gradient(180deg, rgba(29,16,6,0) 55%, rgba(29,16,6,0.6) 100%)' }}/>
                       <div style={{ position:'absolute', left:12, right:12, bottom:12, fontSize:13.5, fontWeight:700, color:'#FFF8EE', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{state.ef.name || 'Your event name'}</div>
                     </div>
-                    <div style={{ marginTop:16, display:'flex', flexWrap:'wrap', gap:11, justifyContent:'center', maxWidth:220 }}>
-                      {EVENT_IMG_PALETTE.map((g,i) => {
-                        const selected = (state.ef.img||EVENT_IMG_PALETTE[0])===g;
-                        return (
-                          <button key={i} onClick={()=>set({ef:{...state.ef,img:g}})} style={{ width:32, height:32, borderRadius:10, background:g, border:'2px solid transparent', boxShadow:selected?'0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-primary)':'none', padding:0, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                            {selected && <Icon name="check" size={14} color="#fff" style={{ filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.45))' }}/>}
-                          </button>
-                        );
-                      })}
+                    <div style={{ marginTop:16, display:'flex', gap:9 }}>
+                      <label style={{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
+                        <Icon name="upload" size={13} color="#9A5B26"/>{isEventPhoto(state.ef.img) ? 'Change photo' : 'Upload photo'}
+                        <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
+                          const file = e.target.files?.[0]; if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => set({ef:{...state.ef,img:eventImgFromFile(reader.result)}});
+                          reader.readAsDataURL(file);
+                          e.target.value='';
+                        }}/>
+                      </label>
+                      {isEventPhoto(state.ef.img) && (
+                        <button onClick={()=>set({ef:{...state.ef,img:EVENT_IMG_PALETTE[0]}})} style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>Remove</button>
+                      )}
                     </div>
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:12, textAlign:'center', lineHeight:1.4 }}>Shown wherever this event is listed. Real photo upload isn't available yet (needs cloud storage).</div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:12, textAlign:'center', lineHeight:1.4 }}>Shown wherever this event is listed.</div>
                   </div>
                 )}
 
@@ -832,15 +842,30 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* EXISTING EVENTS — horizontal rail, tucked behind the wizard card on wide screens */}
+            {/* EXISTING EVENTS — horizontal rail */}
             <div className="event-rail-panel" style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:22, padding:'18px 16px' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-secondary)', textTransform:'uppercase' }}>Existing events</div>
-                <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>{events.length} total</div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12, gap:10 }}>
+                <div style={{ fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-secondary)', textTransform:'uppercase', flexShrink:0 }}>Existing events</div>
+                {eventSearchOpen ? (
+                  <div style={{ position:'relative', flex:'1 1 auto', maxWidth:220 }}>
+                    <Icon name="search" size={13} color="var(--text-muted)" style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)' }}/>
+                    <input autoFocus value={eventSearch} onChange={e=>setEventSearch(e.target.value)} placeholder="Search events…" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:999, padding:'7px 30px', fontSize:12.5, color:'var(--text-primary)', outline:'none' }}/>
+                    <button onClick={()=>{ setEventSearchOpen(false); setEventSearch(''); }} aria-label="Close search" style={{ position:'absolute', right:6, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:2, display:'flex' }}>
+                      <Icon name="x" size={12} color="var(--text-muted)"/>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>{events.length} total</div>
+                    <button onClick={()=>setEventSearchOpen(true)} aria-label="Search events" style={{ width:30, height:30, borderRadius:'50%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', boxShadow:'0 2px 8px rgba(58,34,16,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                      <Icon name="search" size={13} color="#7A431A"/>
+                    </button>
+                  </div>
+                )}
               </div>
               <div style={{ position:'relative' }}>
                 <div ref={eventRailRef} className="event-rail">
-                  {events.map(ev => {
+                  {railEvents.map(ev => {
                     const st = eventStatus(ev);
                     const appsClosed = ev.lastApp && new Date() > new Date(ev.lastApp);
                     return (
@@ -869,11 +894,13 @@ export default function AdminDashboard() {
                       </div>
                     );
                   })}
-                  {events.length===0 && (
-                    <div style={{ flex:'1 1 auto', textAlign:'center', color:'var(--text-muted)', fontSize:13, padding:'30px 10px' }}>No events yet — create one to get started.</div>
+                  {railEvents.length===0 && (
+                    <div style={{ flex:'1 1 auto', textAlign:'center', color:'var(--text-muted)', fontSize:13, padding:'30px 10px' }}>
+                      {events.length===0 ? 'No events yet — create one to get started.' : `No events match "${eventSearch.trim()}".`}
+                    </div>
                   )}
                 </div>
-                {events.length > 1 && (
+                {railEvents.length > 1 && (
                   <>
                     <button onClick={()=>scrollRail(-1)} aria-label="Previous events" style={{ position:'absolute', left:2, top:'50%', transform:'translateY(-50%)', width:34, height:34, borderRadius:'50%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', boxShadow:'0 8px 18px rgba(58,34,16,0.18)', color:'#7A431A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', zIndex:3 }}>
                       <Icon name="arrowLeft" size={15} color="#7A431A"/>

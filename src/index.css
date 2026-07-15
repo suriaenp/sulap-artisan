@@ -240,9 +240,8 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
 .form-grid { display: flex; flex-direction: column; gap: 15px; }
 .admin-cards { display: flex; flex-direction: column; gap: 11px; }
 
-/* Events tab — layered create-wizard card + horizontal existing-events rail.
-   Stacked on narrow/medium screens; from 1140px the rail tucks in behind the
-   wizard card (negative margin + inset shadow), mirroring the reference design. */
+/* Events tab — create-wizard card + horizontal existing-events rail.
+   Stacked on narrow/medium screens; side-by-side from 1140px. */
 .event-wizard-wrap { display: flex; flex-direction: column; gap: 20px; }
 .event-rail {
   display: flex;
@@ -277,7 +276,7 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
 @media (min-width: 1140px) {
   .app-sidebar { width: 268px; }
   .overview-grid { grid-template-columns: repeat(4, 1fr); }
-  .event-wizard-wrap { flex-direction: row; align-items: flex-start; gap: 0; }
-  .event-wizard-card { position: relative; z-index: 2; flex: 0 0 380px; width: 380px; }
-  .event-rail-panel { position: relative; z-index: 1; flex: 1 1 380px; min-width: 0; margin-left: -40px; padding-left: 78px; box-shadow: inset 14px 0 24px -22px rgba(58,34,16,0.4); }
+  .event-wizard-wrap { flex-direction: row; align-items: flex-start; gap: 20px; }
+  .event-wizard-card { flex: 0 0 380px; width: 380px; }
+  .event-rail-panel { flex: 1 1 380px; min-width: 0; }
 }
