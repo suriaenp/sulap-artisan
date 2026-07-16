@@ -39,7 +39,41 @@ export const INITIAL_VENDORS = [
   { id:'v5', business:'Kinabalu Kopi',   owner:'Faiz Anuar',    category:'Food & Beverage',          email:'faiz@kkkopi.my',         phone:'012-3041188', ig:'@kinabalukopi',   fb:'Kinabalu Kopi',   tiktok:'@kkkopi',      plate:'SAB 700 G',  regDate:'18 Jun', tcAcceptedAt:'18 Jun 2026, 11:15 AM', status:'approved', power:'1× coffee machine (240V, 13A), 1× water boiler', productPhotos:[P('v5p1','kopi-o-classic.jpg','#C8A176','#5C3A21'),P('v5p2','kaya-toast.jpg','#E8CFA3','#B07E3F'),P('v5p3','retail-packs.jpg','#B98F63','#4A2E18')], desc:'Traditional Sabah kopi, kaya toast and local kuih. Hot and iced drinks plus retail coffee packs.', einvoice:EI() },
   { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  tcAcceptedAt:'9 Jul 2026, 4:56 PM', status:'pending',  power:'None', productPhotos:[P('v6p1','motif-rings.jpg','#D8D8DC','#8A8A94'),P('v6p2','pendants.jpg','#C9C9CF','#6E6E78'),P('v6p3','pattern-cuffs.jpg','#E2E2E6','#9A9AA4')], desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.', einvoice:EI() },
   { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', tcAcceptedAt:'10 Jul 2026, 1:12 PM', status:'pending',  power:'None', productPhotos:[P('v7p1','pandan-baskets.jpg','#D9E3C9','#7C9153'),P('v7p2','placemats.jpg','#CBD8B5','#6B8046'),P('v7p3','storage-boxes.jpg','#E1E8D2','#8CA05E'),P('v7p4','bamboo-trays.jpg','#D2DFBE','#75894C')], desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.', einvoice:EI() },
+  ...genDemoVendors(68), // v8..v75 — filler vendors so the Categories tab's "All Vendors" table has enough rows to demo real pagination
 ];
+
+// Deterministic filler vendors (not hand-authored like v1–v7 above) — exist purely
+// so the Categories tab's vendor table has enough rows to show 15 pages of
+// pagination, matching the reference screenshot the admin design was matched to.
+function genDemoVendors(count) {
+  const CAT_NAMES = ['Food & Beverage','Handcraft / Art','Fashion','Jewellery','Beauty & Wellness','Home & Lifestyle','Creative Services / Experience','Books / Stationery','Others'];
+  const BIZ_PREFIX = ['Borneo','Tamu','Kinabalu','Sabah','Pulau','Rimba','Nusa','Kudat','Ranau','Papar','Tuaran','Sipitang'];
+  const BIZ_WORD = ['Craft','Kitchen','Studio','Collective','Workshop','Trading','House','Bites','Wares','Atelier','Kopi','Batik'];
+  const OWNER_FIRST = ['Aisyah','Daniel','Nadia','Grace','Faiz','Melissa','Joseph','Amirul','Siti','Wong','Chong','Farah','Aiman','Nurul','Hafiz','Jason','Lily','Kevin','Rosnah','Azman'];
+  const OWNER_LAST = ['Rahman','Lim','Yusof','Wong','Anuar','Robert','Majanil','Idris','Chan','Hassan','Tan','Sabri','Lee','Osman','Junaidi'];
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const business = `${BIZ_PREFIX[i % BIZ_PREFIX.length]} ${BIZ_WORD[(i * 3 + 1) % BIZ_WORD.length]}`;
+    const owner = `${OWNER_FIRST[i % OWNER_FIRST.length]} ${OWNER_LAST[(i * 5 + 2) % OWNER_LAST.length]}`;
+    const category = CAT_NAMES[i % CAT_NAMES.length];
+    const slug = business.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    out.push({
+      id: 'v' + (8 + i), business, owner, category,
+      email: `${owner.split(' ')[0].toLowerCase()}@${slug}.my`,
+      phone: `01${2 + (i % 8)}-${String(2000000 + i * 137).slice(0, 7)}`,
+      ig: '@' + slug, fb: business, tiktok: '@' + slug,
+      plate: `SAB ${1000 + i} ${String.fromCharCode(65 + (i % 26))}`,
+      regDate: `${(i % 28) + 1} Jul`,
+      tcAcceptedAt: `${(i % 28) + 1} Jul 2026, ${9 + (i % 8)}:00 AM`,
+      status: 'approved',
+      power: 'None',
+      productPhotos: [],
+      desc: `${business} is a Sabahan ${category.toLowerCase()} vendor showcasing local craftsmanship at Sulap Artisan markets.`,
+      einvoice: EI(),
+    });
+  }
+  return out;
+}
 
 export const INITIAL_APPS = [
   { id:'a1', vendorId:'v2', eventId:'e1', status:'pending',  shared:false, partners:[] },

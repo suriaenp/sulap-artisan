@@ -313,6 +313,10 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
 .event-rail::-webkit-scrollbar { display: none; }
 .event-rail-card { flex: 0 0 168px; scroll-snap-align: start; }
 
+/* Categories tab — vendor table + category side panel.
+   Stacked on narrow/medium screens; side-by-side from 1140px. */
+.categories-split { display: flex; flex-direction: column; gap: 20px; }
+
 @media (min-width: 768px) {
   .outer-wrap { justify-content: flex-start; }
   .app-shell { max-width: 100%; flex-direction: row; box-shadow: none; }
@@ -335,4 +339,7 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
   .event-wizard-wrap { flex-direction: row; align-items: flex-start; gap: 20px; }
   .event-wizard-card { flex: 0 0 380px; width: 380px; }
   .event-rail-panel { flex: 1 1 380px; min-width: 0; }
+  .categories-split { flex-direction: row; align-items: flex-start; }
+  .categories-vendors-panel { flex: 1 1 0; min-width: 0; }
+  .categories-side-panel { flex: 0 0 300px; width: 300px; }
 }

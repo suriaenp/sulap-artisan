@@ -13,6 +13,11 @@ import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
 
+// Categories tab's "All Vendors" table uses a smaller page size than the shared
+// PER_PAGE (20, used by every other admin list) so its pagination has enough
+// pages to be visibly useful with the seeded demo vendor count.
+const CAT_PAGE_SIZE = 5;
+
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
 // Admin Roles permission matrix all render from this list, so adding or
 // removing a tab here automatically updates role management too.
@@ -116,14 +121,17 @@ function Pager({ total, perPage, page, onPage }) {
 
 // Numbered-pill pagination (page 1, 2, 3 … last, with a "Page X of Y" label) — used
 // where a denser, more modern pager reads better than the plain Prev/Next of `Pager`.
+// Fixed "01 02 03 04 05 … last" pill pagination — the head window stays put
+// regardless of the active page (matching the reference screenshot exactly);
+// Previous/Next still step through every page one at a time.
 function ModernPager({ total, perPage, page, onPage }) {
   const pages = Math.ceil(total / perPage) || 1;
   if (pages <= 1) return null;
   const pad = n => String(n).padStart(2, '0');
-  const keep = new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages));
-  const nums = [...keep].sort((a, b) => a - b);
-  const withGaps = [];
-  nums.forEach((n, i) => { if (i > 0 && n - nums[i - 1] > 1) withGaps.push('gap' + n); withGaps.push(n); });
+  const headCount = Math.min(5, pages);
+  const head = Array.from({ length: headCount }, (_, i) => i + 1);
+  const hasTail = pages > headCount;
+  const hasGap = pages > headCount + 1;
   const navStyle = (dis) => ({ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:dis?'var(--text-muted)':'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:dis?'not-allowed':'pointer' });
   const pillStyle = (active) => ({ width:32, height:32, borderRadius:9, border:active?'none':'1px solid var(--border-medium)', background:active?'#1C1A17':'var(--bg-card)', color:active?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' });
   return (
@@ -131,10 +139,9 @@ function ModernPager({ total, perPage, page, onPage }) {
       <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>Page {page} of {pages}</div>
       <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
         <button disabled={page<=1} onClick={()=>onPage(page-1)} style={navStyle(page<=1)}>‹ Previous</button>
-        {withGaps.map(n => typeof n === 'string'
-          ? <span key={n} style={{ width:20, textAlign:'center', color:'var(--text-muted)', fontSize:12 }}>…</span>
-          : <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>
-        )}
+        {head.map(n => <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>)}
+        {hasGap && <span style={{ width:20, textAlign:'center', color:'var(--text-muted)', fontSize:12 }}>…</span>}
+        {hasTail && <button onClick={()=>onPage(pages)} style={pillStyle(pages===page)}>{pad(pages)}</button>}
         <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={navStyle(page>=pages)}>Next ›</button>
       </div>
     </div>
@@ -290,7 +297,7 @@ export default function AdminDashboard() {
   const pagedVendorList = searchedApprovedList.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const catFilteredVendors = vendors.filter(v => catFilter === 'all' || v.category === catFilter);
   const searchedCatVendors = searchVendors(catFilteredVendors);
-  const pagedCatVendors = searchedCatVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pagedCatVendors = searchedCatVendors.slice((page-1)*CAT_PAGE_SIZE, page*CAT_PAGE_SIZE);
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1694,7 +1701,15 @@ export default function AdminDashboard() {
       {/* ── Categories ── */}
       {aTab === 'categories' && (
         <div style={{ padding:'14px 16px 20px' }}>
-          <button onClick={()=>set({catEditId:'new'})} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 24px', cursor:'pointer', marginBottom:16 }}>+ Add Category</button>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+            <div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:'var(--text-primary)' }}>Categories</div>
+              <div style={{ fontSize:13, color:'var(--text-muted)', marginTop:3 }}>Manage vendor categories and browse every registered vendor.</div>
+            </div>
+            <button onClick={()=>set({catEditId:'new'})} style={{ display:'inline-flex', alignItems:'center', gap:7, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 20px', cursor:'pointer' }}>
+              <Icon name="plus" size={15} color="#FAF8F5"/>Add Category
+            </button>
+          </div>
 
           {/* Category Editor Modal */}
           {state.catEditId && (
@@ -1742,68 +1757,84 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Category management cards — add/remove only, membership lives in the table below */}
-          <div className="admin-cards">
-            {cats.map(c => {
-              const count = vendors.filter(v=>v.category===c.name).length;
-              return (
-                <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', display:'flex', alignItems:'center', gap:12 }}>
-                  <div style={{ width:40, height:40, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <Icon name={c.icon} size={18} color="#9A5B26"/>
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{c.name}</div>
-                    {c.desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{c.desc}</div>}
-                  </div>
-                  <span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px', flexShrink:0 }}>{count}</span>
-                  <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'var(--tint-red-bg)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
-                    <Icon name="x" size={15} color="var(--tint-red-text)"/>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* All Vendors — flat, searchable, filterable table */}
-          <div style={{ marginTop:28 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:9 }}>
-              <div style={{ fontSize:16, fontWeight:700, fontFamily:"'Playfair Display',serif", color:'var(--text-primary)' }}>All Vendors</div>
-              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-                <Icon name="download" size={14} color="#9A5B26"/>Export CSV
-              </button>
-            </div>
-            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14 }}>
-              <div style={{ flex:1, minWidth:220 }}><SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search by business or owner name"/></div>
-              <select value={catFilter} onChange={e=>set({catFilter:e.target.value, page:1})} style={{ border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', cursor:'pointer', height:'fit-content' }}>
-                <option value="all">All categories</option>
-                {cats.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
-              </select>
-            </div>
-
-            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, overflow:'hidden' }}>
-              {pagedCatVendors.length === 0 ? (
-                <div style={{ padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-                  {searchedCatVendors.length === 0 && (vendorSearch || catFilter !== 'all') ? 'No vendors match your search or filter.' : 'No vendors yet.'}
-                </div>
-              ) : pagedCatVendors.map((v, idx) => {
-                const history = vendorHistory(v.id);
-                return (
-                  <div key={v.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderTop: idx===0 ? 'none' : '1px solid var(--border-light)', flexWrap:'wrap' }}>
-                    <VendorAvatar v={v}/>
-                    <div style={{ flex:1, minWidth:140 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
-                      <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:1 }}>{v.owner}</div>
-                    </div>
-                    <span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>{v.category}</span>
-                    <div style={{ fontSize:12, color:'var(--text-secondary)', flexShrink:0, minWidth:100, textAlign:'center' }}>{history.total} market{history.total===1?'':'s'} joined</div>
-                    <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer', flexShrink:0 }}>
-                      <Icon name="eye" size={14} color="#9A5B26"/>View Profile
+          <div className="categories-split">
+            {/* LEFT — All Vendors table */}
+            <div className="categories-vendors-panel">
+              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16 }}>
+                  <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)' }}>All Vendors</div>
+                  <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
+                    <div style={{ minWidth:200 }}><SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search Contacts…"/></div>
+                    <select value={catFilter} onChange={e=>set({catFilter:e.target.value, page:1})} style={{ border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'0 13px', fontSize:13, color:'var(--text-secondary)', outline:'none', cursor:'pointer', height:44 }}>
+                      <option value="all">All categories</option>
+                      {cats.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:11, padding:'0 14px', height:44, cursor:'pointer' }}>
+                      <Icon name="download" size={14} color="#9A5B26"/>Export
                     </button>
                   </div>
-                );
-              })}
+                </div>
+
+                <div style={{ display:'grid', gridTemplateColumns:'minmax(140px,2fr) minmax(90px,1fr) minmax(90px,1fr) 44px', gap:10, padding:'0 8px 10px', borderBottom:'1px solid var(--border-light)', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.02em' }}>
+                  <div>Vendor</div><div>Category</div><div>Markets Joined</div><div/>
+                </div>
+
+                {pagedCatVendors.length === 0 ? (
+                  <div style={{ padding:'28px 8px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
+                    {searchedCatVendors.length === 0 && (vendorSearch || catFilter !== 'all') ? 'No vendors match your search or filter.' : 'No vendors yet.'}
+                  </div>
+                ) : pagedCatVendors.map(v => {
+                  const history = vendorHistory(v.id);
+                  return (
+                    <div key={v.id} style={{ display:'grid', gridTemplateColumns:'minmax(140px,2fr) minmax(90px,1fr) minmax(90px,1fr) 44px', gap:10, alignItems:'center', padding:'12px 8px', borderBottom:'1px solid var(--border-light)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                        <VendorAvatar v={v} size={34}/>
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                          <div style={{ fontSize:11.5, color:'var(--text-muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.owner}</div>
+                        </div>
+                      </div>
+                      <div><span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', display:'inline-block', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                      <div style={{ fontSize:12.5, color:'var(--text-secondary)' }}>{history.total} market{history.total===1?'':'s'}</div>
+                      <div style={{ textAlign:'right' }}>
+                        <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} title="View Profile" style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-medium)', width:32, height:32, borderRadius:9, display:'inline-flex', alignItems:'center', justifyContent:'center', color:'#9A5B26', cursor:'pointer' }}>
+                          <Icon name="eye" size={14} color="#9A5B26"/>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <ModernPager total={searchedCatVendors.length} perPage={CAT_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
+              </div>
             </div>
-            <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+
+            {/* RIGHT — Category side panel */}
+            <div className="categories-side-panel">
+              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:18, boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Categories</div>
+                <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:14 }}>{cats.length} total</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+                  {cats.map(c => {
+                    const count = vendors.filter(v=>v.category===c.name).length;
+                    return (
+                      <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle-alt)', borderRadius:12, padding:'10px 11px' }}>
+                        <div style={{ width:32, height:32, borderRadius:9, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                          <Icon name={c.icon} size={15} color="#9A5B26"/>
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{c.name}</div>
+                          <div style={{ fontSize:10.5, color:'var(--text-muted)' }}>{count} vendor{count===1?'':'s'}</div>
+                        </div>
+                        <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'none', border:'none', width:26, height:26, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
+                          <Icon name="x" size={13} color="var(--tint-red-text)"/>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
