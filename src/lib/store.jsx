@@ -3,7 +3,7 @@ import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASS_APPS, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
-  EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS,
+  EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS, INITIAL_PROFILE_REQUESTS,
 } from '../data/mockData';
 
 function readTabOrder(key) {
@@ -47,7 +47,7 @@ const INIT = {
   // Vendor-submitted requests to change locked profile fields (business, owner,
   // category, email, phone, plate, desc, or e-invoice/bank info) — admin must
   // approve before the change lands on the vendor record. See rule 17.
-  profileRequests: [],
+  profileRequests: INITIAL_PROFILE_REQUESTS,
   settings: { autoApprove:false, publicEvents:true, emailAlerts:true, skipMarkets:1 },
   // admin accounts & the admin currently signed in
   admins: INITIAL_ADMINS,

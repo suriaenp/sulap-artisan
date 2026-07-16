@@ -40,12 +40,15 @@ export const INITIAL_VENDORS = [
   { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  tcAcceptedAt:'9 Jul 2026, 4:56 PM', status:'pending',  power:'None', logo:P('v6logo','kadazan-silver-logo.jpg','#D8D8DC','#6E6E78'), productPhotos:[P('v6p1','motif-rings.jpg','#D8D8DC','#8A8A94'),P('v6p2','pendants.jpg','#C9C9CF','#6E6E78'),P('v6p3','pattern-cuffs.jpg','#E2E2E6','#9A9AA4')], desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.', einvoice:EI() },
   { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', tcAcceptedAt:'10 Jul 2026, 1:12 PM', status:'pending',  power:'None', logo:null, productPhotos:[P('v7p1','pandan-baskets.jpg','#D9E3C9','#7C9153'),P('v7p2','placemats.jpg','#CBD8B5','#6B8046'),P('v7p3','storage-boxes.jpg','#E1E8D2','#8CA05E'),P('v7p4','bamboo-trays.jpg','#D2DFBE','#75894C')], desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.', einvoice:EI() },
   ...genDemoVendors(68), // v8..v75 — filler vendors so the Categories tab's "All Vendors" table has enough rows to demo real pagination
+  ...genDemoVendors(30, { startNum: 76, status: 'pending' }), // v76..v105 — pending fillers so Vendor Applications has 30+ rows to manually check (2026-07-16)
 ];
 
 // Deterministic filler vendors (not hand-authored like v1–v7 above) — exist purely
-// so the Categories tab's vendor table has enough rows to show 15 pages of
-// pagination, matching the reference screenshot the admin design was matched to.
-function genDemoVendors(count) {
+// so vendor-listing tables have enough rows to demo real pagination. `startNum`/
+// `status` let the same generator produce both the original approved fillers
+// (v8..v75, Categories tab) and a second pending-status batch (v76..v105,
+// Vendor Applications tab — added 2026-07-16 alongside every other tab's demo data).
+function genDemoVendors(count, { startNum = 8, status = 'approved' } = {}) {
   const CAT_NAMES = ['Food & Beverage','Handcraft / Art','Fashion','Jewellery','Beauty & Wellness','Home & Lifestyle','Creative Services / Experience','Books / Stationery','Others'];
   const BIZ_PREFIX = ['Borneo','Tamu','Kinabalu','Sabah','Pulau','Rimba','Nusa','Kudat','Ranau','Papar','Tuaran','Sipitang'];
   const BIZ_WORD = ['Craft','Kitchen','Studio','Collective','Workshop','Trading','House','Bites','Wares','Atelier','Kopi','Batik'];
@@ -53,19 +56,20 @@ function genDemoVendors(count) {
   const OWNER_LAST = ['Rahman','Lim','Yusof','Wong','Anuar','Robert','Majanil','Idris','Chan','Hassan','Tan','Sabri','Lee','Osman','Junaidi'];
   const out = [];
   for (let i = 0; i < count; i++) {
-    const business = `${BIZ_PREFIX[i % BIZ_PREFIX.length]} ${BIZ_WORD[(i * 3 + 1) % BIZ_WORD.length]}`;
-    const owner = `${OWNER_FIRST[i % OWNER_FIRST.length]} ${OWNER_LAST[(i * 5 + 2) % OWNER_LAST.length]}`;
-    const category = CAT_NAMES[i % CAT_NAMES.length];
-    const slug = business.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const n = startNum - 8 + i; // keeps name/category cycling continuous across both batches instead of repeating from i=0
+    const business = `${BIZ_PREFIX[n % BIZ_PREFIX.length]} ${BIZ_WORD[(n * 3 + 1) % BIZ_WORD.length]}`;
+    const owner = `${OWNER_FIRST[n % OWNER_FIRST.length]} ${OWNER_LAST[(n * 5 + 2) % OWNER_LAST.length]}`;
+    const category = CAT_NAMES[n % CAT_NAMES.length];
+    const slug = business.toLowerCase().replace(/[^a-z0-9]+/g, '') + startNum;
     out.push({
-      id: 'v' + (8 + i), business, owner, category,
+      id: 'v' + (startNum + i), business, owner, category,
       email: `${owner.split(' ')[0].toLowerCase()}@${slug}.my`,
-      phone: `01${2 + (i % 8)}-${String(2000000 + i * 137).slice(0, 7)}`,
+      phone: `01${2 + (n % 8)}-${String(2000000 + n * 137).slice(0, 7)}`,
       ig: '@' + slug, fb: business, tiktok: '@' + slug,
-      plate: `SAB ${1000 + i} ${String.fromCharCode(65 + (i % 26))}`,
-      regDate: `${(i % 28) + 1} Jul`,
-      tcAcceptedAt: `${(i % 28) + 1} Jul 2026, ${9 + (i % 8)}:00 AM`,
-      status: 'approved',
+      plate: `SAB ${1000 + n} ${String.fromCharCode(65 + (n % 26))}`,
+      regDate: `${(n % 28) + 1} Jul`,
+      tcAcceptedAt: `${(n % 28) + 1} Jul 2026, ${9 + (n % 8)}:00 AM`,
+      status,
       power: 'None',
       logo: null,
       productPhotos: [],
@@ -76,6 +80,19 @@ function genDemoVendors(count) {
   return out;
 }
 
+// Deterministic filler event applications — one status-batch of 30 lets Payments,
+// Deposit Record, Parking, Event Pictures, Vendor Pass, and Event Applications'
+// Shortlist sub-tab all show real multi-page pagination for Tamu Weekend Bazaar
+// (e1) simultaneously, since they all filter on `apps` with `status:'approved'`;
+// the other batch of 30 gives Event Applications' own Applications sub-tab
+// (`status:'pending'`) the same. Added 2026-07-16 alongside the table-style
+// rollout so every touched tab has enough rows to manually check.
+function genDemoApps(vendorIds, eventId, status, idPrefix) {
+  return vendorIds.map((vid, i) => ({ id: `${idPrefix}${i + 1}`, vendorId: vid, eventId, status, shared: false, partners: [] }));
+}
+const DEMO_APP_APPROVED_VENDORS = Array.from({ length: 30 }, (_, i) => 'v' + (8 + i));   // v8..v37
+const DEMO_APP_PENDING_VENDORS  = Array.from({ length: 30 }, (_, i) => 'v' + (38 + i));  // v38..v67
+
 export const INITIAL_APPS = [
   { id:'a1', vendorId:'v2', eventId:'e1', status:'pending',  shared:false, partners:[] },
   { id:'a2', vendorId:'v1', eventId:'e1', status:'approved', shared:true,  partners:['v4'] },
@@ -85,6 +102,8 @@ export const INITIAL_APPS = [
   { id:'a6', vendorId:'v3', eventId:'e3', status:'pending',  shared:false, partners:[] },
   { id:'a7', vendorId:'v5', eventId:'e1', status:'approved', shared:false, partners:[] },
   { id:'a8', vendorId:'v3', eventId:'e1', status:'approved', shared:false, partners:[] },
+  ...genDemoApps(DEMO_APP_APPROVED_VENDORS, 'e1', 'approved', 'da-appr-'),
+  ...genDemoApps(DEMO_APP_PENDING_VENDORS,  'e1', 'pending',  'da-pend-'),
 ];
 
 // Payment docs (advice/advice2/invoice/receipt) are file objects like photos.
@@ -100,11 +119,44 @@ export const INITIAL_PAY_DOC_DOWNLOADS = {};
 
 export const INITIAL_REFUNDS = {};
 
+// 27 more deposit records (on top of the 3 hand-authored ones below) so
+// Deposit Record has ~30 vendors showing real paid/refunded status instead of
+// the default "Unpaid" — added 2026-07-16 alongside the other demo data.
+function genDemoDeposits(count, startNum) {
+  const out = {};
+  const cycle = ['paid', 'unpaid', 'refunded'];
+  for (let i = 0; i < count; i++) {
+    const status = cycle[i % cycle.length];
+    if (status === 'unpaid') { out['v' + (startNum + i)] = { status, inv:'', payDate:'', refundDate:'' }; continue; }
+    out['v' + (startNum + i)] = {
+      status,
+      inv: `DEP-${1100 + i}`,
+      payDate: `2026-06-${String((i % 27) + 1).padStart(2, '0')}`,
+      refundDate: status === 'refunded' ? `2026-07-${String((i % 14) + 1).padStart(2, '0')}` : '',
+    };
+  }
+  return out;
+}
+
 export const INITIAL_DEPOSITS = {
   v1: { status:'paid',     inv:'DEP-1042', payDate:'2026-06-18', refundDate:'' },
   v3: { status:'refunded', inv:'DEP-0991', payDate:'2026-05-02', refundDate:'2026-06-10' },
   v5: { status:'paid',     inv:'DEP-1050', payDate:'2026-06-20', refundDate:'' },
+  ...genDemoDeposits(27, 8), // v8..v34
 };
+
+// 30 more offence records, spread across the e1-approved demo vendors and every
+// offence type, so Compliance's Vendor review sub-tab has real per-vendor
+// history to expand instead of "No offences on record" almost everywhere.
+// Added 2026-07-16 alongside the other demo data.
+function genDemoOffenses(count, startNum) {
+  const TYPES = ['late_open', 'early_close', 'late_pay', 'cleanup', 'no_show', 'unsanctioned'];
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    out.push({ id: `do${i + 1}`, vendorId: 'v' + (startNum + (i % 30)), eventId: 'e1', type: TYPES[i % TYPES.length], photos: [] });
+  }
+  return out;
+}
 
 // Offences may carry photo evidence (`photos`) that vendors can view in their portal.
 export const INITIAL_OFFENSES = [
@@ -113,6 +165,7 @@ export const INITIAL_OFFENSES = [
   { id:'o3', vendorId:'v4', eventId:'e1', type:'late_pay',  photos:[] },
   { id:'o4', vendorId:'v3', eventId:'e1', type:'no_show',   photos:[] },
   { id:'o5', vendorId:'v2', eventId:'e1', type:'cleanup',   photos:[P('o5p1','booth-cleanup-issue.jpg','#B5C4B1','#4F6B4A')] },
+  ...genDemoOffenses(30, 8), // v8..v37
 ];
 
 // Color pairs assigned to newly added offence types, cycled in order.
@@ -174,7 +227,60 @@ export const INITIAL_PASS_APPS = [
     people:[
       { id:'vp2p1', name:'Grace Wong', photo:P('vp2p1','grace-pass.jpg','#F0D8DD','#B97434'), status:'pending', rejectReason:null, decidedAt:null },
     ] },
+  ...genDemoPassApps(20, 8), // v8..v27 — leaves v28..v37 with "no application yet" for a realistic mix
 ];
+
+// 20 more pass applications (1-2 pass holders each, mixed approved/pending/
+// rejected) so Vendor Pass has real summaries to check instead of "No Vendor
+// Pass application yet" on every demo row. Added 2026-07-16.
+function genDemoPassApps(count, startNum) {
+  const STATUSES = ['approved', 'pending', 'rejected'];
+  const NAMES = ['Aina', 'Ben', 'Chong', 'Dewi', 'Eddy', 'Farah', 'Gopal', 'Hana', 'Ismail', 'Jia', 'Kavi', 'Lina', 'Mira', 'Nasir', 'Oscar', 'Priya', 'Qistina', 'Ravi', 'Sara', 'Tariq'];
+  const OWNER_LAST_FOR_PASS = ['Rahman', 'Lim', 'Yusof', 'Wong', 'Anuar', 'Robert'];
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const peopleCount = 1 + (i % 2);
+    const people = Array.from({ length: peopleCount }, (_, pi) => {
+      const status = STATUSES[(i + pi) % STATUSES.length];
+      return {
+        id: `dpp${i}_${pi}`,
+        name: `${NAMES[(i + pi) % NAMES.length]} ${OWNER_LAST_FOR_PASS[(i + pi) % OWNER_LAST_FOR_PASS.length]}`,
+        photo: P(`dpp${i}_${pi}img`, `pass-${i}-${pi}.jpg`, '#D8C6A5', '#8B6F4E'),
+        status,
+        rejectReason: status === 'rejected' ? 'Photo is unclear or blurry' : null,
+        decidedAt: status === 'pending' ? null : '12 Jul',
+      };
+    });
+    out.push({ id: `dvp${i + 1}`, vendorId: 'v' + (startNum + i), eventId: 'e1', extraApproved: 0, boothNumber: i % 3 === 0 ? `B${10 + i}` : '', submittedAt: '11 Jul', people });
+  }
+  return out;
+}
+
+// 30 pending profile change requests so the Profile Requests tab has real
+// rows/pagination to check instead of starting empty (it previously had no
+// seed data at all — `profileRequests: []` in store.jsx). Mostly locked-detail
+// changes (e.g. a phone number update) with every 4th one an e-invoice/bank
+// change, matching the two sections DETAILS_FIELDS/EINVOICE_FIELDS cover.
+// Added 2026-07-16 alongside the other demo data.
+function genDemoProfileRequests(count, startNum) {
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const vid = 'v' + (startNum + i);
+    const v = INITIAL_VENDORS.find(x => x.id === vid) || {};
+    const isEinvoice = i % 4 === 3;
+    const section = isEinvoice ? 'einvoice' : 'details';
+    // `changes` must snapshot every field the section covers (not just the one
+    // that actually changed) — the admin UI diffs each DETAILS_FIELDS/
+    // EINVOICE_FIELDS key against `v[k]`/`v.einvoice[k]`, so any key missing
+    // from `changes` reads as "changed to blank" instead of "unchanged".
+    const changes = isEinvoice
+      ? { ...v.einvoice, bankName: 'CIMB Bank', bankAccNo: `70${1000000 + i}` }
+      : { business: v.business, owner: v.owner, category: v.category, email: v.email, plate: v.plate, desc: v.desc, phone: `01${3 + (i % 6)}-${String(9000000 + i * 111).slice(0, 7)}` };
+    out.push({ id: `dpr${i + 1}`, vendorId: vid, section, changes, submittedAt: `${(i % 28) + 1} Jul`, status: 'pending' });
+  }
+  return out;
+}
+export const INITIAL_PROFILE_REQUESTS = genDemoProfileRequests(30, 8); // v8..v37
 
 export const INITIAL_CATS = [
   { id:'c-fnb',      icon:'utensils', name:'Food & Beverage',                desc:'Coffee, drinks, cakes, cookies, desserts, snacks, meals, packaged food' },
