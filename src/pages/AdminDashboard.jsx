@@ -14,18 +14,6 @@ import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
 
-// Categories tab's "All Vendors" table uses a smaller page size than the shared
-// PER_PAGE (20, used by every other admin list) so its pagination has enough
-// pages to be visibly useful with the seeded demo vendor count.
-const CAT_PAGE_SIZE = 5;
-
-// Payments is filtered to one event at a time, so its approved-application
-// count per page view is naturally much smaller than a global vendor list —
-// PER_PAGE (20) would almost never produce more than one page with realistic
-// per-event headcounts. A dedicated smaller size keeps its ModernPager
-// actually visible/useful instead of silently hiding itself every time.
-const PAY_PAGE_SIZE = 3;
-
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
 // Admin Roles permission matrix all render from this list, so adding or
 // removing a tab here automatically updates role management too.
@@ -394,7 +382,7 @@ export default function AdminDashboard() {
   const filteredPayApps = searchApps(payFilter === 'new'
     ? approvedApps.filter(a => { const r = payRec(`${a.vendorId}-${a.eventId}`); return (r.advice || r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; })
     : approvedApps);
-  const pagedPayments= filteredPayApps.slice((page-1)*PAY_PAGE_SIZE, page*PAY_PAGE_SIZE);
+  const pagedPayments= filteredPayApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const selectedPayApps = filteredPayApps.filter(a => paySel[a.id]);
   const pagedPark    = searchedApprovedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPass    = searchedApprovedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
@@ -425,7 +413,7 @@ export default function AdminDashboard() {
   const pagedVendorList = searchedApprovedList.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const catFilteredVendors = vendors.filter(v => catFilter === 'all' || v.category === catFilter);
   const searchedCatVendors = searchVendors(catFilteredVendors);
-  const pagedCatVendors = searchedCatVendors.slice((page-1)*CAT_PAGE_SIZE, page*CAT_PAGE_SIZE);
+  const pagedCatVendors = searchedCatVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1426,7 +1414,7 @@ export default function AdminDashboard() {
                       <VendorAvatar v={v} size={38}/>
                       <div style={{ minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C' }}>#{(page-1)*PAY_PAGE_SIZE+idx+1}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C' }}>#{(page-1)*PER_PAGE+idx+1}</span>
                           <span style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</span>
                           {advDl && <span title={`Advices downloaded ${advDl}`} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:10, fontWeight:700, color:'#3F7A54', background:'rgba(90,145,110,0.16)', borderRadius:6, padding:'2px 6px', whiteSpace:'nowrap' }}><Icon name="check" size={10} color="#3F7A54"/>DL'd</span>}
                         </div>
@@ -1518,7 +1506,7 @@ export default function AdminDashboard() {
                 rows above scroll past underneath it, instead of scrolling away with
                 the rest of the tab's content. */}
             <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
-              <ModernPager total={filteredPayApps.length} perPage={PAY_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
+              <ModernPager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
             </div>
           </div>
           </div>
@@ -2047,7 +2035,7 @@ export default function AdminDashboard() {
                 );
               })}
 
-              <ModernPager total={searchedCatVendors.length} perPage={CAT_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
+              <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
             </div>
 
             {/* RIGHT — Category side panel */}
