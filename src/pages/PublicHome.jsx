@@ -57,7 +57,7 @@ function GalleryRow({ tiles, reverse, windowWidth }) {
   const loop = Array.from({ length: repeatCount }, () => tiles).flat();
   const duration = Math.max(8, listWidth / GALLERY_PX_PER_SEC);
   return (
-    <div style={{ overflow: 'hidden' }}>
+    <div className="gallery-viewport" style={{ overflow: 'hidden' }}>
       <div className={`gallery-track${reverse ? ' gallery-track--reverse' : ''}`} style={{ gap: GALLERY_GAP, animationDuration: `${duration}s`, '--gallery-shift': `-${listWidth}px` }}>
         {loop.map((tile, i) => (
           <div key={`${tile.id}-${i}`} style={{ flex: `0 0 ${GALLERY_TILE_W}px`, height: GALLERY_TILE_H, borderRadius: 12, overflow: 'hidden', backgroundImage: tile.image ? `url(${tile.image})` : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
