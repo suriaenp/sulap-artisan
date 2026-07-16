@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
+import VendorAvatar from '../components/VendorAvatar';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
@@ -181,24 +182,6 @@ function NoSearchMatch({ query }) {
   return (
     <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
       No vendors match "{query}".
-    </div>
-  );
-}
-
-// Round initials placeholder for a vendor's profile picture — vendors don't
-// have real uploaded photos yet, so this stands in everywhere one's needed.
-const AVATAR_COLORS = ['#9A5B26','#2D6A4F','#5B7FA6','#A6364E','#7A4A38','#6B4F8C'];
-function vendorInitials(name) {
-  return (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
-}
-function avatarColor(id) {
-  const sum = [...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0);
-  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
-}
-function VendorAvatar({ v, size = 44 }) {
-  return (
-    <div style={{ width:size, height:size, borderRadius:size*0.29, background:avatarColor(v.id), display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-      <span style={{ color:'#fff', fontSize:size*0.32, fontWeight:700 }}>{vendorInitials(v.business)}</span>
     </div>
   );
 }
@@ -547,9 +530,12 @@ export default function AdminDashboard() {
             {pagedVendors.map((v,idx) => (
               <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                    <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                    <VendorAvatar v={v} size={36}/>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                      <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                    </div>
                   </div>
                   <Badge status={v.status}/>
                 </div>
@@ -582,9 +568,12 @@ export default function AdminDashboard() {
                   {searchedRejected.map(v => (
                     <div key={v.id} style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
-                          <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                          <VendorAvatar v={v} size={36}/>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
+                            <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                          </div>
                         </div>
                         <Badge status={v.status}/>
                       </div>
@@ -632,9 +621,12 @@ export default function AdminDashboard() {
               return (
                 <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                      <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                      <VendorAvatar v={v} size={36}/>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                        <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                      </div>
                     </div>
                     <Badge status={v.status}/>
                   </div>
@@ -707,7 +699,8 @@ export default function AdminDashboard() {
                 const fields = req.section==='einvoice' ? EINVOICE_FIELDS : DETAILS_FIELDS;
                 return (
                   <div key={req.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <VendorAvatar v={v} size={36}/>
                       <div>
                         <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
                         <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
@@ -748,8 +741,13 @@ export default function AdminDashboard() {
                       const v = vendors.find(x=>x.id===req.vendorId)||{};
                       return (
                         <div key={req.id} style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
-                          <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            <VendorAvatar v={v} size={32}/>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
+                              <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
+                            </div>
+                          </div>
                           <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', marginTop:9, background: req.status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)', color: req.status==='approved'?'var(--tint-green-text)':'var(--tint-red-text)' }}>
                             {req.status==='approved' ? 'Approved' : 'Rejected'}
                           </span>
@@ -1012,17 +1010,20 @@ export default function AdminDashboard() {
               return (
                 <div key={a.id} style={{ background:'var(--bg-card)', border:`1px solid ${onHold?'var(--tint-amber-border)':'var(--border-light)'}`, borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)', display:'flex', alignItems:'center', gap:7 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{(page-1)*PER_PAGE+idx+1}</span>
-                        {v.business}
-                      </div>
-                      <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
-                      {(() => { const h = vendorHistory(a.vendorId); return (
-                        <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:3 }}>
-                          {h.total === 0 ? 'No markets joined yet' : `Last joined ${h.latest.name} (${h.latest.dateRange}) · ${h.total} market${h.total>1?'s':''} joined total`}
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                      <VendorAvatar v={v} size={36}/>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)', display:'flex', alignItems:'center', gap:7 }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{(page-1)*PER_PAGE+idx+1}</span>
+                          {v.business}
                         </div>
-                      ); })()}
+                        <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
+                        {(() => { const h = vendorHistory(a.vendorId); return (
+                          <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:3 }}>
+                            {h.total === 0 ? 'No markets joined yet' : `Last joined ${h.latest.name} (${h.latest.dateRange}) · ${h.total} market${h.total>1?'s':''} joined total`}
+                          </div>
+                        ); })()}
+                      </div>
                     </div>
                   </div>
                   <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:7, marginTop:10 }}>
@@ -1110,13 +1111,18 @@ export default function AdminDashboard() {
                             const onHold = a.status==='shortlisted' && holdOffs.length > 0 && !overridden;
                             return (
                               <div key={a.id} style={{ background: a.status==='approved' ? 'var(--tint-green-bg-soft)' : 'var(--bg-subtle-alt)', border:`1px solid ${onHold?'var(--tint-amber-border)':a.status==='approved'?'var(--tint-green-border)':'var(--border-light)'}`, borderRadius:14, padding:13 }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                                  <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>
-                                    <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}
+                                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                  <VendorAvatar v={v} size={32}/>
+                                  <div style={{ flex:1, minWidth:0 }}>
+                                    <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+                                      <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>
+                                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}
+                                      </div>
+                                      {a.status==='approved' && <span style={{ fontSize:11, fontWeight:600, color:'var(--tint-green-text)' }}>Approved</span>}
+                                    </div>
+                                    <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
                                   </div>
-                                  {a.status==='approved' && <span style={{ fontSize:11, fontWeight:600, color:'var(--tint-green-text)' }}>Approved</span>}
                                 </div>
-                                <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
                                 {a.shared && (
                                   <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'4px 10px', marginTop:8 }}>
                                     <Icon name="users" size={12} color="#9A5B26"/>Sharing · {(a.partners||[]).length+1} vendors
@@ -1161,12 +1167,19 @@ export default function AdminDashboard() {
 
       {/* ── Payments ── */}
       {aTab === 'payments' && (
-        <div style={{ position:'relative', padding:'28px 24px 32px', overflow:'hidden' }}>
+        <div style={{ position:'relative', padding:'28px 24px 32px' }}>
           {/* Decorative ambient glow — same treatment as the Categories tab's "All
               Vendors" table (Canvas-4.dc.html handoff) so the two table-style admin
-              views share one visual language; contained to this tab's own box. */}
-          <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)', pointerEvents:'none', zIndex:0 }}/>
-          <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)', pointerEvents:'none', zIndex:0 }}/>
+              views share one visual language. Clipped by its own absolutely-positioned
+              layer (not `overflow:hidden` on this whole tab wrapper) so the sticky
+              pagination footer below isn't blocked from sticking to the real page
+              scroll container — an `overflow` value other than `visible` on any
+              ancestor between a sticky element and its scrolling container defeats
+              `position:sticky` entirely. */}
+          <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
+            <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
+            <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+          </div>
 
           <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:20 }}>
@@ -1247,7 +1260,7 @@ export default function AdminDashboard() {
               <input type="checkbox" checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
                 onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}
                 style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
-              <div>Vendor</div><div>Total Due</div><div>Status</div><div>Documents</div><div>Actions</div>
+              <div>Vendor</div><div>Total Due</div><div>Status</div><div>Documents</div><div style={{ textAlign:'right' }}>Actions</div>
             </div>
 
             {pagedPayments.length === 0 ? (
@@ -1324,7 +1337,7 @@ export default function AdminDashboard() {
                         );
                       })}
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:5, flexWrap:'wrap' }}>
                       <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', border:'none', color:'#FFF8EE', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 10px', cursor:'pointer', fontFamily:"'Karla',sans-serif", whiteSpace:'nowrap' }}>Record payment</button>
                       <button title="Reset to unpaid" onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
                       <button title="Send payment reminder" onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
@@ -1371,7 +1384,13 @@ export default function AdminDashboard() {
             </div>
             </div>
 
-            <ModernPager total={filteredPayApps.length} perPage={PAY_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
+            {/* Sticky footer — pins to the bottom of the page's real scroll container
+                (`.scrollarea` in App.jsx) so the pager stays reachable while only the
+                rows above scroll past underneath it, instead of scrolling away with
+                the rest of the tab's content. */}
+            <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
+              <ModernPager total={filteredPayApps.length} perPage={PAY_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
+            </div>
           </div>
           </div>
         </div>
@@ -1401,9 +1420,12 @@ export default function AdminDashboard() {
               return (
                 <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px' }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                    <div style={{ minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}</div>
-                      <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                      <VendorAvatar v={v} size={34}/>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}</div>
+                        <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
+                      </div>
                     </div>
                     <Badge status={dep.status}/>
                   </div>
@@ -1458,9 +1480,12 @@ export default function AdminDashboard() {
                     return (
                       <div key={a.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:13 }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                          <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>Vehicle owner on record</div>
+                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                            <VendorAvatar v={v} size={34}/>
+                            <div style={{ minWidth:0 }}>
+                              <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>Vehicle owner on record</div>
+                            </div>
                           </div>
                           <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:6, padding:'4px 9px', flexShrink:0 }}>
                             <Icon name="car" size={13} color="#9A5B26"/>{v.plate}
@@ -1541,6 +1566,7 @@ export default function AdminDashboard() {
                 <div key={g.id} style={{ background:'var(--bg-card)', border:`1.5px solid ${isSel?'#9A5B26':'var(--border-light)'}`, borderRadius:16, padding:14 }}>
                   <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
                     <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#9A5B26', width:16, height:16, cursor:'pointer', flexShrink:0 }}/>
+                    <VendorAvatar v={mainV} size={34}/>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
                     </div>
@@ -1662,10 +1688,13 @@ export default function AdminDashboard() {
               return (
                 <div key={a.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                      <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:3 }}>
-                        {!passApp ? 'No Vendor Pass application yet' : `${passApp.people.length} pass holder${passApp.people.length!==1?'s':''}${summaryParts.length?` · ${summaryParts.join(', ')}`:''}${passApp.extraApproved?` · +${passApp.extraApproved} extra approved`:''} · submitted ${passApp.submittedAt}`}
+                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                      <VendorAvatar v={v} size={36}/>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                        <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:3 }}>
+                          {!passApp ? 'No Vendor Pass application yet' : `${passApp.people.length} pass holder${passApp.people.length!==1?'s':''}${summaryParts.length?` · ${summaryParts.join(', ')}`:''}${passApp.extraApproved?` · +${passApp.extraApproved} extra approved`:''} · submitted ${passApp.submittedAt}`}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -2097,12 +2126,15 @@ export default function AdminDashboard() {
                   return (
                     <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                        <div style={{ minWidth:0 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-                            <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{idx+1}</span>
-                            <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</span>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                          <VendorAvatar v={v} size={34}/>
+                          <div style={{ minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                              <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{idx+1}</span>
+                              <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</span>
+                            </div>
+                            <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:1 }}>{v.category}</div>
                           </div>
-                          <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:1 }}>{v.category}</div>
                         </div>
                         <span style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'5px 11px', flexShrink:0 }}>{vOff.length} total</span>
                       </div>

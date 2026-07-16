@@ -44,6 +44,7 @@ export default function VendorRegister() {
       tcAcceptedAt: tcTimestamp(),
       status: autoApproved ? 'approved' : 'pending',
       power: rf.power.trim() || 'None',
+      logo: rf.logo,
       productPhotos: rf.photos,
       desc: rf.desc.trim(),
       einvoice: { ...EMPTY_EINVOICE },
@@ -51,7 +52,7 @@ export default function VendorRegister() {
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
     logActivity(newVendor.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
     if (autoApproved) logActivity('Admin', `auto-approved ${newVendor.business} as a vendor.`, { icon: 'check', tint: '#F3E4CC' });
-    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[] } });
+    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[], logo:null } });
   };
 
   const handleTermsScroll = (e) => {
@@ -104,6 +105,29 @@ export default function VendorRegister() {
         <div style={{ padding:20 }}>
           <div style={{ fontFamily:"'Marcellus',serif", fontSize:23, fontWeight:400, color:'#1C1A17' }}>Business details</div>
           <div style={{ fontSize:13, color:'#6B6560', marginTop:5 }}>Tell us about your craft business.</div>
+          <div style={{ display:'flex', alignItems:'center', gap:14, marginTop:18 }}>
+            <label style={{ position:'relative', width:74, height:74, borderRadius:'50%', flexShrink:0, cursor:'pointer', background:rf.logo?.url ? '#F2EDE6' : `linear-gradient(135deg,${rf.logo?.grad?.[0]||'#F0D8DD'},${rf.logo?.grad?.[1]||'#B97434'})`, border: rf.logo ? 'none' : '2px dashed #d8c6b2', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+              <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+                const file = e.target.files[0]; e.target.value = '';
+                if (!file) return;
+                upd('logo', await fileToPhoto(file));
+              }}/>
+              {rf.logo?.url ? (
+                <img src={rf.logo.url} alt="Business logo" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+              ) : (
+                <Icon name="camera" size={22} color={rf.logo ? '#fff' : '#9A5B26'}/>
+              )}
+              {rf.logo && (
+                <div onClick={e=>{ e.preventDefault(); upd('logo', null); }} style={{ position:'absolute', bottom:0, right:0, width:22, height:22, borderRadius:'50%', background:'rgba(28,26,23,0.65)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Icon name="x" size={12} color="#fff"/>
+                </div>
+              )}
+            </label>
+            <div>
+              <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>Business logo / profile photo</div>
+              <div style={{ fontSize:11.5, color:'#A09890', marginTop:3, lineHeight:1.4 }}>Shown next to your business name across the vendor &amp; admin portals. Optional — you can add this later.</div>
+            </div>
+          </div>
           <div className="form-grid" style={{ marginTop:20 }}>
             <div><label style={lbl}>Business name</label><input value={rf.business} onChange={e=>upd('business',e.target.value)} placeholder="e.g. Nutmeg & Clay" style={inp} /></div>
             <div><label style={lbl}>Contact person (same as NRIC)</label><input value={rf.owner} onChange={e=>upd('owner',e.target.value)} placeholder="Full name as per NRIC" style={inp} /></div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from './Icon';
 import Badge from './Badge';
 import PhotoTile from './PhotoTile';
+import VendorAvatar from './VendorAvatar';
 import { useStore } from '../lib/store';
 import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } from '../data/mockData';
 import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
@@ -28,12 +29,15 @@ function Sheet({ onClose, children, maxW = 560 }) {
   );
 }
 
-function SheetHeader({ title, sub, onClose }) {
+function SheetHeader({ title, sub, onClose, avatar }) {
   return (
     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
-      <div style={{ minWidth:0 }}>
-        <div style={{ fontFamily:"'Marcellus',serif", fontSize:20, fontWeight:400, color:'#1C1A17' }}>{title}</div>
-        {sub && <div style={{ fontSize:13, color:'#6B6560', marginTop:2 }}>{sub}</div>}
+      <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
+        {avatar}
+        <div style={{ minWidth:0 }}>
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:20, fontWeight:400, color:'#1C1A17' }}>{title}</div>
+          {sub && <div style={{ fontSize:13, color:'#6B6560', marginTop:2 }}>{sub}</div>}
+        </div>
       </div>
       <button onClick={onClose} style={{ background:'#F2EDE6', border:'none', width:34, height:34, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', color:'#1C1A17', cursor:'pointer', flexShrink:0 }}>
         <Icon name="x" size={17} color="#1C1A17"/>
@@ -120,7 +124,7 @@ export function VendorDetailModal() {
   const einvoiceOk = einvoiceComplete(v);
   return (
     <Sheet onClose={close}>
-      <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close}/>
+      <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close} avatar={<VendorAvatar v={v} size={46}/>}/>
       <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:12 }}>
         <Badge status={v.status}/>
       </div>
@@ -320,12 +324,12 @@ export function AppDetailModal() {
   const close = () => set({appDetailId:null});
   return (
     <Sheet onClose={close}>
-      <SheetHeader title={v.business} sub={`${ev.name} · ${v.category}`} onClose={close}/>
+      <SheetHeader title={v.business} sub={`${ev.name} · ${v.category}`} onClose={close} avatar={<VendorAvatar v={v} size={46}/>}/>
       <span style={{ display:'inline-block', marginTop:8, fontSize:12, fontWeight:600, color: a.status==='approved' ? '#8FB8A4' : a.status==='rejected' ? '#CB9A93' : '#B7770D' }}>
         {a.status==='approved' ? 'Approved' : a.status==='rejected' ? 'Rejected' : 'Awaiting review'}
       </span>
       <div onClick={()=>set({appDetailId:null, vendorDetailId:v.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', marginTop:13, cursor:'pointer' }}>
-        <Icon name="badge" size={15} color="#9A5B26"/>
+        <VendorAvatar v={v} size={30}/>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{v.business}</div>
           <div style={{ fontSize:11, color:'#A09890' }}>View full vendor profile</div>
@@ -348,7 +352,7 @@ export function AppDetailModal() {
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:12 }}>
               {partners.map(p => (
                 <div key={p.id} onClick={()=>set({appDetailId:null, vendorDetailId:p.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', cursor:'pointer' }}>
-                  <Icon name="users" size={15} color="#9A5B26"/>
+                  <VendorAvatar v={p} size={30}/>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.business}</div>
                     <div style={{ fontSize:11, color:'#A09890' }}>{p.category}</div>

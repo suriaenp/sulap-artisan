@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
+import VendorAvatar from '../components/VendorAvatar';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import DigitalPassCard from '../components/DigitalPassCard';
 import ParkingPassCard from '../components/ParkingPassCard';
@@ -181,9 +182,7 @@ export default function VendorDashboard() {
       {/* Header */}
       <div style={{ background:'linear-gradient(160deg,#F3E4CC,#F2EDE6)', padding:'16px 20px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div style={{ display:'flex', alignItems:'center', gap:11 }}>
-          <div style={{ width:42, height:42, borderRadius:'50%', background:'linear-gradient(140deg,#B97434,#9A5B26)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:16 }}>
-            {(me.business||'').slice(0,2).toUpperCase()}
-          </div>
+          <VendorAvatar v={me} size={42}/>
           <div>
             <div style={{ fontSize:12, color:'#6B6560' }}>Welcome back,</div>
             <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17', lineHeight:1.1 }}>{me.business}</div>
