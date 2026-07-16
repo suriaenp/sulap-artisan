@@ -1154,66 +1154,100 @@ export default function AdminDashboard() {
 
       {/* ── Payments ── */}
       {aTab === 'payments' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:13 }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={lbl}>Filter by event</div>
-              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPaySel({}); setPayUpMsg(null); }} style={{ width:'100%', maxWidth:360, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}>
+        <div style={{ position:'relative', padding:'28px 24px 32px', overflow:'hidden' }}>
+          {/* Decorative ambient glow — same treatment as the Categories tab's "All
+              Vendors" table (Canvas-4.dc.html handoff) so the two table-style admin
+              views share one visual language; contained to this tab's own box. */}
+          <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)', pointerEvents:'none', zIndex:0 }}/>
+          <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)', pointerEvents:'none', zIndex:0 }}/>
+
+          <div style={{ position:'relative', zIndex:1 }}>
+          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:20 }}>
+            <div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Payments</div>
+              <div style={{ margin:0, fontSize:14, color:'#8A6A4A' }}>Rental payment status for every approved event application.</div>
+            </div>
+            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <Icon name="download" size={14} color="#6B4E33"/>Export
+            </button>
+          </div>
+
+          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'flex-end', gap:12, marginBottom:14 }}>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by event</div>
+              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPaySel({}); setPayUpMsg(null); }} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
-            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
-              <Icon name="download" size={14} color="#9A5B26"/>Export
-            </button>
-          </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:12 }}>
-            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', color:'var(--text-secondary)' }}>
-              <Icon name="calendar" size={13} color="var(--text-muted)"/>Payment due by {curEv.lastApp ? fmtShort(curEv.lastApp) : 'TBC'}
+            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'10px 13px', background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', color:'#6B4E33' }}>
+              <Icon name="calendar" size={13} color="#8A6A4A"/>Payment due by {curEv.lastApp ? fmtShort(curEv.lastApp) : 'TBC'}
             </span>
-            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', background:'var(--tint-green-bg)', color:'var(--tint-green-text)' }}>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'10px 13px', background:'rgba(90,145,110,0.16)', color:'#3F7A54' }}>
               {pagedPayments.filter(a=>payRec(`${a.vendorId}-${a.eventId}`).status==='paid').length} of {pagedPayments.length} fully paid
             </span>
           </div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {searchQ && filteredPayApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
-
-          {/* Bulk toolbar */}
-          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
-            {[['all','All vendors'],['new',`New advices — not downloaded (${approvedApps.filter(a=>{ const r=payRec(`${a.vendorId}-${a.eventId}`); return (r.advice||r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; }).length})`]].map(([id,label]) => (
-              <button key={id} onClick={()=>{ setPayFilter(id); setPaySel({}); set({page:1}); }} style={{ background:payFilter===id?'#9A5B26':'var(--bg-card)', border:`1px solid ${payFilter===id?'#9A5B26':'var(--border-medium)'}`, color:payFilter===id?'#FAF8F5':'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
-            ))}
-            <div style={{ flex:1 }}/>
-            <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer', background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:9, padding:'8px 12px' }}>
-              <input type="checkbox" style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}
-                checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
-                onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}/>
-              Select all
-            </label>
-            <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'#9A5B26':'var(--bg-subtle)', border:'none', color:selectedPayApps.length?'#FAF8F5':'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
-              <Icon name="download" size={14} color={selectedPayApps.length?'#FAF8F5':'var(--text-muted)'}/>Bulk download advices{selectedPayApps.length?` (${selectedPayApps.length})`:''}
-            </button>
-            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
-              <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('invoice','Invoice')}/>
-              <Icon name="upload" size={14} color="#9A5B26"/>Bulk upload invoices
-            </label>
-            <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
-              <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('receipt','Receipt')}/>
-              <Icon name="upload" size={14} color="#9A5B26"/>Bulk upload receipts
-            </label>
-          </div>
 
           {payUpMsg && (
-            <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:payUpMsg.count?'var(--tint-green-bg)':'var(--tint-amber-bg)', border:`1px solid ${payUpMsg.count?'var(--tint-green-border)':'var(--tint-amber-border)'}`, borderRadius:12, padding:'11px 13px', marginBottom:12, fontSize:12, color:payUpMsg.count?'var(--tint-green-text)':'var(--tint-amber-text)', lineHeight:1.5 }}>
-              <Icon name={payUpMsg.count?'check':'info'} size={15} color={payUpMsg.count?'var(--tint-green-text)':'var(--tint-amber-text)'} style={{ marginTop:1 }}/>
+            <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:payUpMsg.count?'rgba(90,145,110,0.14)':'rgba(214,152,66,0.14)', border:`1px solid ${payUpMsg.count?'rgba(90,145,110,0.3)':'rgba(214,152,66,0.3)'}`, borderRadius:14, padding:'11px 13px', marginBottom:14, fontSize:12, color:payUpMsg.count?'#3F7A54':'#9A6A1E', lineHeight:1.5 }}>
+              <Icon name={payUpMsg.count?'check':'info'} size={15} color={payUpMsg.count?'#3F7A54':'#9A6A1E'} style={{ marginTop:1 }}/>
               <div style={{ flex:1 }}>
                 {payUpMsg.count > 0 && <div><b>{payUpMsg.label}s</b> attached to <b>{payUpMsg.count} vendor(s)</b>. Vendors can view them in their portal.</div>}
                 {payUpMsg.unmatched.length > 0 && <div style={{ marginTop:payUpMsg.count?4:0 }}>Folders that didn't match any vendor in this event: <b>{payUpMsg.unmatched.join(', ')}</b>.</div>}
               </div>
-              <button onClick={()=>setPayUpMsg(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}><Icon name="x" size={14} color={payUpMsg.count?'var(--tint-green-text)':'var(--tint-amber-text)'}/></button>
+              <button onClick={()=>setPayUpMsg(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}><Icon name="x" size={14} color={payUpMsg.count?'#3F7A54':'#9A6A1E'}/></button>
             </div>
           )}
-          <div className="admin-cards">
-            {pagedPayments.map((a,idx) => {
+
+          {/* Payment Records table — glass panel + header-row grid, matching the
+              Categories tab's "All Vendors" table exactly (rule 30 in PROJECT_NOTES). */}
+          <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap', marginBottom:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210' }}>Payment Records</div>
+              <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', minWidth:200 }}>
+                  <Icon name="search" size={15} color="#9A5B26"/>
+                  <input value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)} placeholder="Search vendor…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'#3A2210', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
+                </div>
+                <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', color:'#6B4E33', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                  <Icon name="sliders" size={14} color="#6B4E33"/>
+                  <span style={{ whiteSpace:'nowrap' }}>{payFilter === 'all' ? 'All vendors' : 'New advices'}</span>
+                  <select value={payFilter} onChange={e=>{ setPayFilter(e.target.value); setPaySel({}); set({page:1}); }} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}>
+                    <option value="all">All vendors</option>
+                    <option value="new">New advices — not downloaded ({approvedApps.filter(a=>{ const r=payRec(`${a.vendorId}-${a.eventId}`); return (r.advice||r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; }).length})</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:16 }}>
+              <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(154,91,38,0.1)', border:'none', color:selectedPayApps.length?'#FFF8EE':'#B8A48C', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:zipBusy?'wait':'pointer', fontFamily:"'Karla',sans-serif" }}>
+                <Icon name="download" size={14} color={selectedPayApps.length?'#FFF8EE':'#B8A48C'}/>Bulk download advices{selectedPayApps.length?` (${selectedPayApps.length})`:''}
+              </button>
+              <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('invoice','Invoice')}/>
+                <Icon name="upload" size={14} color="#6B4E33"/>Bulk upload invoices
+              </label>
+              <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('receipt','Receipt')}/>
+                <Icon name="upload" size={14} color="#6B4E33"/>Bulk upload receipts
+              </label>
+            </div>
+
+            <div style={{ overflowX:'auto' }}>
+            <div style={{ minWidth:760 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.7fr) minmax(0,1.5fr)', gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+              <input type="checkbox" checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
+                onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}
+                style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
+              <div>Vendor</div><div>Total Due</div><div>Status</div><div>Documents</div><div>Actions</div>
+            </div>
+
+            {pagedPayments.length === 0 ? (
+              <div style={{ padding:'28px 14px', textAlign:'center', color:'#8A6A4A', fontSize:13.5 }}>
+                {searchQ || payFilter !== 'all' ? 'No vendors match your search or filter.' : 'No approved applications for this event yet.'}
+              </div>
+            ) : pagedPayments.map((a,idx) => {
               const v = vById(a.vendorId);
               const dep = deposits[a.vendorId]||{status:'unpaid'};
               const calc = payCalc(v, curEv, dep.status);
@@ -1222,39 +1256,86 @@ export default function AdminDashboard() {
               const ref = refundRec(payKey);
               const isPartial = rec.status === 'partial';
               const overpaidAmt = rec.paid - calc.total;
-              const cardBorder = paySel[a.id] ? '#9A5B26' : rec.status==='paid' ? 'var(--tint-green-border)' : rec.status==='partial' ? 'var(--tint-amber-border)' : 'var(--border-light)';
               const notice = scanNotice(rec, calc);
               const advDl = payDocDownloads[payKey];
+              const docs = [
+                { key:'advice', label:'Payment advice', present:!!rec.advice, adminUpload:false },
+                ...((isPartial || rec.advice2) ? [{ key:'advice2', label:'2nd payment advice', present:!!rec.advice2, adminUpload:false }] : []),
+                { key:'invoice', label:'Invoice', present:!!rec.invoice, adminUpload:true },
+                { key:'receipt', label:'Receipt', present:!!rec.receipt, adminUpload:true },
+              ];
+              const iconBtn = (tone) => ({
+                width:30, height:30, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'pointer',
+                border: tone==='green' ? '1px solid rgba(90,145,110,0.3)' : tone==='muted' ? '1px solid rgba(154,91,38,0.1)' : '1px solid rgba(154,91,38,0.22)',
+                background: tone==='green' ? 'rgba(90,145,110,0.14)' : tone==='muted' ? 'rgba(154,91,38,0.06)' : 'rgba(255,255,255,0.6)',
+              });
               return (
-                <div key={a.id} style={{ background:'var(--bg-card)', border:`1px solid ${cardBorder}`, borderRadius:16, padding:15 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
-                    <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#9A5B26', width:16, height:16, cursor:'pointer', flexShrink:0, marginTop:2 }}/>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{(page-1)*PER_PAGE+idx+1}</span>
-                        <span style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</span>
-                        {advDl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:600, color:'var(--tint-green-text)', background:'var(--tint-green-bg)', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="var(--tint-green-text)"/>Advices downloaded {advDl}</span>}
+                <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.7fr) minmax(0,1.5fr)', gap:10, alignItems:'center', padding:'13px 14px' }}>
+                    <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
+                    <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
+                      <VendorAvatar v={v} size={38}/>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C' }}>#{(page-1)*PER_PAGE+idx+1}</span>
+                          <span style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</span>
+                          {advDl && <span title={`Advices downloaded ${advDl}`} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:10, fontWeight:700, color:'#3F7A54', background:'rgba(90,145,110,0.16)', borderRadius:6, padding:'2px 6px', whiteSpace:'nowrap' }}><Icon name="check" size={10} color="#3F7A54"/>DL'd</span>}
+                        </div>
+                        <div style={{ fontSize:11.5, color:'#8A6A4A', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{calc.tier} · RM {calc.rate}/day × {calc.days}d</div>
                       </div>
-                      <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:3 }}>{calc.tier} · RM {calc.rate}/day × {calc.days} days</div>
                     </div>
-                    <Badge status={rec.status}/>
+                    <div>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:'#3A2210' }}>RM {money(calc.total)}</div>
+                      {isPartial && overpaidAmt<=0 && <div style={{ fontSize:11, fontWeight:600, color:'#C76A0D', marginTop:2 }}>Outstanding RM {money(calc.total-rec.paid)}</div>}
+                      {overpaidAmt>0 && <div style={{ fontSize:11, fontWeight:700, color:'#B03A2E', marginTop:2 }}>+RM {money(overpaidAmt)} over</div>}
+                    </div>
+                    <div><Badge status={rec.status}/></div>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                      {docs.map(doc => {
+                        if (doc.present) return (
+                          <button key={doc.key} title={`View ${doc.label.toLowerCase()}`} onClick={()=>set({docPreview:{payKey, field:doc.key, editable:doc.adminUpload}})} style={iconBtn('green')}>
+                            <Icon name="eye" size={14} color="#3F7A54"/>
+                          </button>
+                        );
+                        if (doc.adminUpload) return (
+                          <label key={doc.key} title={`Upload ${doc.label.toLowerCase()}`} style={iconBtn('outline')}>
+                            <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={async e=>{
+                              const file = e.target.files[0]; e.target.value='';
+                              if (!file) return;
+                              const uploaded = await fileToPhoto(file);
+                              dispatch({type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [doc.key]: uploaded } }});
+                              logActivity('Admin', `uploaded the ${doc.label.toLowerCase()} for ${v.business} — ${curEv.name}.`, {icon:'file', tint:'var(--tint-green-bg)'});
+                              showToast(`${doc.label} uploaded`,'file');
+                            }}/>
+                            <Icon name="upload" size={14} color="#6B4E33"/>
+                          </label>
+                        );
+                        return (
+                          <span key={doc.key} title={`${doc.label} — not yet uploaded by vendor`} style={iconBtn('muted')}>
+                            <Icon name="clock" size={14} color="#B8A48C"/>
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'stretch' }}>
+                      <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', border:'none', color:'#FFF8EE', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 10px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>Record payment</button>
+                      <div style={{ display:'flex', gap:5 }}>
+                        <button title="Reset to unpaid" onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
+                        <button title="Send payment reminder" onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
+                        <button title="Remove from event" onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)}); showToast(`${v.business} removed — slot released`,'info'); }} style={{ width:26, height:26, borderRadius:9, border:'1px solid rgba(196,74,74,0.3)', background:'rgba(196,74,74,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}><Icon name="trash" size={12} color="#B03A2E"/></button>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ background:'var(--bg-subtle-alt)', borderRadius:12, padding:'11px 13px', marginTop:12 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--text-secondary)' }}><span>Rental subtotal</span><span>RM {money(calc.base)}</span></div>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--text-secondary)', marginTop:5 }}><span>SST (6%)</span><span>RM {money(calc.sst)}</span></div>
-                    {calc.needsDeposit && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--text-secondary)', marginTop:5 }}><span style={{ display:'inline-flex', alignItems:'center', gap:5 }}>Refundable deposit <span style={{ fontSize:9.5, fontWeight:700, background:'var(--tint-amber-bg)', color:'var(--tint-amber-text)', borderRadius:5, padding:'1px 5px' }}>NOT YET HELD</span></span><span>RM 100.00</span></div>}
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:14, fontWeight:700, color:'var(--text-primary)', marginTop:8, paddingTop:8, borderTop:'1px solid var(--border-light)' }}><span>Total due</span><span>RM {money(calc.total)}</span></div>
-                    {isPartial && overpaidAmt <= 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginTop:6, color:'#C76A0D', fontWeight:600 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
-                  </div>
+
                   {overpaidAmt > 0 && ref.status !== 'closed' && (
-                    <div style={{ background:'var(--tint-red-bg)', border:'1px solid var(--tint-red-border)', borderRadius:12, padding:'11px 13px', marginTop:11 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:7, fontSize:12.5, fontWeight:700, color:'var(--tint-red-text)' }}>
-                        <Icon name="info" size={14} color="var(--tint-red-text)"/>Overpaid by RM {money(overpaidAmt)}
+                    <div style={{ margin:'0 14px 13px', background:'rgba(196,74,74,0.08)', border:'1px solid rgba(196,74,74,0.25)', borderRadius:12, padding:'11px 13px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7, fontSize:12.5, fontWeight:700, color:'#B03A2E' }}>
+                        <Icon name="info" size={14} color="#B03A2E"/>Overpaid by RM {money(overpaidAmt)}
                       </div>
                       {ref.status === 'completed' ? (
                         <>
                           <div style={{ fontSize:11.5, color:'#8a4a3e', marginTop:6 }}>Refund completed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
-                          <button onClick={()=>{ dispatch({type:'MERGE_REFUNDS',payload:{[payKey]:{...ref,status:'closed'}}}); logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'var(--tint-blue-bg)'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'var(--bg-card)', border:'1px solid var(--tint-red-border)', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
+                          <button onClick={()=>{ dispatch({type:'MERGE_REFUNDS',payload:{[payKey]:{...ref,status:'closed'}}}); logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'var(--tint-blue-bg)'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(196,74,74,0.3)', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
                         </>
                       ) : (
                         <button onClick={()=>set({refundModalKey:payKey,reff:{refCode:'',date:'',time:''}})} style={{ marginTop:9, background:'#B03A2E', color:'#fff', border:'none', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Arrange refund</button>
@@ -1262,76 +1343,32 @@ export default function AdminDashboard() {
                     </div>
                   )}
                   {overpaidAmt > 0 && ref.status === 'closed' && (
-                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:9 }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
+                    <div style={{ margin:'0 14px 13px', fontSize:11, color:'#B8A48C' }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
                   )}
                   {notice && notice.kind === 'unread' && (
-                    <div style={{ background:'var(--bg-neutral-soft)', border:'1px solid var(--border-soft)', borderRadius:10, padding:'9px 12px', marginTop:10, fontSize:11.5, color:'var(--text-faint)', lineHeight:1.45 }}>
+                    <div style={{ margin:'0 14px 13px', background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#8A6A4A', lineHeight:1.45 }}>
                       Auto-scan couldn't read an amount from the vendor's payment advice — verify and record manually.
                     </div>
                   )}
                   {notice && notice.kind === 'match' && (
-                    <div style={{ background:'var(--tint-green-bg-soft)', border:'1px solid #E3EFE7', borderRadius:10, padding:'9px 12px', marginTop:10, fontSize:11.5, color:'var(--tint-green-text-soft)', lineHeight:1.45 }}>
+                    <div style={{ margin:'0 14px 13px', background:'rgba(90,145,110,0.1)', border:'1px solid rgba(90,145,110,0.22)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#3F7A54', lineHeight:1.45 }}>
                       Auto-scan: advice matches the total due (RM {money(notice.scanned)}).{notice.overridden ? ` Recorded amount RM ${money(rec.paid)} was set manually.` : ''}
                     </div>
                   )}
                   {notice && (notice.kind === 'short' || notice.kind === 'over') && (
-                    <div style={{ background:'var(--tint-amber-bg-soft)', border:'1px solid var(--tint-amber-border-soft)', borderRadius:10, padding:'9px 12px', marginTop:10, fontSize:11.5, color:'var(--tint-amber-text-soft)', lineHeight:1.45 }}>
+                    <div style={{ margin:'0 14px 13px', background:'rgba(214,152,66,0.12)', border:'1px solid rgba(214,152,66,0.28)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#9A6A1E', lineHeight:1.45 }}>
                       Auto-scan read RM {money(notice.scanned)} from the advice — {notice.kind==='short' ? `RM ${money(notice.diff)} short of` : `RM ${money(notice.diff)} more than`} the total due.{notice.overridden ? ` Recorded amount RM ${money(rec.paid)} was set manually.` : ' Please double-check.'}
                     </div>
                   )}
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:11 }}>
-                    {rec.advice ? (
-                      <button onClick={()=>set({docPreview:{payKey, field:'advice', editable:false}})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--tint-green-bg)', border:'1px solid var(--tint-green-border)', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                        <Icon name="eye" size={13} color="var(--tint-green-text)"/>Payment advice
-                      </button>
-                    ) : (
-                      <span title="Uploaded by the vendor, not admin" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-subtle)', border:'1px solid #e7ddd0', color:'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px' }}>
-                        <Icon name="clock" size={13} color="var(--text-muted)"/>Payment advice — not yet uploaded by vendor
-                      </span>
-                    )}
-                    {(isPartial || rec.advice2) && (rec.advice2 ? (
-                      <button onClick={()=>set({docPreview:{payKey, field:'advice2', editable:false}})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--tint-green-bg)', border:'1px solid var(--tint-green-border)', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                        <Icon name="eye" size={13} color="var(--tint-green-text)"/>2nd payment advice
-                      </button>
-                    ) : (
-                      <span title="Uploaded by the vendor, not admin" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-subtle)', border:'1px solid #e7ddd0', color:'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px' }}>
-                        <Icon name="clock" size={13} color="var(--text-muted)"/>2nd payment advice — not yet uploaded
-                      </span>
-                    ))}
-                    {[['invoice','Invoice'],['receipt','Receipt']].map(([field,label]) => {
-                      const f = rec[field];
-                      if (f) return (
-                        <button key={field} onClick={()=>set({docPreview:{payKey, field, editable:true}})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--tint-green-bg)', border:'1px solid var(--tint-green-border)', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                          <Icon name="eye" size={13} color="var(--tint-green-text)"/>{label}
-                        </button>
-                      );
-                      return (
-                        <label key={field} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
-                          <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={async e=>{
-                            const file = e.target.files[0]; e.target.value='';
-                            if (!file) return;
-                            const doc = await fileToPhoto(file);
-                            dispatch({type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: doc } }});
-                            logActivity('Admin', `uploaded the ${label.toLowerCase()} for ${v.business} — ${curEv.name}.`, {icon:'file', tint:'var(--tint-green-bg)'});
-                            showToast(`${label} uploaded`,'file');
-                          }}/>
-                          <Icon name="upload" size={13} color="var(--text-secondary)"/>Upload {label.toLowerCase()}
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:12, paddingTop:12, borderTop:'1px solid var(--border-faint)' }}>
-                    <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Record payment</button>
-                    <button onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Reset to unpaid</button>
-                    <div style={{ flex:1 }}/>
-                    <button onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} title="Send payment reminder" style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:34, height:34, border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', borderRadius:9, cursor:'pointer', flexShrink:0 }}><Icon name="bell" size={15} color="#9A5B26"/></button>
-                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)}); showToast(`${v.business} removed — slot released`,'info'); }} title="Remove from event" style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:34, height:34, border:'1px solid var(--tint-red-border)', background:'var(--tint-red-bg)', color:'var(--tint-red-text)', borderRadius:9, cursor:'pointer', flexShrink:0 }}><Icon name="trash" size={15} color="var(--tint-red-text)"/></button>
-                  </div>
                 </div>
               );
             })}
+            </div>
+            </div>
+
+            <ModernPager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
           </div>
-          <Pager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+          </div>
         </div>
       )}
 
