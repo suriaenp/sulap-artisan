@@ -139,7 +139,9 @@ function Pager({ total, perPage, page, onPage }) {
 // PROJECT_NOTES rule 19/31).
 function ModernPager({ total, perPage, page, onPage }) {
   const pages = Math.ceil(total / perPage) || 1;
-  if (pages <= 1) return null;
+  // Always render, even for a single page — so every tab's sticky footer bar
+  // is consistently present (Prev/Next just come up disabled) instead of the
+  // whole bar disappearing on tabs with too little seed data to need paging.
   const pad = n => String(n).padStart(2, '0');
   const headCount = Math.min(5, pages);
   const head = Array.from({ length: headCount }, (_, i) => i + 1);
@@ -208,7 +210,12 @@ function TableShell({
   total, perPage, page, onPage,
 }) {
   return (
-    <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+    // `minHeight` keeps the decorative glow circles (sized for a tall, fully-
+    // populated page) from dominating short-content tabs — without it, a tab
+    // with only 1-2 rows shrinks the wrapper down to roughly the glow circles'
+    // own diameter, so they cover almost the entire visible area instead of
+    // just softly shading the corners, reading as a heavy smudge/shadow.
+    <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
       <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
         <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
         <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
@@ -663,7 +670,7 @@ export default function AdminDashboard() {
                   <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
                 </div>
               </div>
-              <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+              <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
               <div style={{ fontSize:12, color:'#6B4E33' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Icon name="mail" size={12} color="#B8A48C"/>{v.email}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}><Icon name="phone" size={12} color="#B8A48C"/>{v.phone}</div>
@@ -694,7 +701,7 @@ export default function AdminDashboard() {
                           <div style={{ fontSize:11, color:'#8A6A4A' }}>{v.owner}</div>
                         </div>
                       </div>
-                      <div><span style={{ display:'inline-block', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                      <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                       <div style={{ fontSize:12, color:'#6B4E33' }}>{v.regDate}</div>
                       <div style={{ display:'flex', justifyContent:'flex-end' }}>
                         <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
@@ -755,7 +762,7 @@ export default function AdminDashboard() {
                     <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner} · Reg. {v.regDate}</div>
                   </div>
                 </div>
-                <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                 <div style={{ fontSize:12, color:'#6B4E33' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Icon name="mail" size={12} color="#B8A48C"/>{v.email}</div>
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}><Icon name="phone" size={12} color="#B8A48C"/>{v.phone}</div>
@@ -1134,7 +1141,7 @@ export default function AdminDashboard() {
             })
             .filter(g => g.totalVendors > 0 || g.roster.length > 0);
           return (
-            <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+            <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
               <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
                 <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
                 <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
@@ -1260,7 +1267,7 @@ export default function AdminDashboard() {
                         return <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, borderRadius:999, padding:'3px 9px', background:ot.bg, color:ot.color }}><span style={{ width:5, height:5, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>;
                       })}
                     </div>
-                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                    <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6 }}>
                       <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
                       <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'rgba(214,152,66,0.16)', border:'none', color:'#9A6A1E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Shortlist</button>
@@ -1289,7 +1296,7 @@ export default function AdminDashboard() {
 
       {/* ── Payments ── */}
       {aTab === 'payments' && (
-        <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+        <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
           {/* Decorative ambient glow — same treatment as the Categories tab's "All
               Vendors" table (Canvas-4.dc.html handoff) so the two table-style admin
               views share one visual language. Clipped by its own absolutely-positioned
@@ -2028,7 +2035,7 @@ export default function AdminDashboard() {
                         <div style={{ fontSize:12, color:'#8A6A4A', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.owner}</div>
                       </div>
                     </div>
-                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:12, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                    <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:12, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                     <div style={{ fontSize:13.5, color:'#6B4E33' }}>{v.regDate}</div>
                     <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>{history.total} market{history.total===1?'':'s'}</div>
                     <div style={{ display:'flex', justifyContent:'flex-end' }}>
@@ -2279,7 +2286,7 @@ export default function AdminDashboard() {
         // keeps its own glass-card layout (restyled to match) rather than being
         // forced into TableShell.
         return (
-          <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+          <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
             <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
               <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
               <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
