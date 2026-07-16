@@ -1235,8 +1235,8 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ overflowX:'auto' }}>
-            <div style={{ minWidth:760 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.7fr) minmax(0,1.5fr)', gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+            <div style={{ minWidth:820 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,1.9fr) minmax(0,0.95fr) minmax(0,0.8fr) minmax(0,1.4fr) minmax(0,2fr)', gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
               <input type="checkbox" checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
                 onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}
                 style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
@@ -1261,8 +1261,8 @@ export default function AdminDashboard() {
               const docs = [
                 { key:'advice', label:'Payment advice', present:!!rec.advice, adminUpload:false },
                 ...((isPartial || rec.advice2) ? [{ key:'advice2', label:'2nd payment advice', present:!!rec.advice2, adminUpload:false }] : []),
-                { key:'invoice', label:'Invoice', present:!!rec.invoice, adminUpload:true },
-                { key:'receipt', label:'Receipt', present:!!rec.receipt, adminUpload:true },
+                { key:'invoice', label:'Invoice', present:!!rec.invoice, adminUpload:true, uploadIcon:'file' },
+                { key:'receipt', label:'Receipt', present:!!rec.receipt, adminUpload:true, uploadIcon:'receipt' },
               ];
               const iconBtn = (tone) => ({
                 width:30, height:30, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'pointer',
@@ -1271,7 +1271,7 @@ export default function AdminDashboard() {
               });
               return (
                 <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,2fr) minmax(0,1fr) minmax(0,0.85fr) minmax(0,1.7fr) minmax(0,1.5fr)', gap:10, alignItems:'center', padding:'13px 14px' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,1.9fr) minmax(0,0.95fr) minmax(0,0.8fr) minmax(0,1.4fr) minmax(0,2fr)', gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
                     <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
                       <VendorAvatar v={v} size={38}/>
@@ -1307,7 +1307,7 @@ export default function AdminDashboard() {
                               logActivity('Admin', `uploaded the ${doc.label.toLowerCase()} for ${v.business} — ${curEv.name}.`, {icon:'file', tint:'var(--tint-green-bg)'});
                               showToast(`${doc.label} uploaded`,'file');
                             }}/>
-                            <Icon name="upload" size={14} color="#6B4E33"/>
+                            <Icon name={doc.uploadIcon} size={14} color="#6B4E33"/>
                           </label>
                         );
                         return (
@@ -1317,13 +1317,11 @@ export default function AdminDashboard() {
                         );
                       })}
                     </div>
-                    <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'stretch' }}>
-                      <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', border:'none', color:'#FFF8EE', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 10px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>Record payment</button>
-                      <div style={{ display:'flex', gap:5 }}>
-                        <button title="Reset to unpaid" onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
-                        <button title="Send payment reminder" onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
-                        <button title="Remove from event" onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)}); showToast(`${v.business} removed — slot released`,'info'); }} style={{ width:26, height:26, borderRadius:9, border:'1px solid rgba(196,74,74,0.3)', background:'rgba(196,74,74,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}><Icon name="trash" size={12} color="#B03A2E"/></button>
-                      </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
+                      <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', border:'none', color:'#FFF8EE', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 10px', cursor:'pointer', fontFamily:"'Karla',sans-serif", whiteSpace:'nowrap' }}>Record payment</button>
+                      <button title="Reset to unpaid" onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
+                      <button title="Send payment reminder" onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
+                      <button title="Remove from event" onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)}); showToast(`${v.business} removed — slot released`,'info'); }} style={{ width:26, height:26, borderRadius:9, border:'1px solid rgba(196,74,74,0.3)', background:'rgba(196,74,74,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}><Icon name="trash" size={12} color="#B03A2E"/></button>
                     </div>
                   </div>
 
