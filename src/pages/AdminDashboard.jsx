@@ -114,6 +114,33 @@ function Pager({ total, perPage, page, onPage }) {
   );
 }
 
+// Numbered-pill pagination (page 1, 2, 3 … last, with a "Page X of Y" label) — used
+// where a denser, more modern pager reads better than the plain Prev/Next of `Pager`.
+function ModernPager({ total, perPage, page, onPage }) {
+  const pages = Math.ceil(total / perPage) || 1;
+  if (pages <= 1) return null;
+  const pad = n => String(n).padStart(2, '0');
+  const keep = new Set([1, pages, page - 1, page, page + 1].filter(n => n >= 1 && n <= pages));
+  const nums = [...keep].sort((a, b) => a - b);
+  const withGaps = [];
+  nums.forEach((n, i) => { if (i > 0 && n - nums[i - 1] > 1) withGaps.push('gap' + n); withGaps.push(n); });
+  const navStyle = (dis) => ({ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:dis?'var(--text-muted)':'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:dis?'not-allowed':'pointer' });
+  const pillStyle = (active) => ({ width:32, height:32, borderRadius:9, border:active?'none':'1px solid var(--border-medium)', background:active?'#1C1A17':'var(--bg-card)', color:active?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' });
+  return (
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, flexWrap:'wrap', gap:10 }}>
+      <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>Page {page} of {pages}</div>
+      <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+        <button disabled={page<=1} onClick={()=>onPage(page-1)} style={navStyle(page<=1)}>‹ Previous</button>
+        {withGaps.map(n => typeof n === 'string'
+          ? <span key={n} style={{ width:20, textAlign:'center', color:'var(--text-muted)', fontSize:12 }}>…</span>
+          : <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>
+        )}
+        <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={navStyle(page>=pages)}>Next ›</button>
+      </div>
+    </div>
+  );
+}
+
 function SearchBox({ value, onChange, placeholder = 'Search by business or owner name' }) {
   return (
     <div style={{ position:'relative', marginBottom:14, maxWidth:360 }}>
@@ -138,9 +165,27 @@ function NoSearchMatch({ query }) {
   );
 }
 
+// Round initials placeholder for a vendor's profile picture — vendors don't
+// have real uploaded photos yet, so this stands in everywhere one's needed.
+const AVATAR_COLORS = ['#9A5B26','#2D6A4F','#5B7FA6','#A6364E','#7A4A38','#6B4F8C'];
+function vendorInitials(name) {
+  return (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+}
+function avatarColor(id) {
+  const sum = [...String(id)].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+function VendorAvatar({ v, size = 44 }) {
+  return (
+    <div style={{ width:size, height:size, borderRadius:'50%', background:avatarColor(v.id), display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+      <span style={{ color:'#fff', fontSize:size*0.32, fontWeight:700 }}>{vendorInitials(v.business)}</span>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, expandedCats, profileRequests } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, catFilter, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), state.aTabOrder);
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
@@ -243,6 +288,9 @@ export default function AdminDashboard() {
   const searchedRejected = searchVendors(rejectedVendors);
   const pagedVendors = searchedPending.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedVendorList = searchedApprovedList.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const catFilteredVendors = vendors.filter(v => catFilter === 'all' || v.category === catFilter);
+  const searchedCatVendors = searchVendors(catFilteredVendors);
+  const pagedCatVendors = searchedCatVendors.slice((page-1)*PER_PAGE, page*PER_PAGE);
 
   const curEv = eById(filterEvent);
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1648,8 +1696,6 @@ export default function AdminDashboard() {
         <div style={{ padding:'14px 16px 20px' }}>
           <button onClick={()=>set({catEditId:'new'})} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 24px', cursor:'pointer', marginBottom:16 }}>+ Add Category</button>
 
-          <SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search vendors by name"/>
-
           {/* Category Editor Modal */}
           {state.catEditId && (
             <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }} onClick={()=>set({catEditId:null})}>
@@ -1696,50 +1742,68 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Category Accordion Cards */}
-          <div style={{ display:'flex', flexDirection:'column', gap:12, marginTop:16 }}>
+          {/* Category management cards — add/remove only, membership lives in the table below */}
+          <div className="admin-cards">
             {cats.map(c => {
-              const members = vendors.filter(v=>v.category===c.name);
-              const shownMembers = searchVendors(members);
-              const isExpanded = state.expandedCats[c.id];
+              const count = vendors.filter(v=>v.category===c.name).length;
               return (
-                <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, overflow:'hidden' }}>
-                  <div onClick={()=>set({expandedCats:{...state.expandedCats,[c.id]:!isExpanded}})} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px', cursor:'pointer' }}>
-                    <div style={{ width:40, height:40, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <Icon name={c.icon} size={18} color="#9A5B26"/>
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{c.name}</div>
-                      {c.desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{c.desc}</div>}
-                    </div>
-                    <span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px', flexShrink:0 }}>{members.length}</span>
-                    <Icon name={isExpanded?'chevron-down':'chevron-right'} size={16} color="var(--text-muted)" style={{flexShrink:0}}/>
-                    <button onClick={e=>{ e.stopPropagation(); if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'var(--tint-red-bg)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
-                      <Icon name="x" size={15} color="var(--tint-red-text)"/>
-                    </button>
+                <div key={c.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Icon name={c.icon} size={18} color="#9A5B26"/>
                   </div>
-                  {isExpanded && (
-                    <div style={{ padding:'0 14px 14px', borderTop:'1px solid var(--border-light)' }}>
-                      {shownMembers.length > 0 ? (
-                        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                          {shownMembers.map(v => (
-                            <div key={v.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle-alt)', borderRadius:11, padding:'9px 11px' }}>
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{v.business}</div>
-                                <div style={{ fontSize:11, color:'var(--text-muted)' }}>{v.owner}</div>
-                              </div>
-                              <select onChange={e=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,category:e.target.value}:x)}); showToast('Vendor re-assigned','folder'); }} value={v.category} style={{ flexShrink:0, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'7px 9px', fontSize:12, color:'var(--text-secondary)', outline:'none', cursor:'pointer' }}>
-                                {cats.map(x=><option key={x.id} value={x.name}>{x.name}</option>)}
-                              </select>
-                            </div>
-                          ))}
-                        </div>
-                      ) : <div style={{ fontSize:11.5, color:'var(--text-muted)', padding:'8px' }}>{members.length > 0 ? `No vendors match "${vendorSearch}" in this category.` : 'No vendors in this category yet.'}</div>}
-                    </div>
-                  )}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{c.name}</div>
+                    {c.desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{c.desc}</div>}
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'3px 9px', flexShrink:0 }}>{count}</span>
+                  <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'var(--tint-red-bg)', border:'none', width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
+                    <Icon name="x" size={15} color="var(--tint-red-text)"/>
+                  </button>
                 </div>
               );
             })}
+          </div>
+
+          {/* All Vendors — flat, searchable, filterable table */}
+          <div style={{ marginTop:28 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:9 }}>
+              <div style={{ fontSize:16, fontWeight:700, fontFamily:"'Playfair Display',serif", color:'var(--text-primary)' }}>All Vendors</div>
+              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
+                <Icon name="download" size={14} color="#9A5B26"/>Export CSV
+              </button>
+            </div>
+            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:14 }}>
+              <div style={{ flex:1, minWidth:220 }}><SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search by business or owner name"/></div>
+              <select value={catFilter} onChange={e=>set({catFilter:e.target.value, page:1})} style={{ border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', cursor:'pointer', height:'fit-content' }}>
+                <option value="all">All categories</option>
+                {cats.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+
+            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, overflow:'hidden' }}>
+              {pagedCatVendors.length === 0 ? (
+                <div style={{ padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
+                  {searchedCatVendors.length === 0 && (vendorSearch || catFilter !== 'all') ? 'No vendors match your search or filter.' : 'No vendors yet.'}
+                </div>
+              ) : pagedCatVendors.map((v, idx) => {
+                const history = vendorHistory(v.id);
+                return (
+                  <div key={v.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderTop: idx===0 ? 'none' : '1px solid var(--border-light)', flexWrap:'wrap' }}>
+                    <VendorAvatar v={v}/>
+                    <div style={{ flex:1, minWidth:140 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
+                      <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:1 }}>{v.owner}</div>
+                    </div>
+                    <span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>{v.category}</span>
+                    <div style={{ fontSize:12, color:'var(--text-secondary)', flexShrink:0, minWidth:100, textAlign:'center' }}>{history.total} market{history.total===1?'':'s'} joined</div>
+                    <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer', flexShrink:0 }}>
+                      <Icon name="eye" size={14} color="#9A5B26"/>View Profile
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
           </div>
         </div>
       )}

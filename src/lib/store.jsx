@@ -80,7 +80,7 @@ const INIT = {
   eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   cf: null,
   catEditId: null,
-  expandedCats: {},  // { 'c-fnb': true, 'c-craft': false, ... }
+  catFilter: 'all',  // category name, or 'all' — filters the Categories tab's vendor table
   newCat: '',
   newOffType: '',
   // filters & pagination
