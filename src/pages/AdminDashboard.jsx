@@ -18,6 +18,13 @@ import { downloadPassReport } from '../lib/passReport';
 // pages to be visibly useful with the seeded demo vendor count.
 const CAT_PAGE_SIZE = 5;
 
+// Payments is filtered to one event at a time, so its approved-application
+// count per page view is naturally much smaller than a global vendor list —
+// PER_PAGE (20) would almost never produce more than one page with realistic
+// per-event headcounts. A dedicated smaller size keeps its ModernPager
+// actually visible/useful instead of silently hiding itself every time.
+const PAY_PAGE_SIZE = 3;
+
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
 // Admin Roles permission matrix all render from this list, so adding or
 // removing a tab here automatically updates role management too.
@@ -272,7 +279,7 @@ export default function AdminDashboard() {
   const filteredPayApps = searchApps(payFilter === 'new'
     ? approvedApps.filter(a => { const r = payRec(`${a.vendorId}-${a.eventId}`); return (r.advice || r.advice2) && !payDocDownloads[`${a.vendorId}-${a.eventId}`]; })
     : approvedApps);
-  const pagedPayments= filteredPayApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
+  const pagedPayments= filteredPayApps.slice((page-1)*PAY_PAGE_SIZE, page*PAY_PAGE_SIZE);
   const selectedPayApps = filteredPayApps.filter(a => paySel[a.id]);
   const pagedPark    = searchedApprovedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
   const pagedPass    = searchedApprovedApps.slice((page-1)*PER_PAGE, page*PER_PAGE);
@@ -1183,7 +1190,7 @@ export default function AdminDashboard() {
               <Icon name="calendar" size={13} color="#8A6A4A"/>Payment due by {curEv.lastApp ? fmtShort(curEv.lastApp) : 'TBC'}
             </span>
             <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'10px 13px', background:'rgba(90,145,110,0.16)', color:'#3F7A54' }}>
-              {pagedPayments.filter(a=>payRec(`${a.vendorId}-${a.eventId}`).status==='paid').length} of {pagedPayments.length} fully paid
+              {filteredPayApps.filter(a=>payRec(`${a.vendorId}-${a.eventId}`).status==='paid').length} of {filteredPayApps.length} fully paid
             </span>
           </div>
 
@@ -1277,7 +1284,7 @@ export default function AdminDashboard() {
                       <VendorAvatar v={v} size={38}/>
                       <div style={{ minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C' }}>#{(page-1)*PER_PAGE+idx+1}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C' }}>#{(page-1)*PAY_PAGE_SIZE+idx+1}</span>
                           <span style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</span>
                           {advDl && <span title={`Advices downloaded ${advDl}`} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:10, fontWeight:700, color:'#3F7A54', background:'rgba(90,145,110,0.16)', borderRadius:6, padding:'2px 6px', whiteSpace:'nowrap' }}><Icon name="check" size={10} color="#3F7A54"/>DL'd</span>}
                         </div>
@@ -1364,7 +1371,7 @@ export default function AdminDashboard() {
             </div>
             </div>
 
-            <ModernPager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+            <ModernPager total={filteredPayApps.length} perPage={PAY_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
           </div>
           </div>
         </div>
