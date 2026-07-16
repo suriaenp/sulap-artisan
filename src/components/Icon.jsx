@@ -49,6 +49,8 @@ const paths = {
   moon:       <><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></>,
   menu:       <><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></>,
   plus:       <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+  sliders:    <><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></>,
+  kebab:      <><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></>,
 };
 
 export default function Icon({ name, size = 16, color = 'currentColor', style }) {

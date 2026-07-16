@@ -124,6 +124,11 @@ function Pager({ total, perPage, page, onPage }) {
 // Fixed "01 02 03 04 05 … last" pill pagination — the head window stays put
 // regardless of the active page (matching the reference screenshot exactly);
 // Previous/Next still step through every page one at a time.
+// Styled to match the Categories tab's design handoff (Canvas-4.dc.html) exactly —
+// amber gradient on the active pill and the Next button, plain outline everywhere
+// else. Only used by that tab, so it's fine for its colors to be hardcoded rather
+// than theme-variable-driven (same call as the Sheet component elsewhere — see
+// PROJECT_NOTES rule 19/31).
 function ModernPager({ total, perPage, page, onPage }) {
   const pages = Math.ceil(total / perPage) || 1;
   if (pages <= 1) return null;
@@ -132,17 +137,18 @@ function ModernPager({ total, perPage, page, onPage }) {
   const head = Array.from({ length: headCount }, (_, i) => i + 1);
   const hasTail = pages > headCount;
   const hasGap = pages > headCount + 1;
-  const navStyle = (dis) => ({ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:dis?'var(--text-muted)':'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:dis?'not-allowed':'pointer' });
-  const pillStyle = (active) => ({ width:32, height:32, borderRadius:9, border:active?'none':'1px solid var(--border-medium)', background:active?'#1C1A17':'var(--bg-card)', color:active?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' });
+  const outlineStyle = (dis) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', color:dis?'#B8A48C':'#8A6A4A', fontSize:13, fontWeight:700, cursor:dis?'not-allowed':'pointer', fontFamily:"'Karla',sans-serif", opacity:dis?0.6:1 });
+  const gradientStyle = (dis) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'none', background:dis?'rgba(154,91,38,0.35)':'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', fontSize:13, fontWeight:700, cursor:dis?'not-allowed':'pointer', fontFamily:"'Karla',sans-serif" });
+  const pillStyle = (active) => ({ width:34, height:34, borderRadius:10, border:active?'none':'1px solid rgba(154,91,38,0.2)', background:active?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(255,255,255,0.6)', color:active?'#FFF8EE':'#6B4E33', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Karla',sans-serif" });
   return (
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, flexWrap:'wrap', gap:10 }}>
-      <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>Page {page} of {pages}</div>
+    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, padding:'16px 14px' }}>
+      <div style={{ fontSize:13, color:'#8A6A4A' }}>Page {page} of {pages}</div>
       <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
-        <button disabled={page<=1} onClick={()=>onPage(page-1)} style={navStyle(page<=1)}>‹ Previous</button>
+        <button disabled={page<=1} onClick={()=>onPage(page-1)} style={outlineStyle(page<=1)}>‹ Previous</button>
         {head.map(n => <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>)}
-        {hasGap && <span style={{ width:20, textAlign:'center', color:'var(--text-muted)', fontSize:12 }}>…</span>}
+        {hasGap && <span style={{ width:22, textAlign:'center', color:'#8A6A4A', fontSize:13 }}>…</span>}
         {hasTail && <button onClick={()=>onPage(pages)} style={pillStyle(pages===page)}>{pad(pages)}</button>}
-        <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={navStyle(page>=pages)}>Next ›</button>
+        <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={gradientStyle(page>=pages)}>Next ›</button>
       </div>
     </div>
   );
@@ -184,7 +190,7 @@ function avatarColor(id) {
 }
 function VendorAvatar({ v, size = 44 }) {
   return (
-    <div style={{ width:size, height:size, borderRadius:'50%', background:avatarColor(v.id), display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+    <div style={{ width:size, height:size, borderRadius:size*0.29, background:avatarColor(v.id), display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
       <span style={{ color:'#fff', fontSize:size*0.32, fontWeight:700 }}>{vendorInitials(v.business)}</span>
     </div>
   );
@@ -1700,14 +1706,20 @@ export default function AdminDashboard() {
 
       {/* ── Categories ── */}
       {aTab === 'categories' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+        <div style={{ position:'relative', padding:'28px 24px 32px', overflow:'hidden' }}>
+          {/* Decorative ambient glow — matches the design handoff (Canvas-4.dc.html); contained
+              to this tab's own box so it can't bleed into the sidebar or other tabs. */}
+          <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)', pointerEvents:'none', zIndex:0 }}/>
+          <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)', pointerEvents:'none', zIndex:0 }}/>
+
+          <div style={{ position:'relative', zIndex:1 }}>
+          <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:26 }}>
             <div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:'var(--text-primary)' }}>Categories</div>
-              <div style={{ fontSize:13, color:'var(--text-muted)', marginTop:3 }}>Manage vendor categories and browse every registered vendor.</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Categories</div>
+              <div style={{ margin:0, fontSize:14, color:'#8A6A4A' }}>Manage vendor categories and browse every registered vendor.</div>
             </div>
-            <button onClick={()=>set({catEditId:'new'})} style={{ display:'inline-flex', alignItems:'center', gap:7, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 20px', cursor:'pointer' }}>
-              <Icon name="plus" size={15} color="#FAF8F5"/>Add Category
+            <button onClick={()=>set({catEditId:'new'})} style={{ display:'flex', alignItems:'center', gap:8, padding:'13px 22px', border:'none', borderRadius:999, fontSize:14.5, fontWeight:700, color:'#FFF8EE', background:'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow:'0 8px 20px rgba(122,67,26,0.35)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <Icon name="plus" size={15} color="#FFF8EE"/>Add New Category
             </button>
           </div>
 
@@ -1757,84 +1769,89 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          <div className="categories-split">
+          <div style={{ display:'flex', alignItems:'stretch', gap:24, flexWrap:'wrap' }}>
+
             {/* LEFT — All Vendors table */}
-            <div className="categories-vendors-panel">
-              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:'18px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:16 }}>
-                  <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)' }}>All Vendors</div>
-                  <div style={{ display:'flex', gap:9, flexWrap:'wrap' }}>
-                    <div style={{ minWidth:200 }}><SearchBox value={vendorSearch} onChange={setVendorSearch} placeholder="Search Contacts…"/></div>
-                    <select value={catFilter} onChange={e=>set({catFilter:e.target.value, page:1})} style={{ border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'0 13px', fontSize:13, color:'var(--text-secondary)', outline:'none', cursor:'pointer', height:44 }}>
+            <div style={{ flex:'1 1 640px', minWidth:340, background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap', marginBottom:18 }}>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210' }}>All Vendors</div>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', minWidth:220 }}>
+                    <Icon name="search" size={15} color="#9A5B26"/>
+                    <input value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)} placeholder="Search Vendor…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'#3A2210', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
+                  </div>
+                  <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', color:'#6B4E33', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                    <Icon name="sliders" size={14} color="#6B4E33"/>
+                    <span style={{ whiteSpace:'nowrap' }}>{catFilter === 'all' ? 'Filters' : catFilter}</span>
+                    <select value={catFilter} onChange={e=>set({catFilter:e.target.value, page:1})} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}>
                       <option value="all">All categories</option>
                       {cats.map(c=><option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
-                    <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:11, padding:'0 14px', height:44, cursor:'pointer' }}>
-                      <Icon name="download" size={14} color="#9A5B26"/>Export
-                    </button>
                   </div>
                 </div>
+              </div>
 
-                <div style={{ display:'grid', gridTemplateColumns:'minmax(140px,2fr) minmax(90px,1fr) minmax(90px,1fr) 44px', gap:10, padding:'0 8px 10px', borderBottom:'1px solid var(--border-light)', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.02em' }}>
-                  <div>Vendor</div><div>Category</div><div>Markets Joined</div><div/>
+              <div style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+                <div>Vendor Name</div><div>Categories</div><div>Joined Since</div><div>Market Joined</div><div/>
+              </div>
+
+              {pagedCatVendors.length === 0 ? (
+                <div style={{ padding:'28px 14px', textAlign:'center', color:'#8A6A4A', fontSize:13.5 }}>
+                  {searchedCatVendors.length === 0 && (vendorSearch || catFilter !== 'all') ? 'No vendors match your search or filter.' : 'No vendors yet.'}
                 </div>
-
-                {pagedCatVendors.length === 0 ? (
-                  <div style={{ padding:'28px 8px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-                    {searchedCatVendors.length === 0 && (vendorSearch || catFilter !== 'all') ? 'No vendors match your search or filter.' : 'No vendors yet.'}
-                  </div>
-                ) : pagedCatVendors.map(v => {
-                  const history = vendorHistory(v.id);
-                  return (
-                    <div key={v.id} style={{ display:'grid', gridTemplateColumns:'minmax(140px,2fr) minmax(90px,1fr) minmax(90px,1fr) 44px', gap:10, alignItems:'center', padding:'12px 8px', borderBottom:'1px solid var(--border-light)' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                        <VendorAvatar v={v} size={34}/>
-                        <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
-                          <div style={{ fontSize:11.5, color:'var(--text-muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.owner}</div>
-                        </div>
-                      </div>
-                      <div><span style={{ fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', display:'inline-block', whiteSpace:'nowrap' }}>{v.category}</span></div>
-                      <div style={{ fontSize:12.5, color:'var(--text-secondary)' }}>{history.total} market{history.total===1?'':'s'}</div>
-                      <div style={{ textAlign:'right' }}>
-                        <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} title="View Profile" style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-medium)', width:32, height:32, borderRadius:9, display:'inline-flex', alignItems:'center', justifyContent:'center', color:'#9A5B26', cursor:'pointer' }}>
-                          <Icon name="eye" size={14} color="#9A5B26"/>
-                        </button>
+              ) : pagedCatVendors.map(v => {
+                const history = vendorHistory(v.id);
+                return (
+                  <div key={v.id} style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, alignItems:'center', padding:'14px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
+                      <VendorAvatar v={v} size={38}/>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:14.5, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                        <div style={{ fontSize:12, color:'#8A6A4A', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.owner}</div>
                       </div>
                     </div>
-                  );
-                })}
+                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:12, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                    <div style={{ fontSize:13.5, color:'#6B4E33' }}>{v.regDate}</div>
+                    <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>{history.total} market{history.total===1?'':'s'}</div>
+                    <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} title="View Profile" style={{ width:30, height:30, borderRadius:9, border:'none', background:'transparent', color:'#8A6A4A', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <Icon name="kebab" size={16} color="#8A6A4A"/>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
 
-                <ModernPager total={searchedCatVendors.length} perPage={CAT_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
-              </div>
+              <ModernPager total={searchedCatVendors.length} perPage={CAT_PAGE_SIZE} page={page} onPage={p=>set({page:p})}/>
             </div>
 
             {/* RIGHT — Category side panel */}
-            <div className="categories-side-panel">
-              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:18, boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
-                <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>Categories</div>
-                <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:14 }}>{cats.length} total</div>
-                <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
-                  {cats.map(c => {
-                    const count = vendors.filter(v=>v.category===c.name).length;
-                    return (
-                      <div key={c.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle-alt)', borderRadius:12, padding:'10px 11px' }}>
-                        <div style={{ width:32, height:32, borderRadius:9, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                          <Icon name={c.icon} size={15} color="#9A5B26"/>
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{c.name}</div>
-                          <div style={{ fontSize:10.5, color:'var(--text-muted)' }}>{count} vendor{count===1?'':'s'}</div>
-                        </div>
-                        <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ background:'none', border:'none', width:26, height:26, borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--tint-red-text)', cursor:'pointer', flexShrink:0 }}>
-                          <Icon name="x" size={13} color="var(--tint-red-text)"/>
-                        </button>
+            <div style={{ flex:'0 1 340px', minWidth:280, background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:22, boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)', display:'flex', flexDirection:'column' }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210', marginBottom:16 }}>Categories That We Have So Far….</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                {cats.map(c => {
+                  const count = vendors.filter(v=>v.category===c.name).length;
+                  return (
+                    <div key={c.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderRadius:16, border:'1px solid rgba(154,91,38,0.16)', background:'rgba(253,243,228,0.7)' }}>
+                      <div style={{ width:44, height:44, borderRadius:12, background:'rgba(154,91,38,0.14)', display:'flex', alignItems:'center', justifyContent:'center', color:'#7A431A', flexShrink:0 }}>
+                        <Icon name={c.icon} size={19} color="#7A431A"/>
                       </div>
-                    );
-                  })}
-                </div>
+                      <div style={{ minWidth:0, flex:1 }}>
+                        <div style={{ fontSize:14.5, fontWeight:700, color:'#3A2210', marginBottom:3 }}>{c.name}</div>
+                        <div style={{ fontSize:11.5, color:'#8A6A4A', lineHeight:1.4 }}>{c.desc}</div>
+                      </div>
+                      <div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(154,91,38,0.16)', color:'#6B4E33', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{count}</div>
+                      <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ width:26, height:26, borderRadius:'50%', border:'none', background:'rgba(196,74,74,0.14)', color:'#B23A3A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                        <Icon name="x" size={12} color="#B23A3A"/>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+
+          </div>
           </div>
         </div>
       )}
