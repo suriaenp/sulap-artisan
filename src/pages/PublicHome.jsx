@@ -10,12 +10,18 @@ import { eventStatus } from '../lib/helpers';
 // widths themselves animate via CSS transition when focus changes — reading
 // mid-transition layout geometry to compute the centering offset would give
 // stale sizes, so both the render and the offset math use this same
-// function as their single source of truth.
+// function as their single source of truth. `focusH` (the same aspect ratio
+// the cards render at, applied to the widest/focus card) is used to give the
+// track a fixed height — without it, the track/viewport auto-sizes to
+// whichever card is currently tallest, so the whole section's height (and
+// everything below it) visibly shifts every time the focus card changes.
+const CS_ASPECT = 4.15 / 3;
 function csSizes(vw) {
   const cardW = Math.round(Math.min(300, Math.max(148, vw * 0.62)));
   const focusW = Math.round(Math.min(348, Math.max(184, vw * 0.74)));
+  const focusH = Math.round(focusW * CS_ASPECT);
   const gap = vw < 480 ? 14 : 24;
-  return { cardW, focusW, gap };
+  return { cardW, focusW, focusH, gap };
 }
 
 // Position-specific corner radius + fallback color for the "Why Join" 2x2
@@ -59,7 +65,7 @@ export default function PublicHome() {
   const [comingSoonOffset, setComingSoonOffset] = useState(0);
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1280);
   const isMobile = windowWidth < 720;
-  const { cardW: CS_CARD_W, focusW: CS_FOCUS_W, gap: CS_GAP } = csSizes(windowWidth);
+  const { cardW: CS_CARD_W, focusW: CS_FOCUS_W, focusH: CS_FOCUS_H, gap: CS_GAP } = csSizes(windowWidth);
 
   // Oldest-first so past events sit left (greyed) and future events sit right
   // of whichever card is centered. Default center = nearest ongoing, else
@@ -171,7 +177,7 @@ export default function PublicHome() {
         <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(30px, 4vw, 44px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 48px' }}>{content.comingSoonHeading}</h2>
         <div style={{ position: 'relative', maxWidth: 1240, margin: '0 auto', padding: '0 6px' }}>
           <div ref={comingSoonViewportRef} className="coming-soon-viewport" style={{ position: 'relative', overflow: 'hidden', padding: '36px 4px 78px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: CS_GAP, transform: `translateX(${comingSoonOffset}px)`, transition: 'transform 0.5s var(--ease-spring, cubic-bezier(0.2,0.9,0.3,1))', width: 'max-content' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: CS_GAP, height: CS_FOCUS_H, transform: `translateX(${comingSoonOffset}px)`, transition: 'transform 0.5s var(--ease-spring, cubic-bezier(0.2,0.9,0.3,1))', width: 'max-content' }}>
               {comingSoonEvents.map((ev, i) => {
                 const isFocus = i === centerIdx;
                 const isPast = ev._status.key === 'concluded';
