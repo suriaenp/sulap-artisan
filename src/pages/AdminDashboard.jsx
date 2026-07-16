@@ -186,6 +186,131 @@ function NoSearchMatch({ query }) {
   );
 }
 
+// ── Shared "glass table" shell ──────────────────────────────────────────────
+// The Categories/Payments table look (decorative ambient glow scoped to its
+// own clipped layer — never the tab's own overflow, which would silently
+// break the sticky footer's `position:sticky` — translucent glass panel,
+// header-row + grid-row table, and a sticky `ModernPager` footer) factored
+// out so every admin list tab shares one implementation instead of each
+// re-declaring the same ~80 lines of chrome. Hardcoded to the handoff's own
+// hex/rgba palette rather than `--bg-card`/`--text-primary`, same deliberate
+// non-dark-aware tradeoff as Categories (PROJECT_NOTES rule 31) and Payments
+// (rule 32) — this panel stays a light cream card regardless of night mode.
+function TableShell({
+  title, subtitle, headerAction,
+  aboveControls, banner,
+  panelTitle,
+  searchValue, onSearchChange, searchPlaceholder = 'Search vendor…',
+  filterControl, toolbar,
+  headerCells, gridTemplate, minWidth = 700,
+  isEmpty, emptyMessage,
+  children,
+  total, perPage, page, onPage,
+}) {
+  return (
+    <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+      <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
+        <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
+        <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+      </div>
+      <div style={{ position:'relative', zIndex:1 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:20 }}>
+          <div>
+            <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>{title}</div>
+            {subtitle && <div style={{ margin:0, fontSize:14, color:'#8A6A4A' }}>{subtitle}</div>}
+          </div>
+          {headerAction}
+        </div>
+
+        {aboveControls}
+        {banner}
+
+        <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap', marginBottom:16 }}>
+            <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210' }}>{panelTitle}</div>
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+              {onSearchChange && (
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', minWidth:200 }}>
+                  <Icon name="search" size={15} color="#9A5B26"/>
+                  <input value={searchValue} onChange={e=>onSearchChange(e.target.value)} placeholder={searchPlaceholder} style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'#3A2210', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
+                </div>
+              )}
+              {filterControl}
+            </div>
+          </div>
+
+          {toolbar}
+
+          <div style={{ overflowX:'auto' }}>
+            <div style={{ minWidth }}>
+              <div style={{ display:'grid', gridTemplateColumns:gridTemplate, gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+                {headerCells}
+              </div>
+              {isEmpty ? (
+                <div style={{ padding:'28px 14px', textAlign:'center', color:'#8A6A4A', fontSize:13.5 }}>{emptyMessage}</div>
+              ) : children}
+            </div>
+          </div>
+
+          <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
+            <ModernPager total={total} perPage={perPage} page={page} onPage={onPage}/>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Compact non-sticky table used for a secondary/nested list within a tab that
+// already has its own TableShell (e.g. a collapsible "rejected"/"decided"
+// sub-list) — same header-row + grid-row look, no duplicate page title/glow.
+function MiniTablePanel({ headerCells, gridTemplate, minWidth = 700, children }) {
+  return (
+    <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:20, padding:'14px 18px 6px', boxSizing:'border-box', marginTop:13 }}>
+      <div style={{ overflowX:'auto' }}>
+        <div style={{ minWidth }}>
+          <div style={{ display:'grid', gridTemplateColumns:gridTemplate, gap:10, alignItems:'center', padding:'0 12px 10px', fontSize:11.5, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+            {headerCells}
+          </div>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Filter-pill control shared by every table's panel header — a native
+// `<select>` layered transparent over a styled pill (icon + current value),
+// same technique as Categories' "Filters" control (rule 31).
+function FilterPill({ icon = 'sliders', label, value, onChange, options }) {
+  return (
+    <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', color:'#6B4E33', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+      <Icon name={icon} size={14} color="#6B4E33"/>
+      <span style={{ whiteSpace:'nowrap' }}>{label}</span>
+      <select value={value} onChange={e=>onChange(e.target.value)} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}>
+        {options.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+      </select>
+    </div>
+  );
+}
+
+// Round icon-only action button matching the Payments tab's Documents/Actions
+// column buttons (rule 33) — tone: 'green' (positive/view), 'red' (destructive),
+// 'outline' (neutral), 'muted' (disabled/waiting).
+function IconBtn({ tone = 'outline', size = 30, title, onClick, children, disabled }) {
+  const styles = {
+    green:  { border:'1px solid rgba(90,145,110,0.3)',  background:'rgba(90,145,110,0.14)' },
+    red:    { border:'1px solid rgba(196,74,74,0.3)',   background:'rgba(196,74,74,0.1)' },
+    muted:  { border:'1px solid rgba(154,91,38,0.1)',   background:'rgba(154,91,38,0.06)' },
+    outline:{ border:'1px solid rgba(154,91,38,0.22)',  background:'rgba(255,255,255,0.6)' },
+  };
+  return (
+    <button title={title} onClick={onClick} disabled={disabled} style={{ width:size, height:size, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:disabled?'default':'pointer', opacity:disabled?0.5:1, ...styles[tone] }}>
+      {children}
+    </button>
+  );
+}
+
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
   const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, catFilter, profileRequests } = state;
@@ -511,91 +636,89 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Vendor Applications (new sign-ups awaiting a decision) ── */}
-      {aTab === 'vendors' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-            <div style={{ fontSize:13, color:'var(--text-secondary)' }}><b style={{ color:'#9A5B26' }}>{pendingVendors.length}</b> awaiting review</div>
-            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-              <Icon name="download" size={14} color="#9A5B26"/>Export CSV
+      {aTab === 'vendors' && (() => {
+        const vaGrid = 'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1.7fr) minmax(0,0.9fr) minmax(0,1.6fr)';
+        return (
+        <TableShell
+          title="Vendor Applications" subtitle="New sign-ups awaiting a decision."
+          headerAction={
+            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <Icon name="download" size={14} color="#6B4E33"/>Export CSV
             </button>
-          </div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {pendingVendors.length === 0 && (
-            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-              No new applications right now.
-            </div>
-          )}
-          {pendingVendors.length > 0 && searchedPending.length === 0 && <NoSearchMatch query={vendorSearch}/>}
-          <div className="admin-cards">
-            {pagedVendors.map((v,idx) => (
-              <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
-                    <VendorAvatar v={v} size={36}/>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                      <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
-                    </div>
-                  </div>
-                  <Badge status={v.status}/>
-                </div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 14px', marginTop:11, fontSize:11.5, color:'var(--text-secondary)' }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="mail" size={13} color="var(--text-muted)"/>{v.email}</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="phone" size={13} color="var(--text-muted)"/>{v.phone}</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5, color:'#9A5B26' }}><Icon name="instagram" size={13} color="#9A5B26"/>{v.ig}</span>
-                </div>
-                <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>Registered {v.regDate}</div>
-                <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                  <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                    <Icon name="eye" size={14} color="#9A5B26"/>View details
-                  </button>
-                  <div style={{ flex:1 }}/>
-                  <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
-                  <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
+          }
+          panelTitle="Pending Applications"
+          searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+          headerCells={<><div>Vendor</div><div>Category</div><div>Contact</div><div>Registered</div><div style={{ textAlign:'right' }}>Actions</div></>}
+          gridTemplate={vaGrid} minWidth={860}
+          isEmpty={pagedVendors.length===0}
+          emptyMessage={searchQ ? `No vendors match "${vendorSearch}".` : 'No new applications right now.'}
+          total={searchedPending.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+        >
+          {pagedVendors.map((v,idx) => (
+            <div key={v.id} style={{ display:'grid', gridTemplateColumns:vaGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                <VendorAvatar v={v} size={36}/>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                  <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
                 </div>
               </div>
-            ))}
-          </div>
-          <Pager total={searchedPending.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+              <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+              <div style={{ fontSize:12, color:'#6B4E33' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Icon name="mail" size={12} color="#B8A48C"/>{v.email}</div>
+                <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}><Icon name="phone" size={12} color="#B8A48C"/>{v.phone}</div>
+              </div>
+              <div style={{ fontSize:12.5, color:'#6B4E33' }}>{v.regDate}</div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, flexWrap:'wrap' }}>
+                <IconBtn title="View details" onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
+                <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+              </div>
+            </div>
+          ))}
           {searchedRejected.length > 0 && (
-            <div style={{ marginTop:22, paddingTop:16, borderTop:'1px solid var(--border-light)' }}>
-              <button onClick={()=>setShowRejected(s=>!s)} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:12, fontWeight:600, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <Icon name={showRejected?'x':'eye'} size={13} color="var(--text-muted)"/>
+            <div style={{ marginTop:18 }}>
+              <button onClick={()=>setShowRejected(s=>!s)} style={{ background:'none', border:'none', color:'#8A6A4A', fontSize:12.5, fontWeight:700, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <Icon name={showRejected?'x':'eye'} size={13} color="#8A6A4A"/>
                 {showRejected ? 'Hide' : 'Show'} {searchedRejected.length} rejected application{searchedRejected.length>1?'s':''}
               </button>
               {showRejected && (
-                <div className="admin-cards" style={{ marginTop:13 }}>
+                <MiniTablePanel gridTemplate="minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)" minWidth={620}
+                  headerCells={<><div>Vendor</div><div>Category</div><div>Registered</div><div style={{ textAlign:'right' }}>Action</div></>}>
                   {searchedRejected.map(v => (
-                    <div key={v.id} style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
-                          <VendorAvatar v={v} size={36}/>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
-                            <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
-                          </div>
+                    <div key={v.id} style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                        <VendorAvatar v={v} size={32}/>
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                          <div style={{ fontSize:11, color:'#8A6A4A' }}>{v.owner}</div>
                         </div>
-                        <Badge status={v.status}/>
                       </div>
-                      <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>Registered {v.regDate}</div>
-                      <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                        <Icon name="pencil" size={13} color="#9A5B26"/>Reconsider — move back to pending
-                      </button>
+                      <div><span style={{ display:'inline-block', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                      <div style={{ fontSize:12, color:'#6B4E33' }}>{v.regDate}</div>
+                      <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                        <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                          <Icon name="pencil" size={12} color="#6B4E33"/>Reconsider
+                        </button>
+                      </div>
                     </div>
                   ))}
-                </div>
+                </MiniTablePanel>
               )}
             </div>
           )}
-        </div>
-      )}
+        </TableShell>
+        );
+      })()}
 
       {/* ── Vendor Listing (master list of approved/suspended vendors) ── */}
-      {aTab === 'vendorList' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12, gap:9, flexWrap:'wrap' }}>
-            <div style={{ fontSize:13, color:'var(--text-secondary)' }}><b style={{ color:'var(--tint-green-text)' }}>{approvedVendors.filter(v=>v.status==='approved').length}</b> approved vendors</div>
-            <div style={{ display:'flex', gap:8 }}>
+      {aTab === 'vendorList' && (() => {
+        const vlGrid = 'minmax(0,2fr) minmax(0,0.9fr) minmax(0,1.5fr) minmax(0,1.7fr) minmax(0,1.7fr)';
+        return (
+        <TableShell
+          title="Vendor Listing" subtitle="Master list of decided vendors, eligible to apply for events."
+          headerAction={
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
               <button
                 onClick={async ()=>{
                   const list = searchedApprovedList.length ? searchedApprovedList : approvedVendors;
@@ -603,73 +726,68 @@ export default function AdminDashboard() {
                   await downloadSignupFormsZip(list, content.terms);
                   logActivity('Admin', `bulk-downloaded ${list.length} vendor sign-up forms.`, {icon:'download', tint:'var(--tint-pink-bg)'});
                 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-                <Icon name="file" size={14} color="#9A5B26"/>Download all forms
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                <Icon name="file" size={14} color="#6B4E33"/>Download all forms
               </button>
-              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>
-                <Icon name="download" size={14} color="#9A5B26"/>Export CSV
+              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                <Icon name="download" size={14} color="#6B4E33"/>Export CSV
               </button>
             </div>
-          </div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {approvedVendors.length > 0 && searchedApprovedList.length === 0 && <NoSearchMatch query={vendorSearch}/>}
-          <div className="admin-cards">
-            {pagedVendorList.map((v,idx) => {
-              const vOff = offenses.filter(o=>o.vendorId===v.id);
-              const typeCounts = {};
-              vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
-              return (
-                <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
-                      <VendorAvatar v={v} size={36}/>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                        <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
-                      </div>
-                    </div>
-                    <Badge status={v.status}/>
+          }
+          panelTitle={`${approvedVendors.filter(v=>v.status==='approved').length} Approved Vendors`}
+          searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+          headerCells={<><div>Vendor</div><div>Category</div><div>Contact</div><div>Compliance</div><div style={{ textAlign:'right' }}>Actions</div></>}
+          gridTemplate={vlGrid} minWidth={900}
+          isEmpty={pagedVendorList.length===0}
+          emptyMessage={searchQ ? `No vendors match "${vendorSearch}".` : 'No approved vendors yet.'}
+          total={searchedApprovedList.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+        >
+          {pagedVendorList.map((v,idx) => {
+            const vOff = offenses.filter(o=>o.vendorId===v.id);
+            const typeCounts = {};
+            vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
+            return (
+              <div key={v.id} style={{ display:'grid', gridTemplateColumns:vlGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                  <VendorAvatar v={v} size={36}/>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                    <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner} · Reg. {v.regDate}</div>
                   </div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 14px', marginTop:11, fontSize:11.5, color:'var(--text-secondary)' }}>
-                    <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="mail" size={13} color="var(--text-muted)"/>{v.email}</span>
-                    <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="phone" size={13} color="var(--text-muted)"/>{v.phone}</span>
-                    <span style={{ display:'flex', alignItems:'center', gap:5, color:'#9A5B26' }}><Icon name="instagram" size={13} color="#9A5B26"/>{v.ig}</span>
-                  </div>
-                  <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:6 }}>Registered {v.regDate}</div>
-                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)', marginTop:12, marginBottom:6 }}>Compliance</div>
+                </div>
+                <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                <div style={{ fontSize:12, color:'#6B4E33' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Icon name="mail" size={12} color="#B8A48C"/>{v.email}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}><Icon name="phone" size={12} color="#B8A48C"/>{v.phone}</div>
+                </div>
+                <div>
                   {vOff.length === 0 ? (
-                    <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:'var(--tint-green-bg)', color:'var(--tint-green-text)' }}>
-                      <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--tint-green-text)' }}/>No offences on record
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', background:'rgba(90,145,110,0.14)', color:'#3F7A54' }}>
+                      <span style={{ width:6, height:6, borderRadius:'50%', background:'#3F7A54' }}/>Clean record
                     </span>
                   ) : (
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
                       {Object.entries(typeCounts).map(([type,count]) => {
                         const ot = offenseTypes[type]||{};
-                        return <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label} ×{count}</span>;
+                        return <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:10.5, fontWeight:700, borderRadius:999, padding:'3px 9px', background:ot.bg, color:ot.color }}><span style={{ width:5, height:5, borderRadius:'50%', background:ot.color }}/>{ot.label} ×{count}</span>;
                       })}
                     </div>
                   )}
-                  <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                    <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                      <Icon name="eye" size={14} color="#9A5B26"/>View details
-                    </button>
-                    <button
-                      onClick={async ()=>{
-                        await downloadSignupForm(v, content.terms);
-                        showToast(`Downloaded ${v.business}'s sign-up form`,'download');
-                        logActivity('Admin', `downloaded ${v.business}'s sign-up form.`, {icon:'download', tint:'var(--tint-pink-bg)'});
-                      }}
-                      style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                      <Icon name="file" size={14} color="#9A5B26"/>Sign-up form
-                    </button>
-                  </div>
                 </div>
-              );
-            })}
-          </div>
-          <Pager total={searchedApprovedList.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-        </div>
-      )}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, flexWrap:'wrap' }}>
+                  <IconBtn title="View details" onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
+                  <IconBtn title="Download sign-up form" onClick={async ()=>{
+                    await downloadSignupForm(v, content.terms);
+                    showToast(`Downloaded ${v.business}'s sign-up form`,'download');
+                    logActivity('Admin', `downloaded ${v.business}'s sign-up form.`, {icon:'download', tint:'var(--tint-pink-bg)'});
+                  }}><Icon name="file" size={14} color="#6B4E33"/></IconBtn>
+                </div>
+              </div>
+            );
+          })}
+        </TableShell>
+        );
+      })()}
 
       {/* ── Profile Requests (vendor-submitted changes to locked profile fields) ── */}
       {aTab === 'profileReq' && (() => {
@@ -685,80 +803,88 @@ export default function AdminDashboard() {
           logActivity('Admin', `${decision==='approved'?'approved':'rejected'} ${v?.business||'a vendor'}'s ${req.section==='einvoice'?'E-Invoice':'profile'} change request.`, {icon: decision==='approved'?'check':'x', tint: decision==='approved'?'var(--tint-pink-bg)':'var(--tint-red-bg)'});
           showToast(`Request ${decision}`, decision==='approved'?'check':'x');
         };
+        const prGrid = 'minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.8fr)';
         return (
-          <div style={{ padding:'14px 16px 20px' }}>
-            <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:12 }}><b style={{ color:'#9A5B26' }}>{pending.length}</b> pending change request{pending.length!==1?'s':''}</div>
-            {pending.length === 0 && (
-              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-                No pending profile change requests.
-              </div>
-            )}
-            <div className="admin-cards">
-              {pending.map(req => {
-                const v = vendors.find(x=>x.id===req.vendorId)||{};
-                const fields = req.section==='einvoice' ? EINVOICE_FIELDS : DETAILS_FIELDS;
-                return (
-                  <div key={req.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                      <VendorAvatar v={v} size={36}/>
-                      <div>
-                        <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
-                        <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
-                      </div>
+          <TableShell
+            title="Profile Requests" subtitle="Vendor-submitted changes to locked profile fields."
+            panelTitle={`${pending.length} Pending Request${pending.length!==1?'s':''}`}
+            headerCells={<><div>Vendor</div><div>Section</div><div>Submitted</div><div style={{ textAlign:'right' }}>Actions</div></>}
+            gridTemplate={prGrid} minWidth={720}
+            isEmpty={pending.length===0}
+            emptyMessage="No pending profile change requests."
+            total={pending.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+          >
+            {pending.map(req => {
+              const v = vendors.find(x=>x.id===req.vendorId)||{};
+              const fields = req.section==='einvoice' ? EINVOICE_FIELDS : DETAILS_FIELDS;
+              const changedFields = fields.filter(([k]) => {
+                const newVal = req.changes[k];
+                const oldVal = req.section==='einvoice' ? (v.einvoice&&v.einvoice[k]) : v[k];
+                return (oldVal||'') !== (newVal||'');
+              });
+              return (
+                <div key={req.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:prGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                      <VendorAvatar v={v} size={34}/>
+                      <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
                     </div>
-                    <div style={{ marginTop:11, display:'flex', flexDirection:'column', gap:6 }}>
-                      {fields.map(([k,label]) => {
-                        const newVal = req.changes[k];
-                        const oldVal = req.section==='einvoice' ? (v.einvoice&&v.einvoice[k]) : v[k];
-                        if ((oldVal||'') === (newVal||'')) return null;
-                        return (
-                          <div key={k} style={{ fontSize:12, color:'var(--text-secondary)' }}>
-                            <span style={{ fontWeight:600, color:'var(--text-primary)' }}>{label}:</span>{' '}
-                            <span style={{ color:'var(--text-muted)', textDecoration:'line-through' }}>{oldVal||'—'}</span>{' → '}
-                            <span style={{ color:'var(--text-primary)', fontWeight:600 }}>{newVal||'—'}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div style={{ display:'flex', gap:9, marginTop:13 }}>
-                      <button onClick={()=>decide(req,'approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Approve</button>
-                      <button onClick={()=>decide(req,'rejected')} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>Reject</button>
-                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} style={{ background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>View vendor</button>
+                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{req.section==='einvoice' ? 'E-Invoice & bank' : 'Profile details'}</span></div>
+                    <div style={{ fontSize:12.5, color:'#6B4E33' }}>{req.submittedAt}</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, flexWrap:'wrap' }}>
+                      <button onClick={()=>decide(req,'approved')} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                      <button onClick={()=>decide(req,'rejected')} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                      <IconBtn title="View vendor" onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-            {decided.length > 0 && (
-              <div style={{ marginTop:22, paddingTop:16, borderTop:'1px solid var(--border-light)' }}>
-                <button onClick={()=>setShowDecidedReq(s=>!s)} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:12, fontWeight:600, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                  <Icon name={showDecidedReq?'x':'eye'} size={13} color="var(--text-muted)"/>
-                  {showDecidedReq ? 'Hide' : 'Show'} {decided.length} decided request{decided.length!==1?'s':''}
-                </button>
-                {showDecidedReq && (
-                  <div className="admin-cards" style={{ marginTop:13 }}>
-                    {decided.map(req => {
-                      const v = vendors.find(x=>x.id===req.vendorId)||{};
+                  <div style={{ margin:'0 14px 13px', background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:10, padding:'9px 12px', display:'flex', flexDirection:'column', gap:5 }}>
+                    {changedFields.map(([k,label]) => {
+                      const newVal = req.changes[k];
+                      const oldVal = req.section==='einvoice' ? (v.einvoice&&v.einvoice[k]) : v[k];
                       return (
-                        <div key={req.id} style={{ background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <VendorAvatar v={v} size={32}/>
-                            <div>
-                              <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</div>
-                              <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{req.section==='einvoice' ? 'E-Invoice & bank details' : 'Profile details'} · submitted {req.submittedAt}</div>
-                            </div>
-                          </div>
-                          <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', marginTop:9, background: req.status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)', color: req.status==='approved'?'var(--tint-green-text)':'var(--tint-red-text)' }}>
-                            {req.status==='approved' ? 'Approved' : 'Rejected'}
-                          </span>
+                        <div key={k} style={{ fontSize:11.5, color:'#6B4E33' }}>
+                          <span style={{ fontWeight:700, color:'#3A2210' }}>{label}:</span>{' '}
+                          <span style={{ color:'#B8A48C', textDecoration:'line-through' }}>{oldVal||'—'}</span>{' → '}
+                          <span style={{ color:'#3A2210', fontWeight:700 }}>{newVal||'—'}</span>
                         </div>
                       );
                     })}
                   </div>
+                </div>
+              );
+            })}
+            {decided.length > 0 && (
+              <div style={{ marginTop:18 }}>
+                <button onClick={()=>setShowDecidedReq(s=>!s)} style={{ background:'none', border:'none', color:'#8A6A4A', fontSize:12.5, fontWeight:700, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                  <Icon name={showDecidedReq?'x':'eye'} size={13} color="#8A6A4A"/>
+                  {showDecidedReq ? 'Hide' : 'Show'} {decided.length} decided request{decided.length!==1?'s':''}
+                </button>
+                {showDecidedReq && (
+                  <MiniTablePanel gridTemplate="minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)" minWidth={620}
+                    headerCells={<><div>Vendor</div><div>Section</div><div>Submitted</div><div style={{ textAlign:'right' }}>Result</div></>}>
+                    {decided.map(req => {
+                      const v = vendors.find(x=>x.id===req.vendorId)||{};
+                      return (
+                        <div key={req.id} style={{ display:'grid', gridTemplateColumns:'minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                            <VendorAvatar v={v} size={30}/>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                          </div>
+                          <div style={{ fontSize:11.5, color:'#6B4E33' }}>{req.section==='einvoice' ? 'E-Invoice & bank' : 'Profile details'}</div>
+                          <div style={{ fontSize:11.5, color:'#6B4E33' }}>{req.submittedAt}</div>
+                          <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', background: req.status==='approved'?'rgba(90,145,110,0.16)':'rgba(196,74,74,0.1)', color: req.status==='approved'?'#3F7A54':'#B03A2E' }}>
+                              {req.status==='approved' ? 'Approved' : 'Rejected'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </MiniTablePanel>
                 )}
               </div>
             )}
-          </div>
+          </TableShell>
         );
       })()}
 
@@ -972,198 +1098,194 @@ export default function AdminDashboard() {
       })()}
 
       {/* ── Event Applications ── */}
-      {aTab === 'apps' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:14 }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={lbl}>Filter by event</div>
-              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}>
+      {aTab === 'apps' && (() => {
+        const eaGrid = 'minmax(0,2.2fr) minmax(0,1.9fr) minmax(0,1fr) minmax(0,1.6fr)';
+        const eventFilterRow = (
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:14, flexWrap:'wrap' }}>
+            <div style={{ flex:'1 1 240px', minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by event</div>
+              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
-            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 13px', cursor:'pointer', flexShrink:0 }}>
-              <Icon name="download" size={14} color="#9A5B26"/>Export
+            <div style={{ display:'flex', background:'rgba(154,91,38,0.08)', borderRadius:12, padding:4, gap:4 }}>
+              {[['apps','Applications'],['shortlist',`Shortlist${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length ? ` (${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length})` : ''}`]].map(([id,label]) => (
+                <button key={id} onClick={()=>set({appsTab:id,page:1})} style={{ border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 14px', cursor:'pointer', background:appsTab===id?'rgba(255,255,255,0.9)':'transparent', color:appsTab===id?'#3A2210':'#8A6A4A', boxShadow:appsTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
+              ))}
+            </div>
+            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 18px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <Icon name="download" size={14} color="#6B4E33"/>Export
             </button>
           </div>
-          <div style={{ display:'flex', background:'var(--bg-subtle)', borderRadius:12, padding:4, gap:4, marginBottom:14 }}>
-            {[['apps','Applications'],['shortlist',`Shortlist${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length ? ` (${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length})` : ''}`]].map(([id,label]) => (
-              <button key={id} onClick={()=>set({appsTab:id,page:1})} style={{ flex:1, border:'none', fontSize:13, fontWeight:600, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:appsTab===id?'var(--bg-card)':'transparent', color:appsTab===id?'var(--text-primary)':'var(--text-secondary)', boxShadow:appsTab===id?'0 1px 4px rgba(0,0,0,0.08)':'none' }}>{label}</button>
-            ))}
-          </div>
-          {appsTab === 'apps' && (
-          <>
-          <div style={{ fontSize:11.5, color:'var(--text-muted)', marginBottom:12, lineHeight:1.5 }}>Awaiting a decision for <b style={{ color:'var(--text-secondary)' }}>{curEv.name}</b>. Shortlist a vendor to move them for review — once approved they'll only appear in the Shortlist tab.</div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {apps.filter(a=>a.eventId===filterEvent && a.status==='pending').length > 0 && filteredApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
-          {apps.filter(a=>a.eventId===filterEvent && a.status==='pending').length === 0 && !searchQ && (
-            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-              No applications awaiting a decision for this market.
+        );
+
+        if (appsTab === 'shortlist') {
+          const rosterApps = apps.filter(a => a.eventId===filterEvent && (a.status==='shortlisted' || a.status==='approved'));
+          const groups = cats
+            .map(c => {
+              const inCat = rosterApps.filter(a => vById(a.vendorId).category===c.name);
+              return {
+                cat: c,
+                totalVendors: vendors.filter(v=>v.category===c.name).length,
+                roster: [...inCat].sort((a,b) => a.status===b.status ? 0 : a.status==='shortlisted' ? -1 : 1),
+                approvedCount: inCat.filter(a=>a.status==='approved').length,
+                shortlistedCount: inCat.filter(a=>a.status==='shortlisted').length,
+              };
+            })
+            .filter(g => g.totalVendors > 0 || g.roster.length > 0);
+          return (
+            <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+              <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
+                <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
+                <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+              </div>
+              <div style={{ position:'relative', zIndex:1 }}>
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Event Applications</div>
+                  <div style={{ fontSize:14, color:'#8A6A4A' }}>The final roster for {curEv.name}, grouped by category.</div>
+                </div>
+                {eventFilterRow}
+                {rosterApps.length === 0 && (
+                  <div style={{ background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#8A6A4A', fontSize:13.5, marginBottom:14 }}>
+                    No vendors shortlisted or approved yet — shortlist pending applications from the Applications tab.
+                  </div>
+                )}
+                {groups.map(g => (
+                  <div key={g.cat.id} style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:20, padding:'18px 20px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)', marginBottom:16 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:9, flexWrap:'wrap' }}>
+                      <span style={{ fontFamily:"'Marcellus',serif", fontSize:17, color:'#3A2210' }}>{g.cat.name}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color: g.roster.length ? '#9A6A1E' : '#8A6A4A', background: g.roster.length ? 'rgba(214,152,66,0.16)' : 'rgba(154,91,38,0.08)', borderRadius:999, padding:'3px 10px' }}>
+                        {g.roster.length} of {g.totalVendors} vendor{g.totalVendors!==1?'s':''}
+                      </span>
+                      {g.roster.length > 0 && (
+                        <span style={{ fontSize:11.5, color:'#8A6A4A' }}>{g.approvedCount} approved · {g.shortlistedCount} shortlisted</span>
+                      )}
+                    </div>
+                    {g.roster.length === 0 ? (
+                      <div style={{ fontSize:12, color:'#8A6A4A', marginTop:10 }}>No vendors shortlisted or approved yet in this category.</div>
+                    ) : (
+                      <div style={{ marginTop:12 }}>
+                        {g.roster.map((a,idx) => {
+                          const v = vById(a.vendorId);
+                          const holdOffs = complianceHold(a.vendorId, a.eventId);
+                          const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
+                          const onHold = a.status==='shortlisted' && holdOffs.length > 0 && !overridden;
+                          return (
+                            <div key={a.id} style={{ borderTop: idx>0 ? '1px solid rgba(154,91,38,0.1)' : 'none', padding:'12px 0' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                                <VendorAvatar v={v} size={34}/>
+                                <div style={{ flex:1, minWidth:150 }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
+                                    <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>
+                                      <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{idx+1}</span>{v.business}
+                                    </div>
+                                    {a.status==='approved' && <span style={{ fontSize:11, fontWeight:700, color:'#3F7A54' }}>Approved</span>}
+                                    {a.shared && (
+                                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:999, padding:'2px 8px' }}>
+                                        <Icon name="users" size={10} color="#6B4E33"/>{(a.partners||[]).length+1} vendors
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize:11.5, color:'#8A6A4A', marginTop:1 }}>{v.owner}</div>
+                                </div>
+                                <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', justifyContent:'flex-end' }}>
+                                  <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
+                                  {a.status==='approved' && (
+                                    <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }} style={{ background:'none', border:'none', color:'#B03A2E', fontSize:11, fontWeight:700, padding:'0 4px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Release</button>
+                                  )}
+                                  {a.status==='shortlisted' && (onHold ? (
+                                    <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'var(--tint-amber-bg)'}); showToast('Hold overridden — you can now approve this vendor','shield'); }} style={{ background:'rgba(255,255,255,0.7)', border:'1px solid rgba(214,152,66,0.35)', color:'#9A6A1E', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Override hold</button>
+                                  ) : (
+                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                                  ))}
+                                  {a.status==='shortlisted' && (
+                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `rejected ${v.business} from the shortlist for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor moved back to Event Applications','x'); }} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                                  )}
+                                </div>
+                              </div>
+                              {onHold && (
+                                <div style={{ display:'flex', alignItems:'flex-start', gap:7, background:'rgba(214,152,66,0.12)', border:'1px solid rgba(214,152,66,0.28)', borderRadius:10, padding:'9px 11px', marginTop:9, fontSize:11.5, color:'#9A6A1E', lineHeight:1.5 }}>
+                                  <Icon name="shield" size={13} color="#9A6A1E" style={{ marginTop:1, flexShrink:0 }}/>
+                                  <div style={{ flex:1 }}>Compliance hold — {holdOffs.length} offence{holdOffs.length>1?'s':''} in the last {skipN} market{skipN>1?'s':''}.</div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-          <div className="admin-cards">
+          );
+        }
+
+        return (
+          <TableShell
+            title="Event Applications" subtitle={`Awaiting a decision for ${curEv.name}. Shortlist a vendor to move them for review.`}
+            aboveControls={eventFilterRow}
+            panelTitle="Applications"
+            searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+            headerCells={<><div>Vendor</div><div>Booth</div><div>Category</div><div style={{ textAlign:'right' }}>Actions</div></>}
+            gridTemplate={eaGrid} minWidth={820}
+            isEmpty={pagedApps.length===0}
+            emptyMessage={searchQ ? `No vendors match "${vendorSearch}".` : 'No applications awaiting a decision for this market.'}
+            total={filteredApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+          >
             {pagedApps.map((a,idx) => {
               const v = vById(a.vendorId);
               const vOffenses = offenses.filter(o=>o.vendorId===a.vendorId);
               const holdOffs = complianceHold(a.vendorId, a.eventId);
               const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
               const onHold = holdOffs.length > 0 && !overridden;
+              const h = vendorHistory(a.vendorId);
               return (
-                <div key={a.id} style={{ background:'var(--bg-card)', border:`1px solid ${onHold?'var(--tint-amber-border)':'var(--border-light)'}`, borderRadius:16, padding:14 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
+                <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:eaGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                       <VendorAvatar v={v} size={36}/>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)', display:'flex', alignItems:'center', gap:7 }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{(page-1)*PER_PAGE+idx+1}</span>
-                          {v.business}
-                        </div>
-                        <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:2 }}>{v.owner} · {v.category}</div>
-                        {(() => { const h = vendorHistory(a.vendorId); return (
-                          <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:3 }}>
-                            {h.total === 0 ? 'No markets joined yet' : `Last joined ${h.latest.name} (${h.latest.dateRange}) · ${h.total} market${h.total>1?'s':''} joined total`}
-                          </div>
-                        ); })()}
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                        <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
+                        <div style={{ fontSize:10.5, color:'#B8A48C', marginTop:1 }}>{h.total === 0 ? 'No markets joined yet' : `${h.total} market${h.total>1?'s':''} joined`}</div>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:7, marginTop:10 }}>
-                    <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'4px 10px' }}>
-                      <Icon name={a.shared?'users':'tent'} size={12} color="#9A5B26"/>{a.shared?`Sharing · ${(a.partners||[]).length+1} vendors`:'Solo booth'}
-                    </span>
-                    {vOffenses.slice(0,3).map((o,i) => {
-                      const ot = offenseTypes[o.type]||{};
-                      return <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color, display:'inline-block' }}/>{ot.label}</span>;
-                    })}
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:10.5, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:999, padding:'3px 9px' }}>
+                        <Icon name={a.shared?'users':'tent'} size={11} color="#6B4E33"/>{a.shared?`Sharing · ${(a.partners||[]).length+1}`:'Solo'}
+                      </span>
+                      {vOffenses.slice(0,2).map((o,i) => {
+                        const ot = offenseTypes[o.type]||{};
+                        return <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, borderRadius:999, padding:'3px 9px', background:ot.bg, color:ot.color }}><span style={{ width:5, height:5, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>;
+                      })}
+                    </div>
+                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6 }}>
+                      <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
+                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'rgba(214,152,66,0.16)', border:'none', color:'#9A6A1E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Shortlist</button>
+                    </div>
                   </div>
                   {holdOffs.length > 0 && (
                     onHold ? (
-                      <div style={{ display:'flex', alignItems:'flex-start', gap:8, background:'var(--tint-amber-bg-soft)', border:'1px solid var(--tint-amber-border-soft)', borderRadius:11, padding:'10px 12px', marginTop:11, fontSize:11.5, color:'var(--tint-amber-text-soft)', lineHeight:1.5 }}>
-                        <Icon name="shield" size={14} color="var(--tint-amber-text-soft)" style={{ marginTop:1, flexShrink:0 }}/>
+                      <div style={{ margin:'0 14px 13px', display:'flex', alignItems:'flex-start', gap:8, background:'rgba(214,152,66,0.12)', border:'1px solid rgba(214,152,66,0.28)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#9A6A1E', lineHeight:1.5 }}>
+                        <Icon name="shield" size={14} color="#9A6A1E" style={{ marginTop:1, flexShrink:0 }}/>
                         <div style={{ flex:1 }}>
                           <b>Compliance hold</b> — {v.business} logged {holdOffs.length} offence{holdOffs.length>1?'s':''} at {[...new Set(holdOffs.map(o=>eById(o.eventId).name))].join(', ')}. Policy: sit out the next {skipN} market{skipN>1?'s':''} — this can still be shortlisted, but approval will need an override in the Shortlist tab.
                         </div>
                       </div>
                     ) : (
-                      <div style={{ display:'flex', alignItems:'center', gap:7, background:'var(--bg-neutral-soft)', border:'1px solid var(--border-soft)', borderRadius:11, padding:'9px 12px', marginTop:11, fontSize:11.5, color:'var(--text-faint)', lineHeight:1.45 }}>
-                        <Icon name="shield" size={13} color="var(--text-faint)"/>Compliance hold overridden for this vendor.
+                      <div style={{ margin:'0 14px 13px', display:'flex', alignItems:'center', gap:7, background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#8A6A4A', lineHeight:1.45 }}>
+                        <Icon name="shield" size={13} color="#8A6A4A"/>Compliance hold overridden for this vendor.
                       </div>
                     )
                   )}
-                  <div style={{ display:'flex', gap:9, marginTop:13, alignItems:'center' }}>
-                    <button onClick={()=>set({appDetailId:a.id})} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 14px', cursor:'pointer' }}>
-                      <Icon name="eye" size={14} color="#9A5B26"/>View &amp; share booth
-                    </button>
-                    <div style={{ flex:1 }}/>
-                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'var(--tint-amber-bg)', border:'none', color:'var(--tint-amber-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Shortlist</button>
-                  </div>
                 </div>
               );
             })}
-          </div>
-          <Pager total={filteredApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-          </>
-          )}
-
-          {appsTab === 'shortlist' && (() => {
-            // Shortlist tab is the final roster for this event: shortlisted (awaiting a decision)
-            // and approved (already confirmed) vendors both stay here, grouped by category.
-            const rosterApps = apps.filter(a => a.eventId===filterEvent && (a.status==='shortlisted' || a.status==='approved'));
-            const groups = cats
-              .map(c => {
-                const inCat = rosterApps.filter(a => vById(a.vendorId).category===c.name);
-                return {
-                  cat: c,
-                  totalVendors: vendors.filter(v=>v.category===c.name).length,
-                  roster: [...inCat].sort((a,b) => a.status===b.status ? 0 : a.status==='shortlisted' ? -1 : 1),
-                  approvedCount: inCat.filter(a=>a.status==='approved').length,
-                  shortlistedCount: inCat.filter(a=>a.status==='shortlisted').length,
-                };
-              })
-              .filter(g => g.totalVendors > 0 || g.roster.length > 0);
-            return (
-              <>
-                <div style={{ fontSize:11.5, color:'var(--text-muted)', marginBottom:14, lineHeight:1.5 }}>The final roster for <b style={{ color:'var(--text-secondary)' }}>{curEv.name}</b>, grouped by category. Approve or reject shortlisted vendors here — rejected vendors move back to Event Applications. Approved vendors stay here as the record for this market.</div>
-                {rosterApps.length === 0 && (
-                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13, marginBottom:14 }}>
-                    No vendors shortlisted or approved yet — shortlist pending applications from the Applications tab.
-                  </div>
-                )}
-                <div className="admin-cards">
-                  {groups.map(g => (
-                    <div key={g.cat.id} style={{ gridColumn:'1 / -1', background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:9, flexWrap:'wrap' }}>
-                        <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{g.cat.name}</span>
-                        <span style={{ fontSize:11, fontWeight:600, color: g.roster.length ? 'var(--tint-amber-text)' : 'var(--text-muted)', background: g.roster.length ? 'var(--tint-amber-bg)' : 'var(--bg-subtle)', borderRadius:999, padding:'3px 10px' }}>
-                          {g.roster.length} of {g.totalVendors} vendor{g.totalVendors!==1?'s':''}
-                        </span>
-                        {g.roster.length > 0 && (
-                          <span style={{ fontSize:11, color:'var(--text-muted)' }}>{g.approvedCount} approved · {g.shortlistedCount} shortlisted</span>
-                        )}
-                      </div>
-                      {g.roster.length === 0 ? (
-                        <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:10 }}>No vendors shortlisted or approved yet in this category.</div>
-                      ) : (
-                        <div className="admin-cards" style={{ marginTop:11 }}>
-                          {g.roster.map((a,idx) => {
-                            const v = vById(a.vendorId);
-                            const holdOffs = complianceHold(a.vendorId, a.eventId);
-                            const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
-                            const onHold = a.status==='shortlisted' && holdOffs.length > 0 && !overridden;
-                            return (
-                              <div key={a.id} style={{ background: a.status==='approved' ? 'var(--tint-green-bg-soft)' : 'var(--bg-subtle-alt)', border:`1px solid ${onHold?'var(--tint-amber-border)':a.status==='approved'?'var(--tint-green-border)':'var(--border-light)'}`, borderRadius:14, padding:13 }}>
-                                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                  <VendorAvatar v={v} size={32}/>
-                                  <div style={{ flex:1, minWidth:0 }}>
-                                    <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                                      <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>
-                                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}
-                                      </div>
-                                      {a.status==='approved' && <span style={{ fontSize:11, fontWeight:600, color:'var(--tint-green-text)' }}>Approved</span>}
-                                    </div>
-                                    <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
-                                  </div>
-                                </div>
-                                {a.shared && (
-                                  <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'4px 10px', marginTop:8 }}>
-                                    <Icon name="users" size={12} color="#9A5B26"/>Sharing · {(a.partners||[]).length+1} vendors
-                                  </span>
-                                )}
-                                {onHold && (
-                                  <div style={{ display:'flex', alignItems:'flex-start', gap:7, background:'var(--tint-amber-bg-soft)', border:'1px solid var(--tint-amber-border-soft)', borderRadius:10, padding:'9px 11px', marginTop:9, fontSize:11, color:'var(--tint-amber-text-soft)', lineHeight:1.5 }}>
-                                    <Icon name="shield" size={13} color="var(--tint-amber-text-soft)" style={{ marginTop:1, flexShrink:0 }}/>
-                                    <div style={{ flex:1 }}>Compliance hold — {holdOffs.length} offence{holdOffs.length>1?'s':''} in the last {skipN} market{skipN>1?'s':''}.</div>
-                                  </div>
-                                )}
-                                <div style={{ display:'flex', gap:8, marginTop:11 }}>
-                                  <button onClick={()=>set({appDetailId:a.id})} title="View & share booth" style={{ display:'flex', alignItems:'center', justifyContent:'center', width:34, height:34, background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:9, cursor:'pointer', flexShrink:0 }}>
-                                    <Icon name="eye" size={14} color="#9A5B26"/>
-                                  </button>
-                                  {a.status==='approved' && (
-                                    <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }} style={{ display:'flex', alignItems:'center', background:'none', border:'none', color:'var(--tint-red-text)', fontSize:11, fontWeight:600, padding:'0 4px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3, flexShrink:0 }}>Release vendor</button>
-                                  )}
-                                  <div style={{ flex:1 }}/>
-                                  {a.status==='shortlisted' && (onHold ? (
-                                    <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'var(--tint-amber-bg)'}); showToast('Hold overridden — you can now approve this vendor','shield'); }} style={{ background:'var(--bg-card)', border:'1px solid var(--tint-amber-border-soft)', color:'var(--tint-amber-text-soft)', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Override hold</button>
-                                  ) : (
-                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Approve</button>
-                                  ))}
-                                  {a.status==='shortlisted' && (
-                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `rejected ${v.business} from the shortlist for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor moved back to Event Applications','x'); }} style={{ background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor:'pointer' }}>Reject</button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      )}
+          </TableShell>
+        );
+      })()}
 
       {/* ── Payments ── */}
       {aTab === 'payments' && (
@@ -1397,207 +1519,226 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Deposit Record ── */}
-      {aTab === 'deposits' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginBottom:14 }}>
-            <div style={{ flex:1, minWidth:120, background:'var(--tint-green-bg)', borderRadius:13, padding:'12px 14px' }}>
-              <div style={{ fontSize:11, fontWeight:600, color:'var(--tint-green-text)' }}>Deposits held</div>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, color:'var(--tint-green-text)', marginTop:3, lineHeight:1 }}>RM {money(Object.values(deposits).filter(d=>d.status==='paid').length*100)}</div>
-              <div style={{ fontSize:10.5, color:'#6f9d8a', marginTop:3 }}>{Object.values(deposits).filter(d=>d.status==='paid').length} vendors · RM100 each</div>
-            </div>
-            <div style={{ flex:1, minWidth:120, background:'var(--tint-blue-bg)', borderRadius:13, padding:'12px 14px' }}>
-              <div style={{ fontSize:11, fontWeight:600, color:'var(--tint-blue-text)' }}>Refunded</div>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, color:'var(--tint-blue-text)', marginTop:3, lineHeight:1 }}>{Object.values(deposits).filter(d=>d.status==='refunded').length}</div>
-              <div style={{ fontSize:10.5, color:'#7184c9', marginTop:3 }}>returned after market</div>
-            </div>
+      {aTab === 'deposits' && (() => {
+        const drGrid = 'minmax(0,2fr) minmax(0,2.2fr) minmax(0,1fr) minmax(0,1.4fr)';
+        const drList = searchVendors(vendors);
+        const drPaged = drList.slice((page-1)*PER_PAGE, page*PER_PAGE);
+        const statBadge = (bg, color, label, value, sub) => (
+          <div style={{ flex:1, minWidth:160, background:bg, borderRadius:14, padding:'13px 16px' }}>
+            <div style={{ fontSize:11.5, fontWeight:700, color }}>{label}</div>
+            <div style={{ fontFamily:"'Marcellus',serif", fontSize:25, fontWeight:400, color, marginTop:3, lineHeight:1 }}>{value}</div>
+            <div style={{ fontSize:10.5, color, opacity:0.75, marginTop:3 }}>{sub}</div>
           </div>
-          <div style={{ fontSize:11.5, color:'var(--text-muted)', marginBottom:11, lineHeight:1.5 }}>The refundable RM100 deposit is tracked once per vendor. While unpaid, it is automatically added to that vendor's first event invoice.</div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {searchQ && searchVendors(vendors).length === 0 && <NoSearchMatch query={vendorSearch}/>}
-          <div className="admin-cards">
-            {searchVendors(vendors).map((v,idx) => {
+        );
+        return (
+          <TableShell
+            title="Deposit Record" subtitle="The refundable RM100 deposit, tracked once per vendor."
+            aboveControls={
+              <div style={{ display:'flex', flexWrap:'wrap', gap:12, marginBottom:16 }}>
+                {statBadge('rgba(90,145,110,0.16)', '#3F7A54', 'Deposits held', `RM ${money(Object.values(deposits).filter(d=>d.status==='paid').length*100)}`, `${Object.values(deposits).filter(d=>d.status==='paid').length} vendors · RM100 each`)}
+                {statBadge('rgba(91,127,166,0.16)', '#3D5BC4', 'Refunded', Object.values(deposits).filter(d=>d.status==='refunded').length, 'returned after market')}
+              </div>
+            }
+            panelTitle="Vendor Deposits"
+            searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+            headerCells={<><div>Vendor</div><div>Deposit history</div><div>Status</div><div style={{ textAlign:'right' }}>Actions</div></>}
+            gridTemplate={drGrid} minWidth={780}
+            isEmpty={drPaged.length===0}
+            emptyMessage={`No vendors match "${vendorSearch}".`}
+            total={drList.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+          >
+            {drPaged.map((v,idx) => {
               const dep = depRec(v.id);
               return (
-                <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                      <VendorAvatar v={v} size={34}/>
-                      <div style={{ minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{idx+1}</span>{v.business}</div>
-                        <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:2 }}>{v.owner}</div>
-                      </div>
+                <div key={v.id} style={{ display:'grid', gridTemplateColumns:drGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                    <VendorAvatar v={v} size={34}/>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                      <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
                     </div>
-                    <Badge status={dep.status}/>
                   </div>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:'7px 16px', marginTop:10, fontSize:11.5, color:'var(--text-secondary)' }}>
-                    <span>Invoice <b style={{ color:'var(--text-primary)' }}>{dep.inv||'—'}</b></span>
-                    <span>Paid <b style={{ color:'var(--text-primary)' }}>{dep.payDate||'—'}</b></span>
-                    <span>Refunded <b style={{ color:'var(--text-primary)' }}>{dep.refundDate||'—'}</b></span>
+                  <div style={{ fontSize:11.5, color:'#6B4E33', display:'flex', flexWrap:'wrap', gap:'4px 12px' }}>
+                    <span>Invoice <b style={{ color:'#3A2210' }}>{dep.inv||'—'}</b></span>
+                    <span>Paid <b style={{ color:'#3A2210' }}>{dep.payDate||'—'}</b></span>
+                    <span>Refunded <b style={{ color:'#3A2210' }}>{dep.refundDate||'—'}</b></span>
                   </div>
-                  <button onClick={()=>{ const d=depRec(v.id); set({depModalVendor:v.id,depf:{...d}}); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, marginTop:11, width:'100%', background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:13, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                    <Icon name="pencil" size={14} color="#9A5B26"/>Update deposit status
-                  </button>
+                  <div><Badge status={dep.status}/></div>
+                  <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                    <button onClick={()=>{ const d=depRec(v.id); set({depModalVendor:v.id,depf:{...d}}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
+                      <Icon name="pencil" size={13} color="#6B4E33"/>Update
+                    </button>
+                  </div>
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
+          </TableShell>
+        );
+      })()}
 
       {/* ── Parking ── */}
-      {aTab === 'parking' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={lbl}>Select event</div>
-          <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:360, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:12 }}>
-            {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </select>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {(() => {
-            const ev = curEv;
-            const start = ev.startDate ? new Date(ev.startDate) : null;
-            const end   = ev.endDate   ? new Date(ev.endDate)   : null;
-            const inEvent = start && end && today >= start && today <= end;
-            const editable = inEvent || parkOverride;
-            return (
+      {aTab === 'parking' && (() => {
+        const ev = curEv;
+        const start = ev.startDate ? new Date(ev.startDate) : null;
+        const end   = ev.endDate   ? new Date(ev.endDate)   : null;
+        const inEvent = start && end && today >= start && today <= end;
+        const editable = inEvent || parkOverride;
+        const pkGrid = 'minmax(0,2.1fr) minmax(0,1fr) minmax(0,3fr)';
+        return (
+          <TableShell
+            title="Parking" subtitle="Per-day parking serials for approved applicants of the selected event."
+            aboveControls={
               <>
-                <div style={{ display:'flex', alignItems:'center', gap:9, background:editable?'var(--tint-green-bg)':'var(--tint-amber-bg)', border:`1px solid ${editable?'var(--tint-green-border)':'var(--tint-amber-border)'}`, borderRadius:12, padding:'11px 13px', marginBottom:14 }}>
-                  <Icon name={editable?'check':'lock'} size={15} color={editable?'var(--tint-green-text)':'var(--tint-amber-text)'}/>
-                  <div style={{ flex:1, fontSize:12, fontWeight:500, color:editable?'var(--tint-green-text)':'var(--tint-amber-text)', lineHeight:1.4 }}>
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
+                  <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
+                    {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:9, background:editable?'rgba(90,145,110,0.14)':'rgba(214,152,66,0.14)', border:`1px solid ${editable?'rgba(90,145,110,0.3)':'rgba(214,152,66,0.3)'}`, borderRadius:12, padding:'11px 13px', marginBottom:16 }}>
+                  <Icon name={editable?'check':'lock'} size={15} color={editable?'#3F7A54':'#9A6A1E'}/>
+                  <div style={{ flex:1, fontSize:12, fontWeight:600, color:editable?'#3F7A54':'#9A6A1E', lineHeight:1.4 }}>
                     {editable ? 'Entry is open — market is currently in progress.' : 'Locked — serial entry is only available during the event dates.'}
                   </div>
-                  <button onClick={()=>set({parkOverride:!parkOverride})} style={{ flexShrink:0, background:'rgba(255,255,255,0.65)', border:`1px solid ${editable?'var(--tint-green-border)':'var(--tint-amber-border)'}`, color:editable?'var(--tint-green-text)':'var(--tint-amber-text)', fontSize:11, fontWeight:600, borderRadius:8, padding:'6px 10px', cursor:'pointer' }}>
+                  <button onClick={()=>set({parkOverride:!parkOverride})} style={{ flexShrink:0, background:'rgba(255,255,255,0.65)', border:`1px solid ${editable?'rgba(90,145,110,0.3)':'rgba(214,152,66,0.3)'}`, color:editable?'#3F7A54':'#9A6A1E', fontSize:11, fontWeight:700, borderRadius:8, padding:'6px 10px', cursor:'pointer' }}>
                     {parkOverride ? 'Lock' : 'Override'}
                   </button>
                 </div>
-                {searchQ && searchedApprovedApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
-                <div className="admin-cards">
-                  {pagedPark.map((a,idx) => {
-                    const v = vById(a.vendorId);
-                    const cells = Array.from({length:ev.days||1},(_,i)=>({
-                      dayLabel:`Day ${i+1}`, key:`${a.vendorId}-${ev.id}-${i+1}`,
-                      value: parking[`${a.vendorId}-${ev.id}-${i+1}`]||'',
-                    }));
-                    return (
-                      <div key={a.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:13 }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                            <VendorAvatar v={v} size={34}/>
-                            <div style={{ minWidth:0 }}>
-                              <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>Vehicle owner on record</div>
-                            </div>
-                          </div>
-                          <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:6, padding:'4px 9px', flexShrink:0 }}>
-                            <Icon name="car" size={13} color="#9A5B26"/>{v.plate}
-                          </span>
-                        </div>
-                        <div style={{ display:'flex', gap:8, marginTop:11 }}>
-                          {cells.map(c => (
-                            <div key={c.key} style={{ flex:1 }}>
-                              <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, textAlign:'center' }}>{c.dayLabel} serial</div>
-                              <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} placeholder="—" style={{ width:'100%', border:'1px solid var(--border-medium)', background:editable?'var(--bg-card)':'var(--bg-subtle)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:600, textAlign:'center', outline:'none', color:'var(--text-primary)', cursor:editable?'text':'not-allowed' }}/>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <Pager total={searchedApprovedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
               </>
-            );
-          })()}
-        </div>
-      )}
+            }
+            panelTitle="Vendor Parking"
+            searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+            headerCells={<><div>Vendor</div><div>Plate</div><div>Daily serials</div></>}
+            gridTemplate={pkGrid} minWidth={720}
+            isEmpty={pagedPark.length===0}
+            emptyMessage={searchQ ? `No vendors match "${vendorSearch}".` : 'No approved applicants for this event yet.'}
+            total={searchedApprovedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+          >
+            {pagedPark.map((a,idx) => {
+              const v = vById(a.vendorId);
+              const cells = Array.from({length:ev.days||1},(_,i)=>({
+                dayLabel:`Day ${i+1}`, key:`${a.vendorId}-${ev.id}-${i+1}`,
+                value: parking[`${a.vendorId}-${ev.id}-${i+1}`]||'',
+              }));
+              return (
+                <div key={a.id} style={{ display:'grid', gridTemplateColumns:pkGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                    <VendorAvatar v={v} size={34}/>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                      <div style={{ fontSize:11, color:'#8A6A4A' }}>Vehicle owner on record</div>
+                    </div>
+                  </div>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:6, padding:'4px 9px', flexShrink:0, width:'fit-content' }}>
+                    <Icon name="car" size={13} color="#6B4E33"/>{v.plate}
+                  </span>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {cells.map(c => (
+                      <div key={c.key} style={{ flex:1, minWidth:70 }}>
+                        <div style={{ fontSize:10, color:'#8A6A4A', marginBottom:4, textAlign:'center' }}>{c.dayLabel}</div>
+                        <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} placeholder="—" style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:editable?'rgba(255,255,255,0.7)':'rgba(154,91,38,0.06)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:700, textAlign:'center', outline:'none', color:'#3A2210', cursor:editable?'text':'not-allowed' }}/>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </TableShell>
+        );
+      })()}
 
       {/* ── Event Pictures ── */}
-      {aTab === 'photos' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={lbl}>Select event</div>
-          <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPhotoSel({}); setBulkUpMsg(null); }} style={{ width:'100%', maxWidth:360, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:8 }}>
-            {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-          </select>
-          <div style={{ fontSize:11.5, color:'var(--text-muted)', marginBottom:12, lineHeight:1.5 }}>Vendor product photos come from their profile — always their latest set. Booth sharers are grouped with the main vendor. Bulk downloads save one folder per business, renamed "Vendor - 001 - Event".</div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-
-          {/* Toolbar */}
-          <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:12 }}>
-            {[['all','All vendors'],['new',`New — not downloaded (${boothGroups.filter(g=>!groupDownloaded(g)).length})`]].map(([id,label]) => (
-              <button key={id} onClick={()=>{ setPhotoFilter(id); setPhotoSel({}); set({page:1}); }} style={{ background:photoFilter===id?'#9A5B26':'var(--bg-card)', border:`1px solid ${photoFilter===id?'#9A5B26':'var(--border-medium)'}`, color:photoFilter===id?'#FAF8F5':'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>{label}</button>
-            ))}
-            <div style={{ flex:1 }}/>
-            <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer', background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:9, padding:'8px 12px' }}>
-              <input type="checkbox" style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}
-                checked={filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id])}
-                onChange={()=>{ const all = filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id]); setPhotoSel(all ? {} : Object.fromEntries(filteredGroups.map(g=>[g.id,true]))); }}/>
-              Select all
-            </label>
-            <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'#9A5B26':'var(--bg-subtle)', border:'none', color:selectedGroups.length?'#FAF8F5':'var(--text-muted)', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
-              <Icon name="download" size={14} color={selectedGroups.length?'#FAF8F5':'var(--text-muted)'}/>Bulk download{selectedGroups.length?` (${selectedGroups.length})`:''}
-            </button>
-            <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
-              <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={handleBulkUpload}/>
-              <Icon name="upload" size={14} color="#9A5B26"/>Bulk upload
-            </label>
-          </div>
-
-          {bulkUpMsg && (
-            <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:bulkUpMsg.count?'var(--tint-green-bg)':'var(--tint-amber-bg)', border:`1px solid ${bulkUpMsg.count?'var(--tint-green-border)':'var(--tint-amber-border)'}`, borderRadius:12, padding:'11px 13px', marginBottom:12, fontSize:12, color:bulkUpMsg.count?'var(--tint-green-text)':'var(--tint-amber-text)', lineHeight:1.5 }}>
-              <Icon name={bulkUpMsg.count?'check':'info'} size={15} color={bulkUpMsg.count?'var(--tint-green-text)':'var(--tint-amber-text)'} style={{ marginTop:1 }}/>
+      {aTab === 'photos' && (() => {
+        const epGrid = '26px minmax(0,2.5fr) minmax(0,1.8fr)';
+        return (
+        <TableShell
+          title="Event Pictures" subtitle="Vendor product photos come from their profile. Booth sharers are grouped with the main vendor."
+          aboveControls={
+            <div style={{ marginBottom:0 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
+              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPhotoSel({}); setBulkUpMsg(null); }} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif", marginBottom:16 }}>
+                {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+              </select>
+            </div>
+          }
+          banner={bulkUpMsg && (
+            <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:bulkUpMsg.count?'rgba(90,145,110,0.14)':'rgba(214,152,66,0.14)', border:`1px solid ${bulkUpMsg.count?'rgba(90,145,110,0.3)':'rgba(214,152,66,0.3)'}`, borderRadius:14, padding:'11px 13px', marginBottom:14, fontSize:12, color:bulkUpMsg.count?'#3F7A54':'#9A6A1E', lineHeight:1.5 }}>
+              <Icon name={bulkUpMsg.count?'check':'info'} size={15} color={bulkUpMsg.count?'#3F7A54':'#9A6A1E'} style={{ marginTop:1 }}/>
               <div style={{ flex:1 }}>
                 {bulkUpMsg.count > 0 && <div><b>{bulkUpMsg.count} photo(s)</b> uploaded to <b>{bulkUpMsg.vendors} vendor(s)</b>. Vendors can now download them from their portal.</div>}
                 {bulkUpMsg.unmatched.length > 0 && <div style={{ marginTop:bulkUpMsg.count?4:0 }}>Folders that didn't match any vendor in this event: <b>{bulkUpMsg.unmatched.join(', ')}</b>. Rename them to the exact business name and try again.</div>}
               </div>
-              <button onClick={()=>setBulkUpMsg(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}><Icon name="x" size={14} color={bulkUpMsg.count?'var(--tint-green-text)':'var(--tint-amber-text)'}/></button>
+              <button onClick={()=>setBulkUpMsg(null)} style={{ background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0 }}><Icon name="x" size={14} color={bulkUpMsg.count?'#3F7A54':'#9A6A1E'}/></button>
             </div>
           )}
-
-          {filteredGroups.length === 0 && (
-            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-              {searchQ ? `No vendors match "${vendorSearch}".` : photoFilter==='new' ? 'All booths for this event have been downloaded — nothing new.' : 'No approved vendors for this event yet.'}
+          panelTitle="Booth Groups"
+          searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+          filterControl={<FilterPill label={photoFilter==='all'?'All vendors':'New — not downloaded'} value={photoFilter} onChange={v=>{ setPhotoFilter(v); setPhotoSel({}); set({page:1}); }} options={[['all','All vendors'],['new',`New — not downloaded (${boothGroups.filter(g=>!groupDownloaded(g)).length})`]]}/>}
+          toolbar={
+            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:16 }}>
+              <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:700, color:'#6B4E33', cursor:'pointer', background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', borderRadius:9, padding:'8px 12px' }}>
+                <input type="checkbox" style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}
+                  checked={filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id])}
+                  onChange={()=>{ const all = filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id]); setPhotoSel(all ? {} : Object.fromEntries(filteredGroups.map(g=>[g.id,true]))); }}/>
+                Select all
+              </label>
+              <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(154,91,38,0.1)', border:'none', color:selectedGroups.length?'#FFF8EE':'#B8A48C', fontSize:12, fontWeight:700, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
+                <Icon name="download" size={14} color={selectedGroups.length?'#FFF8EE':'#B8A48C'}/>Bulk download{selectedGroups.length?` (${selectedGroups.length})`:''}
+              </button>
+              <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+                <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={handleBulkUpload}/>
+                <Icon name="upload" size={14} color="#6B4E33"/>Bulk upload
+              </label>
             </div>
-          )}
-
-          <div className="admin-cards">
-            {pagedGroups.map((g,idx) => {
-              const isSel = !!photoSel[g.id];
-              const mainV = vById(g.members[0]);
-              return (
-                <div key={g.id} style={{ background:'var(--bg-card)', border:`1.5px solid ${isSel?'#9A5B26':'var(--border-light)'}`, borderRadius:16, padding:14 }}>
-                  <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
-                    <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#9A5B26', width:16, height:16, cursor:'pointer', flexShrink:0 }}/>
+          }
+          headerCells={<><div/><div>Vendor</div><div>Booth</div></>}
+          gridTemplate={epGrid} minWidth={620}
+          isEmpty={pagedGroups.length===0}
+          emptyMessage={searchQ ? `No vendors match "${vendorSearch}".` : photoFilter==='new' ? 'All booths for this event have been downloaded — nothing new.' : 'No approved vendors for this event yet.'}
+          total={filteredGroups.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+        >
+          {pagedGroups.map((g,idx) => {
+            const isSel = !!photoSel[g.id];
+            const mainV = vById(g.members[0]);
+            return (
+              <div key={g.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div style={{ display:'grid', gridTemplateColumns:epGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
+                  <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={mainV} size={34}/>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
-                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
+                  </div>
+                  <div>
                     {g.shared && (
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', background:'var(--tint-pink-bg)', borderRadius:999, padding:'4px 10px', flexShrink:0 }}>
-                        <Icon name="users" size={12} color="#9A5B26"/>Shared booth · {g.members.length} vendors
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, color:'#9A5B26', background:'rgba(154,91,38,0.14)', borderRadius:999, padding:'4px 10px' }}>
+                        <Icon name="users" size={12} color="#9A5B26"/>Shared · {g.members.length} vendors
                       </span>
                     )}
-                  </label>
+                  </div>
+                </div>
+                <div style={{ margin:'0 14px 14px' }}>
                   {g.members.map((vid, mi) => {
                     const v = vById(vid);
                     const key = `${vid}-${filterEvent}`;
                     const dl = photoDownloads[key];
                     const adminPhotos = eventPhotos[key] || [];
                     return (
-                      <div key={vid} style={{ marginTop:12, paddingTop:mi>0?12:0, borderTop:mi>0?'1px dashed var(--border-light)':'none' }}>
+                      <div key={vid} style={{ marginTop:mi>0?12:0, paddingTop:mi>0?12:0, borderTop:mi>0?'1px dashed rgba(154,91,38,0.16)':'none' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</span>
-                          {mi>0 && <span style={{ fontSize:10.5, fontWeight:600, color:'var(--text-muted)', background:'var(--bg-subtle)', borderRadius:6, padding:'2px 7px' }}>Booth sharer</span>}
-                          {dl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:600, color:'var(--tint-green-text)', background:'var(--tint-green-bg)', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="var(--tint-green-text)"/>Downloaded {dl}</span>}
+                          <span style={{ fontSize:13, fontWeight:700, color:'#3A2210' }}>{v.business}</span>
+                          {mi>0 && <span style={{ fontSize:10.5, fontWeight:700, color:'#8A6A4A', background:'rgba(154,91,38,0.08)', borderRadius:6, padding:'2px 7px' }}>Booth sharer</span>}
+                          {dl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, color:'#3F7A54', background:'rgba(90,145,110,0.16)', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="#3F7A54"/>Downloaded {dl}</span>}
                           <div style={{ flex:1 }}/>
-                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:11.5, fontWeight:600, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
-                            <Icon name="download" size={12} color="#9A5B26"/>Download ({(v.productPhotos||[]).length})
+                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
+                            <Icon name="download" size={12} color="#6B4E33"/>Download ({(v.productPhotos||[]).length})
                           </button>
                         </div>
-                        <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', marginTop:9 }}>Product photos ({(v.productPhotos||[]).length}) — from vendor profile</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#8A6A4A', marginTop:9 }}>Product photos ({(v.productPhotos||[]).length}) — from vendor profile</div>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:6 }}>
                           {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={64}/>)}
-                          {!(v.productPhotos||[]).length && <span style={{ fontSize:11.5, color:'var(--text-muted)' }}>None uploaded yet.</span>}
+                          {!(v.productPhotos||[]).length && <span style={{ fontSize:11.5, color:'#8A6A4A' }}>None uploaded yet.</span>}
                         </div>
-                        <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', marginTop:11 }}>Event photos for vendor ({adminPhotos.length}) — vendor downloads these</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#8A6A4A', marginTop:11 }}>Event photos for vendor ({adminPhotos.length}) — vendor downloads these</div>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:6, alignItems:'center' }}>
                           {adminPhotos.map(ph => (
                             <PhotoTile key={ph.id} photo={ph} size={64} onRemove={()=>{
@@ -1605,7 +1746,7 @@ export default function AdminDashboard() {
                               showToast('Photo removed','x');
                             }}/>
                           ))}
-                          <label style={{ width:64, height:64, borderRadius:10, border:'2px dashed var(--border-dashed)', background:'var(--bg-subtle-alt)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, cursor:'pointer', flexShrink:0 }}>
+                          <label style={{ width:64, height:64, borderRadius:10, border:'2px dashed rgba(154,91,38,0.3)', background:'rgba(154,91,38,0.06)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, cursor:'pointer', flexShrink:0 }}>
                             <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e => {
                               const files = [...e.target.files]; e.target.value = '';
                               if (!files.length) return;
@@ -1614,166 +1755,171 @@ export default function AdminDashboard() {
                               logActivity('Admin', `uploaded ${added.length} event photo(s) for ${v.business} — ${curEv.name}.`, {icon:'upload', tint:'var(--tint-green-bg)'});
                               showToast(`${added.length} photo(s) uploaded for ${v.business}`,'image');
                             }}/>
-                            <Icon name="upload" size={16} color="#9A5B26"/><span style={{ fontSize:8.5, fontWeight:600, color:'#9A5B26' }}>Upload</span>
+                            <Icon name="upload" size={16} color="#9A5B26"/><span style={{ fontSize:8.5, fontWeight:700, color:'#9A5B26' }}>Upload</span>
                           </label>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              );
-            })}
-          </div>
-          <Pager total={filteredGroups.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-        </div>
-      )}
+              </div>
+            );
+          })}
+        </TableShell>
+        );
+      })()}
 
       {/* ── Vendor Pass ── */}
-      {aTab === 'pass' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:14, flexWrap:'wrap' }}>
-            <div style={{ flex:'1 1 240px', minWidth:0 }}>
-              <div style={lbl}>Select event</div>
-              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}>
-                {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
+      {aTab === 'pass' && (() => {
+        const vpGrid = 'minmax(0,2.2fr) minmax(0,1.6fr) minmax(0,1.4fr)';
+        return (
+        <TableShell
+          title="Vendor Pass" subtitle="Digital pass applications for approved vendors, grouped by event."
+          aboveControls={
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:16, flexWrap:'wrap' }}>
+              <div style={{ flex:'1 1 240px', minWidth:0 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
+                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
+                  {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+              </div>
+              <button
+                disabled={passReportBusy}
+                onClick={async ()=>{
+                  setPassReportBusy(true);
+                  try {
+                    await downloadPassReport(curEv, passApps, vendors);
+                    logActivity('Admin', `exported the Vendor Pass report for ${curEv.name}.`, { icon:'download', tint:'var(--tint-blue-bg)' });
+                    showToast('Vendor Pass report downloaded','download');
+                  } finally { setPassReportBusy(false); }
+                }}
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor: passReportBusy?'default':'pointer', flexShrink:0, fontFamily:"'Karla',sans-serif" }}>
+                <Icon name="download" size={14} color="#6B4E33"/>{passReportBusy ? 'Preparing…' : 'Export report (PDF)'}
+              </button>
             </div>
-            <button
-              disabled={passReportBusy}
-              onClick={async ()=>{
-                setPassReportBusy(true);
-                try {
-                  await downloadPassReport(curEv, passApps, vendors);
-                  logActivity('Admin', `exported the Vendor Pass report for ${curEv.name}.`, { icon:'download', tint:'var(--tint-blue-bg)' });
-                  showToast('Vendor Pass report downloaded','download');
-                } finally { setPassReportBusy(false); }
-              }}
-              style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'11px 14px', cursor: passReportBusy?'default':'pointer', flexShrink:0 }}>
-              <Icon name="download" size={14} color="#9A5B26"/>{passReportBusy ? 'Preparing…' : 'Export report (PDF)'}
-            </button>
-          </div>
-          <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-          {searchQ && searchedApprovedApps.length === 0 && <NoSearchMatch query={vendorSearch}/>}
-          <div className="admin-cards">
-            {pagedPass.map((a,idx) => {
-              const v = vById(a.vendorId);
-              const ev = events.find(e=>e.id===a.eventId) || {};
-              const passApp = passApps.find(p=>p.vendorId===a.vendorId && p.eventId===a.eventId);
+          }
+          panelTitle="Pass Applications"
+          searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+          headerCells={<><div>Vendor</div><div>Booth number</div><div>Summary</div></>}
+          gridTemplate={vpGrid} minWidth={680}
+          isEmpty={pagedPass.length===0}
+          emptyMessage={searchQ ? `No vendors match "${vendorSearch}".` : 'No approved applicants for this event yet.'}
+          total={searchedApprovedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+        >
+          {pagedPass.map((a,idx) => {
+            const v = vById(a.vendorId);
+            const ev = events.find(e=>e.id===a.eventId) || {};
+            const passApp = passApps.find(p=>p.vendorId===a.vendorId && p.eventId===a.eventId);
 
-              const decidePerson = (person, status, rejectReason=null) => {
-                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, people: p.people.map(pp=>pp.id===person.id ? { ...pp, status, rejectReason, decidedAt:fmtShort(new Date()) } : pp) } : p) });
-                logActivity('Admin', `${status==='approved'?'approved':'rejected'} ${person.name}'s Vendor Pass — ${v.business}, ${ev.name}.${status==='rejected' && rejectReason ? ` Reason: ${rejectReason}` : ''}`, { icon: status==='approved'?'check':'x', tint: status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
-                showToast(`Pass ${status}`, status==='approved'?'check':'x');
-                setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther('');
-              };
-              const confirmReject = (person) => {
-                const reason = rejectReasonKey === 'other' ? rejectReasonOther.trim() : PASS_REJECT_REASONS[rejectReasonKey];
-                if (!reason) { showToast('Pick a reason (or describe one) first','info'); return; }
-                decidePerson(person, 'rejected', reason);
-              };
-              const updateBooth = (val) => {
-                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, boothNumber:val } : p) });
-              };
-              const confirmAddPass = () => {
-                const count = Number(addPassCount) || 1;
-                dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:(p.extraApproved||0)+count } : p) });
-                logActivity('Admin', `granted ${v.business} ${count} additional Vendor Pass slot${count>1?'s':''} — ${ev.name}.`, { icon:'badge', tint:'var(--tint-green-bg)' });
-                showToast(`${count} additional pass slot${count>1?'s':''} granted`,'check');
-                setAddingPassFor(null); setAddPassCount(1);
-              };
+            const decidePerson = (person, status, rejectReason=null) => {
+              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, people: p.people.map(pp=>pp.id===person.id ? { ...pp, status, rejectReason, decidedAt:fmtShort(new Date()) } : pp) } : p) });
+              logActivity('Admin', `${status==='approved'?'approved':'rejected'} ${person.name}'s Vendor Pass — ${v.business}, ${ev.name}.${status==='rejected' && rejectReason ? ` Reason: ${rejectReason}` : ''}`, { icon: status==='approved'?'check':'x', tint: status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
+              showToast(`Pass ${status}`, status==='approved'?'check':'x');
+              setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther('');
+            };
+            const confirmReject = (person) => {
+              const reason = rejectReasonKey === 'other' ? rejectReasonOther.trim() : PASS_REJECT_REASONS[rejectReasonKey];
+              if (!reason) { showToast('Pick a reason (or describe one) first','info'); return; }
+              decidePerson(person, 'rejected', reason);
+            };
+            const updateBooth = (val) => {
+              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, boothNumber:val } : p) });
+            };
+            const confirmAddPass = () => {
+              const count = Number(addPassCount) || 1;
+              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:(p.extraApproved||0)+count } : p) });
+              logActivity('Admin', `granted ${v.business} ${count} additional Vendor Pass slot${count>1?'s':''} — ${ev.name}.`, { icon:'badge', tint:'var(--tint-green-bg)' });
+              showToast(`${count} additional pass slot${count>1?'s':''} granted`,'check');
+              setAddingPassFor(null); setAddPassCount(1);
+            };
 
-              const statusCounts = passApp ? passApp.people.reduce((m,p)=>{ m[p.status]=(m[p.status]||0)+1; return m; }, {}) : {};
-              const summaryParts = ['approved','pending','rejected'].filter(s=>statusCounts[s]).map(s=>`${statusCounts[s]} ${s}`);
+            const statusCounts = passApp ? passApp.people.reduce((m,p)=>{ m[p.status]=(m[p.status]||0)+1; return m; }, {}) : {};
+            const summaryParts = ['approved','pending','rejected'].filter(s=>statusCounts[s]).map(s=>`${statusCounts[s]} ${s}`);
 
-              return (
-                <div key={a.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, flex:1, minWidth:0 }}>
-                      <VendorAvatar v={v} size={36}/>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}><span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginRight:7 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                        <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:3 }}>
-                          {!passApp ? 'No Vendor Pass application yet' : `${passApp.people.length} pass holder${passApp.people.length!==1?'s':''}${summaryParts.length?` · ${summaryParts.join(', ')}`:''}${passApp.extraApproved?` · +${passApp.extraApproved} extra approved`:''} · submitted ${passApp.submittedAt}`}
-                        </div>
-                      </div>
-                    </div>
+            return (
+              <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div style={{ display:'grid', gridTemplateColumns:vpGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                    <VendorAvatar v={v} size={36}/>
+                    <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                   </div>
+                  <div>
+                    {passApp ? (
+                      <input value={passApp.boothNumber||''} onChange={e=>updateBooth(e.target.value)} placeholder="e.g. A12" style={{ width:'100%', maxWidth:140, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:9, padding:'8px 10px', fontSize:13, color:'#3A2210', outline:'none' }}/>
+                    ) : <span style={{ fontSize:12, color:'#B8A48C' }}>—</span>}
+                  </div>
+                  <div style={{ fontSize:11.5, color:'#6B4E33' }}>
+                    {!passApp ? 'No application yet' : `${passApp.people.length} holder${passApp.people.length!==1?'s':''}${summaryParts.length?` · ${summaryParts.join(', ')}`:''}${passApp.extraApproved?` · +${passApp.extraApproved} extra`:''}`}
+                  </div>
+                </div>
 
-                  {passApp && (
-                    <>
-                      <div style={{ marginTop:12 }}>
-                        <label style={{ display:'block', fontSize:11, fontWeight:600, color:'var(--text-secondary)', marginBottom:5 }}>Booth number</label>
-                        <input value={passApp.boothNumber||''} onChange={e=>updateBooth(e.target.value)} placeholder="e.g. A12" style={{ ...inp, maxWidth:180, padding:'9px 11px', fontSize:13 }}/>
-                      </div>
-
-                      <div style={{ display:'flex', flexDirection:'column', gap:9, marginTop:12 }}>
-                        {passApp.people.map(p => (
-                          <div key={p.id} style={{ background:'var(--bg-subtle-alt)', borderRadius:12, padding:'9px 10px' }}>
-                            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                              <div onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0, cursor:'pointer' }}>
-                                <PhotoTile photo={p.photo} size={34}/>
-                                <span style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
-                                <Icon name="eye" size={12} color="var(--text-muted)"/>
-                              </div>
-                              <Badge status={p.status}/>
+                {passApp && (
+                  <div style={{ margin:'0 14px 14px' }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+                      {passApp.people.map(p => (
+                        <div key={p.id} style={{ background:'rgba(154,91,38,0.06)', borderRadius:12, padding:'9px 10px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0, cursor:'pointer' }}>
+                              <PhotoTile photo={p.photo} size={34}/>
+                              <span style={{ fontSize:12.5, fontWeight:700, color:'#3A2210', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
+                              <Icon name="eye" size={12} color="#8A6A4A"/>
                             </div>
-
-                            {p.status === 'rejected' && p.rejectReason && (
-                              <div style={{ fontSize:11.5, color:'var(--tint-red-text)', marginTop:7, lineHeight:1.4 }}>Reason: {p.rejectReason}</div>
-                            )}
-
-                            {p.status === 'pending' && rejectingPersonId !== p.id && (
-                              <div style={{ display:'flex', gap:8, marginTop:9 }}>
-                                <button onClick={()=>decidePerson(p, 'approved')} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
-                                <button onClick={()=>{ setRejectingPersonId(p.id); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
-                              </div>
-                            )}
-
-                            {rejectingPersonId === p.id && (
-                              <div style={{ marginTop:9, background:'var(--bg-card)', border:'1px solid var(--border-medium)', borderRadius:10, padding:10 }}>
-                                <div style={{ fontSize:11, fontWeight:600, color:'var(--text-primary)', marginBottom:7 }}>Why reject {p.name}'s photo?</div>
-                                <select value={rejectReasonKey} onChange={e=>setRejectReasonKey(e.target.value)} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'var(--text-primary)', outline:'none' }}>
-                                  <option value="">Select a reason…</option>
-                                  {Object.entries(PASS_REJECT_REASONS).map(([k,label]) => <option key={k} value={k}>{label}</option>)}
-                                </select>
-                                {rejectReasonKey === 'other' && (
-                                  <textarea value={rejectReasonOther} onChange={e=>setRejectReasonOther(e.target.value)} placeholder="Describe the reason" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'var(--text-primary)', outline:'none', marginTop:8, minHeight:52, resize:'none', boxSizing:'border-box' }}/>
-                                )}
-                                <div style={{ display:'flex', gap:8, marginTop:9 }}>
-                                  <button onClick={()=>{ setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'var(--bg-subtle)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
-                                  <button onClick={()=>confirmReject(p)} style={{ flex:1, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Confirm reject</button>
-                                </div>
-                              </div>
-                            )}
+                            <Badge status={p.status}/>
                           </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
 
-                  {passApp && (
-                    addingPassFor === passApp.id ? (
-                      <div style={{ marginTop:12, background:'var(--bg-subtle-alt)', borderRadius:12, padding:10 }}>
-                        <div style={{ fontSize:11, fontWeight:600, color:'var(--text-primary)', marginBottom:7 }}>How many additional pass slots to grant?</div>
+                          {p.status === 'rejected' && p.rejectReason && (
+                            <div style={{ fontSize:11.5, color:'#B03A2E', marginTop:7, lineHeight:1.4 }}>Reason: {p.rejectReason}</div>
+                          )}
+
+                          {p.status === 'pending' && rejectingPersonId !== p.id && (
+                            <div style={{ display:'flex', gap:8, marginTop:9 }}>
+                              <button onClick={()=>decidePerson(p, 'approved')} style={{ flex:1, background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                              <button onClick={()=>{ setRejectingPersonId(p.id); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                            </div>
+                          )}
+
+                          {rejectingPersonId === p.id && (
+                            <div style={{ marginTop:9, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', borderRadius:10, padding:10 }}>
+                              <div style={{ fontSize:11, fontWeight:700, color:'#3A2210', marginBottom:7 }}>Why reject {p.name}'s photo?</div>
+                              <select value={rejectReasonKey} onChange={e=>setRejectReasonKey(e.target.value)} style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.9)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'#3A2210', outline:'none' }}>
+                                <option value="">Select a reason…</option>
+                                {Object.entries(PASS_REJECT_REASONS).map(([k,label]) => <option key={k} value={k}>{label}</option>)}
+                              </select>
+                              {rejectReasonKey === 'other' && (
+                                <textarea value={rejectReasonOther} onChange={e=>setRejectReasonOther(e.target.value)} placeholder="Describe the reason" style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.9)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'#3A2210', outline:'none', marginTop:8, minHeight:52, resize:'none', boxSizing:'border-box' }}/>
+                              )}
+                              <div style={{ display:'flex', gap:8, marginTop:9 }}>
+                                <button onClick={()=>{ setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'rgba(154,91,38,0.08)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
+                                <button onClick={()=>confirmReject(p)} style={{ flex:1, background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Confirm reject</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {addingPassFor === passApp.id ? (
+                      <div style={{ marginTop:12, background:'rgba(154,91,38,0.06)', borderRadius:12, padding:10 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#3A2210', marginBottom:7 }}>How many additional pass slots to grant?</div>
                         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                          <input type="number" min={1} value={addPassCount} onChange={e=>setAddPassCount(e.target.value)} style={{ width:70, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 9px', fontSize:13, color:'var(--text-primary)', outline:'none' }}/>
-                          <button onClick={()=>{ setAddingPassFor(null); setAddPassCount(1); }} style={{ flex:1, background:'var(--bg-subtle)', border:'1px solid var(--border-medium)', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
-                          <button onClick={confirmAddPass} style={{ flex:1, background:'var(--tint-green-bg)', border:'none', color:'var(--tint-green-text)', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Grant</button>
+                          <input type="number" min={1} value={addPassCount} onChange={e=>setAddPassCount(e.target.value)} style={{ width:70, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:9, padding:'8px 9px', fontSize:13, color:'#3A2210', outline:'none' }}/>
+                          <button onClick={()=>{ setAddingPassFor(null); setAddPassCount(1); }} style={{ flex:1, background:'rgba(154,91,38,0.08)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
+                          <button onClick={confirmAddPass} style={{ flex:1, background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Grant</button>
                         </div>
                       </div>
                     ) : (
-                      <button onClick={()=>{ setAddingPassFor(passApp.id); setAddPassCount(1); }} style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:6, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
-                        <Icon name="plus" size={13} color="#9A5B26"/>Add pass
+                      <button onClick={()=>{ setAddingPassFor(passApp.id); setAddPassCount(1); }} style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:6, background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
+                        <Icon name="plus" size={13} color="#6B4E33"/>Add pass
                       </button>
-                    )
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <Pager total={searchedApprovedApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-        </div>
-      )}
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </TableShell>
+        );
+      })()}
 
       {/* ── Categories ── */}
       {aTab === 'categories' && (
@@ -2016,171 +2162,203 @@ export default function AdminDashboard() {
       )}
 
       {/* ── Compliance ── */}
-      {aTab === 'compliance' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', marginBottom:13, display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-            <div style={{ flex:1, minWidth:200 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Offence policy</div>
-              <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2, lineHeight:1.4 }}>Vendors with offences sit out this many upcoming markets. A reminder appears on their next applications, with an override option.</div>
+      {aTab === 'compliance' && (() => {
+        const policyAndTabs = (
+          <>
+            <div style={{ background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:16, padding:'13px 14px', marginBottom:13, display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+              <div style={{ flex:1, minWidth:200 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'#3A2210' }}>Offence policy</div>
+                <div style={{ fontSize:11.5, color:'#8A6A4A', marginTop:2, lineHeight:1.4 }}>Vendors with offences sit out this many upcoming markets. A reminder appears on their next applications, with an override option.</div>
+              </div>
+              <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                {[1,2].map(n => (
+                  <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(255,255,255,0.6)', border:`1px solid ${skipN===n?'transparent':'rgba(154,91,38,0.22)'}`, color:skipN===n?'#FFF8EE':'#6B4E33', fontSize:12.5, fontWeight:700, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
+                    Skip {n} market{n>1?'s':''}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-              {[1,2].map(n => (
-                <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'#9A5B26':'var(--bg-card)', border:`1px solid ${skipN===n?'#9A5B26':'var(--border-medium)'}`, color:skipN===n?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
-                  Skip {n} market{n>1?'s':''}
-                </button>
+            <div style={{ display:'flex', background:'rgba(154,91,38,0.08)', borderRadius:12, padding:4, gap:4, marginBottom:16 }}>
+              {[['log','Log offences'],['review','Vendor review']].map(([id,label]) => (
+                <button key={id} onClick={()=>set({compTab:id})} style={{ flex:1, border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:compTab===id?'rgba(255,255,255,0.9)':'transparent', color:compTab===id?'#3A2210':'#8A6A4A', boxShadow:compTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
               ))}
             </div>
-          </div>
-          <div style={{ display:'flex', background:'var(--bg-subtle)', borderRadius:12, padding:4, gap:4, marginBottom:14 }}>
-            {[['log','Log offences'],['review','Vendor review']].map(([id,label]) => (
-              <button key={id} onClick={()=>set({compTab:id})} style={{ flex:1, border:'none', fontSize:13, fontWeight:600, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:compTab===id?'var(--bg-card)':'transparent', color:compTab===id?'var(--text-primary)':'var(--text-secondary)', boxShadow:compTab===id?'0 1px 4px rgba(0,0,0,0.08)':'none' }}>{label}</button>
-            ))}
-          </div>
+          </>
+        );
 
-          {compTab === 'log' && (
-            <>
-              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:14, display:'flex', gap:9, marginBottom:14 }}>
-                <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
-                <button onClick={()=>{
-                  const n = newOffType.trim();
-                  if (!n) return;
-                  if (Object.values(offenseTypes).some(t=>t.label.toLowerCase()===n.toLowerCase())) { showToast('That offence type already exists','info'); return; }
-                  const pal = OFFENSE_PALETTE[Object.keys(offenseTypes).length % OFFENSE_PALETTE.length];
-                  dispatch({type:'MERGE_OFFENSE_TYPES', payload:{ ...offenseTypes, ['ot'+Date.now()]: { label:n, color:pal.color, bg:pal.bg } }});
-                  set({newOffType:''});
-                  logActivity('Admin', `added the "${n}" offence type.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
-                  showToast('Offence type added','shield');
-                }} style={{ background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 16px', cursor:'pointer' }}>Add</button>
-              </div>
-              <div style={lbl}>Event</div>
-              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:14 }}>
-                {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
-              <div className="admin-cards">
-                {Object.entries(offenseTypes).map(([type,ot]) => {
-                  const sel = compSel[type]||[];
-                  const eventVendors = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
-                  return (
-                    <div key={type} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                        <span style={{ width:10, height:10, borderRadius:'50%', background:ot.color, flexShrink:0 }}/>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{ot.label}</div>
-                        </div>
-                        {offenses.every(o=>o.type!==type) && (
-                          <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'var(--bg-subtle)', border:'none', width:26, height:26, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
-                            <Icon name="x" size={13} color="var(--text-muted)"/>
-                          </button>
-                        )}
+        if (compTab === 'review') {
+          const crGrid = 'minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)';
+          const reviewList = searchVendors(vendors);
+          const reviewPaged = reviewList.slice((page-1)*PER_PAGE, page*PER_PAGE);
+          return (
+            <TableShell
+              title="Compliance" subtitle="Per-vendor offence history and evidence."
+              aboveControls={policyAndTabs}
+              banner={
+                <div style={{ background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:16, padding:'13px 14px', marginBottom:14 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:'#3A2210', marginBottom:9 }}>Offence legend</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 16px' }}>
+                    {Object.entries(offenseTypes).map(([type,ot]) => (
+                      <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, color:'#6B4E33' }}>
+                        <span style={{ width:8, height:8, borderRadius:'50%', background:ot.color }}/>
+                        {ot.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              }
+              panelTitle="Vendor Review"
+              searchValue={vendorSearch} onSearchChange={setVendorSearch} searchPlaceholder="Search by business or owner name"
+              headerCells={<><div>Vendor</div><div>Category</div><div style={{ textAlign:'right' }}>Offences</div></>}
+              gridTemplate={crGrid} minWidth={620}
+              isEmpty={reviewPaged.length===0}
+              emptyMessage={`No vendors match "${vendorSearch}".`}
+              total={reviewList.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
+            >
+              {reviewPaged.map((v,idx) => {
+                const vOff = offenses.filter(o=>o.vendorId===v.id);
+                return (
+                  <div key={v.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                    <div style={{ display:'grid', gridTemplateColumns:crGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+                        <VendorAvatar v={v} size={34}/>
+                        <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                       </div>
-                      {sel.length > 0 && (
-                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
-                          {sel.map(vid => (
-                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--tint-pink-bg)', border:'1px solid #E3CBA0', color:'#9A5B26', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
-                              {vById(vid).business}<Icon name="x" size={13} color="#9A5B26"/>
+                      <div style={{ fontSize:12.5, color:'#6B4E33' }}>{v.category}</div>
+                      <div style={{ display:'flex', justifyContent:'flex-end' }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:999, padding:'5px 11px' }}>{vOff.length} total</span>
+                      </div>
+                    </div>
+                    {vOff.length === 0 ? (
+                      <div style={{ margin:'0 14px 13px', fontSize:11.5, color:'#8A6A4A' }}>No offences on record.</div>
+                    ) : (
+                      <div style={{ margin:'0 14px 13px', display:'flex', flexDirection:'column', gap:8 }}>
+                        {vOff.map(o => {
+                          const ot = offenseTypes[o.type]||{};
+                          const oPhotos = o.photos||[];
+                          const updOffense = (patch) => dispatch({type:'MERGE_OFFENSES', payload: offenses.map(x=>x.id===o.id?{...x,...patch}:x)});
+                          return (
+                            <div key={o.id} style={{ background:'rgba(154,91,38,0.06)', borderRadius:11, padding:'10px 11px' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                                <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>
+                                <span style={{ fontSize:11.5, color:'#6B4E33' }}>{eById(o.eventId).name || 'Unknown event'}</span>
+                                <button title="Remove this offence" onClick={()=>{ if(!window.confirm(`Remove this ${ot.label||'offence'} record for ${v.business}?`)) return; dispatch({type:'MERGE_OFFENSES', payload: offenses.filter(x=>x.id!==o.id)}); logActivity('Admin', `removed a ${ot.label||'offence'} record for ${v.business}.`, {icon:'shield', tint:'var(--bg-subtle)'}); showToast('Offence removed','x'); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', padding:2, flexShrink:0 }}>
+                                  <Icon name="x" size={13} color="#8A6A4A"/>
+                                </button>
+                              </div>
+                              <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:9, alignItems:'center' }}>
+                                {oPhotos.map(ph => (
+                                  <PhotoTile key={ph.id} photo={ph} size={56} onRemove={()=>{ updOffense({photos: oPhotos.filter(x=>x.id!==ph.id)}); showToast('Evidence photo removed','x'); }}/>
+                                ))}
+                                <label title="Upload evidence photos the vendor can see" style={{ width:56, height:56, borderRadius:10, border:'2px dashed rgba(154,91,38,0.3)', background:'rgba(255,255,255,0.7)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1, cursor:'pointer', flexShrink:0 }}>
+                                  <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e=>{
+                                    const files = [...e.target.files]; e.target.value='';
+                                    if (!files.length) return;
+                                    const added = await Promise.all(files.map(fileToPhoto));
+                                    updOffense({photos:[...oPhotos, ...added]});
+                                    logActivity('Admin', `added ${added.length} evidence photo(s) to ${v.business}'s ${ot.label||'offence'} record.`, {icon:'camera', tint:'var(--tint-pink-bg)'});
+                                    showToast(`${added.length} photo(s) added — visible to the vendor`,'camera');
+                                  }}/>
+                                  <Icon name="upload" size={14} color="#9A5B26"/><span style={{ fontSize:8, fontWeight:700, color:'#9A5B26' }}>Photo</span>
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </TableShell>
+          );
+        }
+
+        // Log offences: each row is an offence *type* with a vendor multi-select,
+        // not a vendor listing — doesn't fit the vendor-row table pattern, so it
+        // keeps its own glass-card layout (restyled to match) rather than being
+        // forced into TableShell.
+        return (
+          <div style={{ position:'relative', padding:'28px 24px 32px' }}>
+            <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
+              <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
+              <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+            </div>
+            <div style={{ position:'relative', zIndex:1 }}>
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Compliance</div>
+                <div style={{ fontSize:14, color:'#8A6A4A' }}>Tag vendors with an offence type for the selected market.</div>
+              </div>
+              {policyAndTabs}
+              <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+                <div style={{ display:'flex', gap:9, marginBottom:16 }}>
+                  <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'#3A2210', outline:'none' }}/>
+                  <button onClick={()=>{
+                    const n = newOffType.trim();
+                    if (!n) return;
+                    if (Object.values(offenseTypes).some(t=>t.label.toLowerCase()===n.toLowerCase())) { showToast('That offence type already exists','info'); return; }
+                    const pal = OFFENSE_PALETTE[Object.keys(offenseTypes).length % OFFENSE_PALETTE.length];
+                    dispatch({type:'MERGE_OFFENSE_TYPES', payload:{ ...offenseTypes, ['ot'+Date.now()]: { label:n, color:pal.color, bg:pal.bg } }});
+                    set({newOffType:''});
+                    logActivity('Admin', `added the "${n}" offence type.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
+                    showToast('Offence type added','shield');
+                  }} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', border:'none', fontSize:14, fontWeight:700, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Add</button>
+                </div>
+                <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Event</div>
+                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:12, padding:'11px 13px', fontSize:14, color:'#3A2210', outline:'none', marginBottom:16, fontFamily:"'Karla',sans-serif" }}>
+                  {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+                <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+                  {Object.entries(offenseTypes).map(([type,ot]) => {
+                    const sel = compSel[type]||[];
+                    const eventVendors = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
+                    return (
+                      <div key={type} style={{ background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:14, padding:'13px 14px' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+                          <span style={{ width:10, height:10, borderRadius:'50%', background:ot.color, flexShrink:0 }}/>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>{ot.label}</div>
+                          </div>
+                          {offenses.every(o=>o.type!==type) && (
+                            <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'rgba(255,255,255,0.7)', border:'none', width:26, height:26, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                              <Icon name="x" size={13} color="#8A6A4A"/>
                             </button>
+                          )}
+                        </div>
+                        {sel.length > 0 && (
+                          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
+                            {sel.map(vid => (
+                              <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(154,91,38,0.14)', border:'1px solid rgba(154,91,38,0.22)', color:'#9A5B26', fontSize:11.5, fontWeight:700, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
+                                {vById(vid).business}<Icon name="x" size={13} color="#9A5B26"/>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:9 }}>
+                          {eventVendors.filter(vid=>!sel.includes(vid)).map(vid => (
+                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=[...(s[type]||[]),vid]; set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,0.7)', border:'1px dashed rgba(154,91,38,0.3)', color:'#6B4E33', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', cursor:'pointer' }}>+ {vById(vid).business}</button>
                           ))}
                         </div>
-                      )}
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:9 }}>
-                        {eventVendors.filter(vid=>!sel.includes(vid)).map(vid => (
-                          <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=[...(s[type]||[]),vid]; set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--bg-card)', border:'1px dashed var(--border-dashed)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:500, borderRadius:999, padding:'5px 11px', cursor:'pointer' }}>+ {vById(vid).business}</button>
-                        ))}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <button onClick={()=>{
-                const sel=compSel; const ev=filterEvent; const added=[]; let id=Date.now();
-                Object.entries(sel).forEach(([type,vids])=>(vids||[]).forEach(vid=>added.push({id:'o'+(id++),vendorId:vid,eventId:ev,type})));
-                if(!added.length){ showToast('Select at least one vendor first','info'); return; }
-                dispatch({type:'MERGE_OFFENSES',payload:[...offenses,...added]});
-                set({compSel:{}});
-                logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${curEv.name}.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
-                showToast(`${added.length} offence${added.length>1?'s':''} logged`,'shield');
-              }} className="cta" style={{ marginTop:14, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>
-                Log selected offences for {curEv.name}
-              </button>
-            </>
-          )}
-
-          {compTab === 'review' && (
-            <>
-              <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', marginBottom:13 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)', marginBottom:9 }}>Offence legend</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 16px' }}>
-                  {Object.entries(offenseTypes).map(([type,ot]) => (
-                    <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, color:'var(--text-secondary)' }}>
-                      <span style={{ width:8, height:8, borderRadius:'50%', background:ot.color }}/>
-                      {ot.label}
-                    </span>
-                  ))}
+                    );
+                  })}
                 </div>
+                <button onClick={()=>{
+                  const sel=compSel; const ev=filterEvent; const added=[]; let id=Date.now();
+                  Object.entries(sel).forEach(([type,vids])=>(vids||[]).forEach(vid=>added.push({id:'o'+(id++),vendorId:vid,eventId:ev,type})));
+                  if(!added.length){ showToast('Select at least one vendor first','info'); return; }
+                  dispatch({type:'MERGE_OFFENSES',payload:[...offenses,...added]});
+                  set({compSel:{}});
+                  logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${curEv.name}.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
+                  showToast(`${added.length} offence${added.length>1?'s':''} logged`,'shield');
+                }} style={{ marginTop:16, width:'100%', background:'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', border:'none', fontSize:14, fontWeight:700, borderRadius:12, padding:13, cursor:'pointer' }}>
+                  Log selected offences for {curEv.name}
+                </button>
               </div>
-              <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-              {searchQ && searchVendors(vendors).length === 0 && <NoSearchMatch query={vendorSearch}/>}
-              <div className="admin-cards">
-                {searchVendors(vendors).map((v,idx) => {
-                  const vOff = offenses.filter(o=>o.vendorId===v.id);
-                  return (
-                    <div key={v.id} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                          <VendorAvatar v={v} size={34}/>
-                          <div style={{ minWidth:0 }}>
-                            <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-                              <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>#{idx+1}</span>
-                              <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</span>
-                            </div>
-                            <div style={{ fontSize:11.5, color:'var(--text-secondary)', marginTop:1 }}>{v.category}</div>
-                          </div>
-                        </div>
-                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', background:'var(--bg-subtle)', borderRadius:999, padding:'5px 11px', flexShrink:0 }}>{vOff.length} total</span>
-                      </div>
-                      {vOff.length === 0 && (
-                        <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:9 }}>No offences on record.</div>
-                      )}
-                      {vOff.map(o => {
-                        const ot = offenseTypes[o.type]||{};
-                        const oPhotos = o.photos||[];
-                        const updOffense = (patch) => dispatch({type:'MERGE_OFFENSES', payload: offenses.map(x=>x.id===o.id?{...x,...patch}:x)});
-                        return (
-                          <div key={o.id} style={{ background:'var(--bg-subtle-alt)', borderRadius:11, padding:'10px 11px', marginTop:9 }}>
-                            <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                              <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>
-                              <span style={{ fontSize:11.5, color:'var(--text-secondary)' }}>{eById(o.eventId).name || 'Unknown event'}</span>
-                              <button title="Remove this offence" onClick={()=>{ if(!window.confirm(`Remove this ${ot.label||'offence'} record for ${v.business}?`)) return; dispatch({type:'MERGE_OFFENSES', payload: offenses.filter(x=>x.id!==o.id)}); logActivity('Admin', `removed a ${ot.label||'offence'} record for ${v.business}.`, {icon:'shield', tint:'var(--bg-subtle)'}); showToast('Offence removed','x'); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', padding:2, flexShrink:0 }}>
-                                <Icon name="x" size={13} color="var(--text-muted)"/>
-                              </button>
-                            </div>
-                            <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:9, alignItems:'center' }}>
-                              {oPhotos.map(ph => (
-                                <PhotoTile key={ph.id} photo={ph} size={56} onRemove={()=>{ updOffense({photos: oPhotos.filter(x=>x.id!==ph.id)}); showToast('Evidence photo removed','x'); }}/>
-                              ))}
-                              <label title="Upload evidence photos the vendor can see" style={{ width:56, height:56, borderRadius:10, border:'2px dashed var(--border-dashed)', background:'var(--bg-card)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1, cursor:'pointer', flexShrink:0 }}>
-                                <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e=>{
-                                  const files = [...e.target.files]; e.target.value='';
-                                  if (!files.length) return;
-                                  const added = await Promise.all(files.map(fileToPhoto));
-                                  updOffense({photos:[...oPhotos, ...added]});
-                                  logActivity('Admin', `added ${added.length} evidence photo(s) to ${v.business}'s ${ot.label||'offence'} record.`, {icon:'camera', tint:'var(--tint-pink-bg)'});
-                                  showToast(`${added.length} photo(s) added — visible to the vendor`,'camera');
-                                }}/>
-                                <Icon name="upload" size={14} color="#9A5B26"/><span style={{ fontSize:8, fontWeight:600, color:'#9A5B26' }}>Photo</span>
-                              </label>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Content ── */}
       {aTab === 'content' && (
