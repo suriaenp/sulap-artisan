@@ -2129,7 +2129,7 @@ export default function AdminDashboard() {
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Our Gallery section</div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The dark strip of 8 photo tiles near the bottom of the page. Recommended photo size: <strong>600 × 700px</strong> (portrait, ~6:7 ratio) — matches the tile's on-screen 300×280 shape at a sharp resolution. Falls back to a plain dark gradient tile if no photo is set.</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The dark strip near the bottom of the page — it auto-scrolls continuously (top row right to left, bottom row left to right), so upload as many photos as you like. Recommended photo size: <strong>600 × 700px</strong> (portrait, ~6:7 ratio). An empty gallery (no photos at all) hides the section entirely.</div>
 
               <div style={{ marginTop:12 }}>
                 <div style={lbl}>Section heading</div>
@@ -2137,34 +2137,39 @@ export default function AdminDashboard() {
               </div>
 
               <div style={{ marginTop:14, display:'flex', gap:10, flexWrap:'wrap' }}>
-                {(state.cf?.galleryImages ?? content.galleryImages).map((tile, i) => {
+                {(state.cf?.galleryImages ?? content.galleryImages).map((tile) => {
                   const tiles = state.cf?.galleryImages ?? content.galleryImages;
-                  const setTile = (patch) => {
-                    const next = tiles.map((x, xi) => xi === i ? { ...x, ...patch } : x);
-                    set({cf:{...(state.cf||content), galleryImages: next}});
-                  };
+                  const removeTile = () => set({cf:{...(state.cf||content), galleryImages: tiles.filter(x=>x.id!==tile.id)}});
                   return (
                     <div key={tile.id} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
                       <div style={{ width:64, height:64, borderRadius:10, overflow:'hidden', background:'linear-gradient(135deg, #4A2A0F, #2A1708)', border:'1px solid var(--border-light)' }}>
                         {tile.image && <img src={tile.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>}
                       </div>
-                      <div style={{ display:'flex', gap:4 }}>
-                        <label style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', border:'1px solid var(--border-medium)', background:'var(--bg-card)', color:'#9A5B26', borderRadius:8, width:28, height:28, cursor:'pointer' }} title="Upload photo">
-                          <Icon name="upload" size={12} color="#9A5B26"/>
-                          <input type="file" accept="image/*" style={{ display:'none' }} onChange={e=>{
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => setTile({image: reader.result});
-                            reader.readAsDataURL(file);
-                            e.target.value = '';
-                          }}/>
-                        </label>
-                        {tile.image && <button onClick={()=>setTile({image:null})} title="Remove" style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', borderRadius:8, width:28, height:28, cursor:'pointer' }}>×</button>}
-                      </div>
+                      <button onClick={removeTile} title="Remove" style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', borderRadius:8, width:28, height:28, cursor:'pointer' }}>×</button>
                     </div>
                   );
                 })}
+                <label style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, width:64, height:64, borderRadius:10, border:'1.5px dashed var(--border-medium)', color:'#9A5B26', cursor:'pointer' }} title="Add photo(s)">
+                  <Icon name="upload" size={14} color="#9A5B26"/>
+                  <span style={{ fontSize:9.5, fontWeight:700 }}>Add</span>
+                  <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e=>{
+                    const files = [...(e.target.files||[])];
+                    if (!files.length) return;
+                    const tiles = state.cf?.galleryImages ?? content.galleryImages;
+                    let pending = files.length;
+                    const added = [];
+                    files.forEach(file => {
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        added.push({ id:`g-${Date.now()}-${Math.random().toString(36).slice(2,8)}`, image: reader.result });
+                        pending--;
+                        if (pending === 0) set({cf:{...(state.cf||content), galleryImages: [...tiles, ...added]}});
+                      };
+                      reader.readAsDataURL(file);
+                    });
+                    e.target.value = '';
+                  }}/>
+                </label>
               </div>
             </div>
 

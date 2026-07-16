@@ -34,6 +34,32 @@ const whyJoinTileStyle = [
   { radius: '28px 28px 80px 28px', fallback: '#E8D3B4' },
 ];
 
+// "Our Gallery" marquee — the admin can upload any number of photos (see
+// AdminDashboard's Content tab), so tile count isn't fixed. Each row's list
+// is rendered twice back-to-back and animated exactly -50% (see .gallery-track
+// in index.css) for a seamless loop no matter how many tiles there are; speed
+// is derived from row width so more photos doesn't mean a faster scroll.
+const GALLERY_TILE_W = 170;
+const GALLERY_TILE_H = 200;
+const GALLERY_GAP = 14;
+const GALLERY_PX_PER_SEC = 32;
+
+function GalleryRow({ tiles, reverse }) {
+  if (!tiles.length) return null;
+  const rowWidth = tiles.length * (GALLERY_TILE_W + GALLERY_GAP);
+  const duration = Math.max(8, rowWidth / GALLERY_PX_PER_SEC);
+  const loop = [...tiles, ...tiles];
+  return (
+    <div style={{ overflow: 'hidden' }}>
+      <div className={`gallery-track${reverse ? ' gallery-track--reverse' : ''}`} style={{ gap: GALLERY_GAP, animationDuration: `${duration}s` }}>
+        {loop.map((tile, i) => (
+          <div key={`${tile.id}-${i}`} style={{ flex: `0 0 ${GALLERY_TILE_W}px`, height: GALLERY_TILE_H, borderRadius: 12, overflow: 'hidden', backgroundImage: tile.image ? `url(${tile.image})` : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Renders a heading as plain text, gradient-highlighting the given phrase
 // wherever it appears, so admin-edited copy still gets the brand accent.
 function highlightPhrase(text = '', phrase) {
@@ -254,18 +280,18 @@ export default function PublicHome() {
         </div>
       </section>
 
-      {/* Our Gallery */}
-      <section id="gallery" style={{ background: '#1D1006', padding: '64px 0' }}>
+      {/* Our Gallery — continuously auto-scrolling, top row right-to-left,
+          bottom row left-to-right (see GalleryRow above + .gallery-track in
+          index.css). Not a manual scroller, so there's nothing to swipe. */}
+      {content.galleryImages.length > 0 && (
+      <section id="gallery" style={{ background: '#1D1006', padding: '64px 0', overflow: 'hidden' }}>
         <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 44px' }}>{content.galleryHeading}</h2>
-        <div style={isMobile
-          ? { display: 'flex', gap: 14, overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0 16px 12px', scrollbarWidth: 'none' }
-          : { maxWidth: 1240, margin: '0 auto', padding: '0 16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 280, gap: 14 }
-        }>
-          {content.galleryImages.map(tile => (
-            <div key={tile.id} style={{ borderRadius: 12, overflow: 'hidden', backgroundImage: tile.image ? `url(${tile.image})` : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundSize: 'cover', backgroundPosition: 'center', scrollSnapAlign: 'start', minWidth: 0, flex: '0 0 78vw', maxWidth: 300, height: 280 }} />
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <GalleryRow tiles={content.galleryImages.filter((_, i) => i % 2 === 0)} />
+          <GalleryRow tiles={content.galleryImages.filter((_, i) => i % 2 === 1)} reverse />
         </div>
       </section>
+      )}
 
       {/* CTA */}
       <section style={{ background: '#F1E2CC', padding: '80px 24px' }}>

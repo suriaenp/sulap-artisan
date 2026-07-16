@@ -182,7 +182,9 @@ export const INITIAL_CONTENT = {
     { id: 'wj4', title: 'Flexible booth rates',        body: 'Daily rates for F&B and non-F&B booths — pay only for the days you trade.' },
   ],
 
-  // "Our Gallery" section (public home page) — dark strip of 8 photo tiles.
+  // "Our Gallery" section (public home page) — dark auto-scrolling photo
+  // strip. Admin can add/remove any number of tiles (see AdminDashboard's
+  // Content tab); this seed set is just a starting point, not a fixed count.
   galleryHeading: 'OUR GALLERY',
   galleryImages: [
     { id: 'g1', image: null }, { id: 'g2', image: null }, { id: 'g3', image: null }, { id: 'g4', image: null },
