@@ -35,23 +35,30 @@ const whyJoinTileStyle = [
 ];
 
 // "Our Gallery" marquee — the admin can upload any number of photos (see
-// AdminDashboard's Content tab), so tile count isn't fixed. Each row's list
-// is rendered twice back-to-back and animated exactly -50% (see .gallery-track
-// in index.css) for a seamless loop no matter how many tiles there are; speed
-// is derived from row width so more photos doesn't mean a faster scroll.
-const GALLERY_TILE_W = 170;
-const GALLERY_TILE_H = 200;
-const GALLERY_GAP = 14;
-const GALLERY_PX_PER_SEC = 32;
+// AdminDashboard's Content tab), so tile count isn't fixed and a plain "loop
+// the list twice, animate -50%" isn't safe: if a short tile list is narrower
+// than the viewport, the doubled track is still narrower than the screen and
+// the marquee visibly runs out of tiles into empty space before looping.
+// Instead we repeat each row's list enough times that at least one full
+// screen-width of content always remains once one list-width has scrolled
+// off (`repeatCount`), and animate by exactly one list-width in px (via the
+// `--gallery-shift` custom property, read inside the shared keyframe in
+// index.css) rather than a fixed -50%, since the loop distance is always one
+// list's width regardless of how many times it's repeated for coverage.
+const GALLERY_TILE_W = 240;
+const GALLERY_TILE_H = 280;
+const GALLERY_GAP = 16;
+const GALLERY_PX_PER_SEC = 34;
 
-function GalleryRow({ tiles, reverse }) {
+function GalleryRow({ tiles, reverse, windowWidth }) {
   if (!tiles.length) return null;
-  const rowWidth = tiles.length * (GALLERY_TILE_W + GALLERY_GAP);
-  const duration = Math.max(8, rowWidth / GALLERY_PX_PER_SEC);
-  const loop = [...tiles, ...tiles];
+  const listWidth = tiles.length * (GALLERY_TILE_W + GALLERY_GAP);
+  const repeatCount = Math.max(2, Math.ceil(windowWidth / listWidth) + 2);
+  const loop = Array.from({ length: repeatCount }, () => tiles).flat();
+  const duration = Math.max(8, listWidth / GALLERY_PX_PER_SEC);
   return (
     <div style={{ overflow: 'hidden' }}>
-      <div className={`gallery-track${reverse ? ' gallery-track--reverse' : ''}`} style={{ gap: GALLERY_GAP, animationDuration: `${duration}s` }}>
+      <div className={`gallery-track${reverse ? ' gallery-track--reverse' : ''}`} style={{ gap: GALLERY_GAP, animationDuration: `${duration}s`, '--gallery-shift': `-${listWidth}px` }}>
         {loop.map((tile, i) => (
           <div key={`${tile.id}-${i}`} style={{ flex: `0 0 ${GALLERY_TILE_W}px`, height: GALLERY_TILE_H, borderRadius: 12, overflow: 'hidden', backgroundImage: tile.image ? `url(${tile.image})` : 'linear-gradient(135deg, #4A2A0F, #2A1708)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         ))}
@@ -284,11 +291,13 @@ export default function PublicHome() {
           bottom row left-to-right (see GalleryRow above + .gallery-track in
           index.css). Not a manual scroller, so there's nothing to swipe. */}
       {content.galleryImages.length > 0 && (
-      <section id="gallery" style={{ background: '#1D1006', padding: '64px 0', overflow: 'hidden' }}>
-        <h2 style={{ fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 44px' }}>{content.galleryHeading}</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <GalleryRow tiles={content.galleryImages.filter((_, i) => i % 2 === 0)} />
-          <GalleryRow tiles={content.galleryImages.filter((_, i) => i % 2 === 1)} reverse />
+      <section id="gallery" style={{ position: 'relative', background: '#1D1006', padding: '64px 0', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -60, left: -80, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.55, filter: 'blur(2px)' }} />
+        <div style={{ position: 'absolute', bottom: -70, right: -60, width: 220, height: 220, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #B97434, #4A2A0F)', opacity: 0.5, filter: 'blur(2px)' }} />
+        <h2 style={{ position: 'relative', fontFamily: "'Marcellus', serif", fontWeight: 400, fontSize: 'clamp(28px, 3.6vw, 40px)', letterSpacing: '0.35em', textIndent: '0.35em', color: '#FFF3E2', textAlign: 'center', margin: '0 0 44px' }}>{content.galleryHeading}</h2>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <GalleryRow tiles={content.galleryImages.filter((_, i) => i % 2 === 0)} windowWidth={windowWidth} />
+          <GalleryRow tiles={content.galleryImages.filter((_, i) => i % 2 === 1)} reverse windowWidth={windowWidth} />
         </div>
       </section>
       )}
