@@ -561,7 +561,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                  {[['Confirmed', confirmedN, confPct, '#B97434'], ['Shortlisted', shortlistedN, shortPct, '#3A2210'], ['Pending', pendingN, pendPct, 'rgba(154,91,38,0.5)']].map(([label,val,p,color]) => (
+                  {[['Confirmed', confirmedN, confPct, '#B97434'], ['Shortlisted', shortlistedN, shortPct, 'var(--text-primary)'], ['Pending', pendingN, pendPct, 'rgba(154,91,38,0.5)']].map(([label,val,p,color]) => (
                     <div key={label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                         <div style={{ width:4, height:26, borderRadius:3, background:color }}/>
@@ -756,7 +756,7 @@ export default function AdminDashboard() {
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                   {agendaItems.map((ag,i) => (
                     <div key={i} style={{ display:'flex', alignItems:'center', gap:11 }}>
-                      <div style={{ width:40, height:40, borderRadius:12, background: ag.badge==='deadline' ? 'rgba(154,91,38,0.16)' : 'var(--accent-gradient)', color: ag.badge==='deadline' ? '#7A431A' : '#FFF8EE', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700 }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background: ag.badge==='deadline' ? 'var(--glass-card-border)' : 'var(--accent-gradient)', color: ag.badge==='deadline' ? '#7A431A' : '#FFF8EE', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700 }}>
                         {ag.day}
                       </div>
                       <div style={{ minWidth:0 }}>
@@ -802,7 +802,7 @@ export default function AdminDashboard() {
         <TableShell
           title="Vendor Applications" subtitle="New sign-ups awaiting a decision."
           headerAction={
-            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="download" size={14} color="#6B4E33"/>Export CSV
             </button>
           }
@@ -815,20 +815,20 @@ export default function AdminDashboard() {
           total={searchedPending.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
         >
           {pagedVendors.map((v,idx) => (
-            <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:vaGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+            <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:vaGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid var(--glass-divider)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                 <VendorAvatar v={v} size={36}/>
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                  <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                  <div style={{ fontSize:11.5, color:'var(--text-muted)' }}>{v.owner}</div>
                 </div>
               </div>
-              <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
-              <div style={{ fontSize:12, color:'#6B4E33' }}>
+              <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+              <div style={{ fontSize:12, color:'var(--text-secondary)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Icon name="mail" size={12} color="#B8A48C"/>{v.email}</div>
                 <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}><Icon name="phone" size={12} color="#B8A48C"/>{v.phone}</div>
               </div>
-              <div style={{ fontSize:12.5, color:'#6B4E33' }}>{v.regDate}</div>
+              <div style={{ fontSize:12.5, color:'var(--text-secondary)' }}>{v.regDate}</div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, flexWrap:'wrap' }}>
                 <IconBtn title="View details" onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
                 <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
@@ -838,7 +838,7 @@ export default function AdminDashboard() {
           ))}
           {searchedRejected.length > 0 && (
             <div style={{ marginTop:18 }}>
-              <button onClick={()=>setShowRejected(s=>!s)} style={{ background:'none', border:'none', color:'#8A6A4A', fontSize:12.5, fontWeight:700, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+              <button onClick={()=>setShowRejected(s=>!s)} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:12.5, fontWeight:700, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                 <Icon name={showRejected?'x':'eye'} size={13} color="#8A6A4A"/>
                 {showRejected ? 'Hide' : 'Show'} {searchedRejected.length} rejected application{searchedRejected.length>1?'s':''}
               </button>
@@ -846,18 +846,18 @@ export default function AdminDashboard() {
                 <MiniTablePanel gridTemplate="minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)" minWidth={620}
                   headerCells={<><div>Vendor</div><div>Category</div><div>Registered</div><div style={{ textAlign:'right' }}>Action</div></>}>
                   {searchedRejected.map(v => (
-                    <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                    <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid var(--glass-divider)' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                         <VendorAvatar v={v} size={32}/>
                         <div style={{ minWidth:0 }}>
-                          <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
-                          <div style={{ fontSize:11, color:'#8A6A4A' }}>{v.owner}</div>
+                          <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                          <div style={{ fontSize:11, color:'var(--text-muted)' }}>{v.owner}</div>
                         </div>
                       </div>
-                      <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
-                      <div style={{ fontSize:12, color:'#6B4E33' }}>{v.regDate}</div>
+                      <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                      <div style={{ fontSize:12, color:'var(--text-secondary)' }}>{v.regDate}</div>
                       <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                        <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
                           <Icon name="pencil" size={12} color="#6B4E33"/>Reconsider
                         </button>
                       </div>
@@ -886,10 +886,10 @@ export default function AdminDashboard() {
                   await downloadSignupFormsZip(list, content.terms);
                   logActivity('Admin', `bulk-downloaded ${list.length} vendor sign-up forms.`, {icon:'download', tint:'var(--tint-pink-bg)'});
                 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <Icon name="file" size={14} color="#6B4E33"/>Download all forms
               </button>
-              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <Icon name="download" size={14} color="#6B4E33"/>Export CSV
               </button>
             </div>
@@ -907,16 +907,16 @@ export default function AdminDashboard() {
             const typeCounts = {};
             vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
             return (
-              <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:vlGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:vlGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid var(--glass-divider)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                   <VendorAvatar v={v} size={36}/>
                   <div style={{ minWidth:0 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                    <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner} · Reg. {v.regDate}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                    <div style={{ fontSize:11.5, color:'var(--text-muted)' }}>{v.owner} · Reg. {v.regDate}</div>
                   </div>
                 </div>
-                <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
-                <div style={{ fontSize:12, color:'#6B4E33' }}>
+                <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                <div style={{ fontSize:12, color:'var(--text-secondary)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:5, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}><Icon name="mail" size={12} color="#B8A48C"/>{v.email}</div>
                   <div style={{ display:'flex', alignItems:'center', gap:5, marginTop:2 }}><Icon name="phone" size={12} color="#B8A48C"/>{v.phone}</div>
                 </div>
@@ -983,29 +983,29 @@ export default function AdminDashboard() {
                 return (oldVal||'') !== (newVal||'');
               });
               return (
-                <div key={req.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={req.id} className="dc-row-hover" style={{ borderBottom:'1px solid var(--glass-divider)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:prGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                       <VendorAvatar v={v} size={34}/>
-                      <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
                     </div>
-                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{req.section==='einvoice' ? 'E-Invoice & bank' : 'Profile details'}</span></div>
-                    <div style={{ fontSize:12.5, color:'#6B4E33' }}>{req.submittedAt}</div>
+                    <div><span style={{ display:'inline-block', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{req.section==='einvoice' ? 'E-Invoice & bank' : 'Profile details'}</span></div>
+                    <div style={{ fontSize:12.5, color:'var(--text-secondary)' }}>{req.submittedAt}</div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, flexWrap:'wrap' }}>
                       <button onClick={()=>decide(req,'approved')} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
                       <button onClick={()=>decide(req,'rejected')} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
                       <IconBtn title="View vendor" onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
                     </div>
                   </div>
-                  <div style={{ margin:'0 14px 13px', background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:10, padding:'9px 12px', display:'flex', flexDirection:'column', gap:5 }}>
+                  <div style={{ margin:'0 14px 13px', background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-divider)', borderRadius:10, padding:'9px 12px', display:'flex', flexDirection:'column', gap:5 }}>
                     {changedFields.map(([k,label]) => {
                       const newVal = req.changes[k];
                       const oldVal = req.section==='einvoice' ? (v.einvoice&&v.einvoice[k]) : v[k];
                       return (
-                        <div key={k} style={{ fontSize:11.5, color:'#6B4E33' }}>
-                          <span style={{ fontWeight:700, color:'#3A2210' }}>{label}:</span>{' '}
+                        <div key={k} style={{ fontSize:11.5, color:'var(--text-secondary)' }}>
+                          <span style={{ fontWeight:700, color:'var(--text-primary)' }}>{label}:</span>{' '}
                           <span style={{ color:'#B8A48C', textDecoration:'line-through' }}>{oldVal||'—'}</span>{' → '}
-                          <span style={{ color:'#3A2210', fontWeight:700 }}>{newVal||'—'}</span>
+                          <span style={{ color:'var(--text-primary)', fontWeight:700 }}>{newVal||'—'}</span>
                         </div>
                       );
                     })}
@@ -1015,7 +1015,7 @@ export default function AdminDashboard() {
             })}
             {decided.length > 0 && (
               <div style={{ marginTop:18 }}>
-                <button onClick={()=>setShowDecidedReq(s=>!s)} style={{ background:'none', border:'none', color:'#8A6A4A', fontSize:12.5, fontWeight:700, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <button onClick={()=>setShowDecidedReq(s=>!s)} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:12.5, fontWeight:700, padding:0, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                   <Icon name={showDecidedReq?'x':'eye'} size={13} color="#8A6A4A"/>
                   {showDecidedReq ? 'Hide' : 'Show'} {decided.length} decided request{decided.length!==1?'s':''}
                 </button>
@@ -1025,13 +1025,13 @@ export default function AdminDashboard() {
                     {decided.map(req => {
                       const v = vendors.find(x=>x.id===req.vendorId)||{};
                       return (
-                        <div key={req.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                        <div key={req.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid var(--glass-divider)' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                             <VendorAvatar v={v} size={30}/>
-                            <div style={{ fontSize:13, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
                           </div>
-                          <div style={{ fontSize:11.5, color:'#6B4E33' }}>{req.section==='einvoice' ? 'E-Invoice & bank' : 'Profile details'}</div>
-                          <div style={{ fontSize:11.5, color:'#6B4E33' }}>{req.submittedAt}</div>
+                          <div style={{ fontSize:11.5, color:'var(--text-secondary)' }}>{req.section==='einvoice' ? 'E-Invoice & bank' : 'Profile details'}</div>
+                          <div style={{ fontSize:11.5, color:'var(--text-secondary)' }}>{req.submittedAt}</div>
                           <div style={{ display:'flex', justifyContent:'flex-end' }}>
                             <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', background: req.status==='approved'?'rgba(90,145,110,0.16)':'rgba(196,74,74,0.1)', color: req.status==='approved'?'#3F7A54':'#B03A2E' }}>
                               {req.status==='approved' ? 'Approved' : 'Rejected'}
@@ -1263,17 +1263,17 @@ export default function AdminDashboard() {
         const eventFilterRow = (
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:14, flexWrap:'wrap' }}>
             <div style={{ flex:'1 1 240px', minWidth:0 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by event</div>
-              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by event</div>
+              <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:320, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'var(--text-primary)', outline:'none', fontFamily:"'Karla',sans-serif" }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
             <div style={{ display:'flex', background:'rgba(154,91,38,0.08)', borderRadius:12, padding:4, gap:4 }}>
               {[['apps','Applications'],['shortlist',`Shortlist${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length ? ` (${apps.filter(a=>a.eventId===filterEvent&&(a.status==='shortlisted'||a.status==='approved')).length})` : ''}`]].map(([id,label]) => (
-                <button key={id} onClick={()=>set({appsTab:id,page:1})} style={{ border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 14px', cursor:'pointer', background:appsTab===id?'rgba(255,255,255,0.9)':'transparent', color:appsTab===id?'#3A2210':'#8A6A4A', boxShadow:appsTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
+                <button key={id} onClick={()=>set({appsTab:id,page:1})} style={{ border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 14px', cursor:'pointer', background:appsTab===id?'var(--glass-card-solid)':'transparent', color:appsTab===id?'var(--text-primary)':'var(--text-muted)', boxShadow:appsTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
               ))}
             </div>
-            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 18px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 18px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="download" size={14} color="#6B4E33"/>Export
             </button>
           </div>
@@ -1297,32 +1297,32 @@ export default function AdminDashboard() {
             <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
               <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
                 <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
-                <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+                <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, var(--glass-chip-border), transparent 70%)', filter:'blur(60px)' }}/>
               </div>
               <div style={{ position:'relative', zIndex:1 }}>
                 <div style={{ marginBottom:20 }}>
-                  <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Event Applications</div>
-                  <div style={{ fontSize:14, color:'#8A6A4A' }}>The final roster for {curEv.name}, grouped by category.</div>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'var(--text-primary)' }}>Event Applications</div>
+                  <div style={{ fontSize:14, color:'var(--text-muted)' }}>The final roster for {curEv.name}, grouped by category.</div>
                 </div>
                 {eventFilterRow}
                 {rosterApps.length === 0 && (
-                  <div style={{ background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'#8A6A4A', fontSize:13.5, marginBottom:14 }}>
+                  <div style={{ background:'var(--glass-card)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13.5, marginBottom:14 }}>
                     No vendors shortlisted or approved yet — shortlist pending applications from the Applications tab.
                   </div>
                 )}
                 {groups.map(g => (
-                  <div key={g.cat.id} style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:20, padding:'18px 20px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)', marginBottom:16 }}>
+                  <div key={g.cat.id} style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:20, padding:'18px 20px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)', marginBottom:16 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:9, flexWrap:'wrap' }}>
-                      <span style={{ fontFamily:"'Marcellus',serif", fontSize:17, color:'#3A2210' }}>{g.cat.name}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color: g.roster.length ? '#9A6A1E' : '#8A6A4A', background: g.roster.length ? 'rgba(214,152,66,0.16)' : 'rgba(154,91,38,0.08)', borderRadius:999, padding:'3px 10px' }}>
+                      <span style={{ fontFamily:"'Marcellus',serif", fontSize:17, color:'var(--text-primary)' }}>{g.cat.name}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color: g.roster.length ? '#9A6A1E' : 'var(--text-muted)', background: g.roster.length ? 'rgba(214,152,66,0.16)' : 'rgba(154,91,38,0.08)', borderRadius:999, padding:'3px 10px' }}>
                         {g.roster.length} of {g.totalVendors} vendor{g.totalVendors!==1?'s':''}
                       </span>
                       {g.roster.length > 0 && (
-                        <span style={{ fontSize:11.5, color:'#8A6A4A' }}>{g.approvedCount} approved · {g.shortlistedCount} shortlisted</span>
+                        <span style={{ fontSize:11.5, color:'var(--text-muted)' }}>{g.approvedCount} approved · {g.shortlistedCount} shortlisted</span>
                       )}
                     </div>
                     {g.roster.length === 0 ? (
-                      <div style={{ fontSize:12, color:'#8A6A4A', marginTop:10 }}>No vendors shortlisted or approved yet in this category.</div>
+                      <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:10 }}>No vendors shortlisted or approved yet in this category.</div>
                     ) : (
                       <div style={{ marginTop:12 }}>
                         {g.roster.map((a,idx) => {
@@ -1331,22 +1331,22 @@ export default function AdminDashboard() {
                           const overridden = !!compOverrides[`${a.vendorId}-${a.eventId}`];
                           const onHold = a.status==='shortlisted' && holdOffs.length > 0 && !overridden;
                           return (
-                            <div key={a.id} style={{ borderTop: idx>0 ? '1px solid rgba(154,91,38,0.1)' : 'none', padding:'12px 0' }}>
+                            <div key={a.id} style={{ borderTop: idx>0 ? '1px solid var(--glass-divider)' : 'none', padding:'12px 0' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
                                 <VendorAvatar v={v} size={34}/>
                                 <div style={{ flex:1, minWidth:150 }}>
                                   <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
-                                    <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>
+                                    <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>
                                       <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{idx+1}</span>{v.business}
                                     </div>
                                     {a.status==='approved' && <span style={{ fontSize:11, fontWeight:700, color:'#3F7A54' }}>Approved</span>}
                                     {a.shared && (
-                                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:999, padding:'2px 8px' }}>
+                                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-divider)', borderRadius:999, padding:'2px 8px' }}>
                                         <Icon name="users" size={10} color="#6B4E33"/>{(a.partners||[]).length+1} vendors
                                       </span>
                                     )}
                                   </div>
-                                  <div style={{ fontSize:11.5, color:'#8A6A4A', marginTop:1 }}>{v.owner}</div>
+                                  <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:1 }}>{v.owner}</div>
                                 </div>
                                 <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', justifyContent:'flex-end' }}>
                                   <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
@@ -1354,7 +1354,7 @@ export default function AdminDashboard() {
                                     <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }} style={{ background:'none', border:'none', color:'#B03A2E', fontSize:11, fontWeight:700, padding:'0 4px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Release</button>
                                   )}
                                   {a.status==='shortlisted' && (onHold ? (
-                                    <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'var(--tint-amber-bg)'}); showToast('Hold overridden — you can now approve this vendor','shield'); }} style={{ background:'rgba(255,255,255,0.7)', border:'1px solid rgba(214,152,66,0.35)', color:'#9A6A1E', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Override hold</button>
+                                    <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'var(--tint-amber-bg)'}); showToast('Hold overridden — you can now approve this vendor','shield'); }} style={{ background:'var(--glass-input)', border:'1px solid rgba(214,152,66,0.35)', color:'#9A6A1E', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Override hold</button>
                                   ) : (
                                     <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
                                   ))}
@@ -1401,18 +1401,18 @@ export default function AdminDashboard() {
               const onHold = holdOffs.length > 0 && !overridden;
               const h = vendorHistory(a.vendorId);
               return (
-                <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid var(--glass-divider)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:eaGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                       <VendorAvatar v={v} size={36}/>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                        <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
+                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                        <div style={{ fontSize:11.5, color:'var(--text-muted)' }}>{v.owner}</div>
                         <div style={{ fontSize:10.5, color:'#B8A48C', marginTop:1 }}>{h.total === 0 ? 'No markets joined yet' : `${h.total} market${h.total>1?'s':''} joined`}</div>
                       </div>
                     </div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:10.5, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:999, padding:'3px 9px' }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:10.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-divider)', borderRadius:999, padding:'3px 9px' }}>
                         <Icon name={a.shared?'users':'tent'} size={11} color="#6B4E33"/>{a.shared?`Sharing · ${(a.partners||[]).length+1}`:'Solo'}
                       </span>
                       {vOffenses.slice(0,2).map((o,i) => {
@@ -1420,7 +1420,7 @@ export default function AdminDashboard() {
                         return <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, borderRadius:999, padding:'3px 9px', background:ot.bg, color:ot.color }}><span style={{ width:5, height:5, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>;
                       })}
                     </div>
-                    <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                    <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6 }}>
                       <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
                       <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'rgba(214,152,66,0.16)', border:'none', color:'#9A6A1E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Shortlist</button>
@@ -1435,7 +1435,7 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     ) : (
-                      <div style={{ margin:'0 14px 13px', display:'flex', alignItems:'center', gap:7, background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#8A6A4A', lineHeight:1.45 }}>
+                      <div style={{ margin:'0 14px 13px', display:'flex', alignItems:'center', gap:7, background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-divider)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.45 }}>
                         <Icon name="shield" size={13} color="#8A6A4A"/>Compliance hold overridden for this vendor.
                       </div>
                     )
@@ -1460,28 +1460,28 @@ export default function AdminDashboard() {
               `position:sticky` entirely. */}
           <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
             <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
-            <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+            <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, var(--glass-chip-border), transparent 70%)', filter:'blur(60px)' }}/>
           </div>
 
           <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:20 }}>
             <div>
-              <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Payments</div>
-              <div style={{ margin:0, fontSize:14, color:'#8A6A4A' }}>Rental payment status for every approved event application.</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'var(--text-primary)' }}>Payments</div>
+              <div style={{ margin:0, fontSize:14, color:'var(--text-muted)' }}>Rental payment status for every approved event application.</div>
             </div>
-            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="download" size={14} color="#6B4E33"/>Export
             </button>
           </div>
 
           <div style={{ display:'flex', flexWrap:'wrap', alignItems:'flex-end', gap:12, marginBottom:14 }}>
             <div style={{ minWidth:0 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by event</div>
-              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPaySel({}); setPayUpMsg(null); }} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Filter by event</div>
+              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPaySel({}); setPayUpMsg(null); }} style={{ width:'100%', maxWidth:320, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'var(--text-primary)', outline:'none', fontFamily:"'Karla',sans-serif" }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
-            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'10px 13px', background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', color:'#6B4E33' }}>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'10px 13px', background:'var(--glass-card)', border:'1px solid var(--glass-card-border)', color:'var(--text-secondary)' }}>
               <Icon name="calendar" size={13} color="#8A6A4A"/>Payment due by {curEv.lastApp ? fmtShort(curEv.lastApp) : 'TBC'}
             </span>
             <span style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:600, borderRadius:10, padding:'10px 13px', background:'rgba(90,145,110,0.16)', color:'#3F7A54' }}>
@@ -1502,16 +1502,16 @@ export default function AdminDashboard() {
 
           {/* Payment Records table — glass panel + header-row grid, matching the
               Categories tab's "All Vendors" table exactly (rule 30 in PROJECT_NOTES). */}
-          <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+          <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
 
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap', marginBottom:16 }}>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210' }}>Payment Records</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'var(--text-primary)' }}>Payment Records</div>
               <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', minWidth:200 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', minWidth:200 }}>
                   <Icon name="search" size={15} color="#9A5B26"/>
-                  <input value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)} placeholder="Search vendor…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'#3A2210', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
+                  <input value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)} placeholder="Search vendor…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'var(--text-primary)', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
                 </div>
-                <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', color:'#6B4E33', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', color:'var(--text-secondary)', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                   <Icon name="sliders" size={14} color="#6B4E33"/>
                   <span style={{ whiteSpace:'nowrap' }}>{payFilter === 'all' ? 'All vendors' : 'New advices'}</span>
                   <select value={payFilter} onChange={e=>{ setPayFilter(e.target.value); setPaySel({}); set({page:1}); }} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}>
@@ -1523,14 +1523,14 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:16 }}>
-              <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(154,91,38,0.1)', border:'none', color:selectedPayApps.length?'#FFF8EE':'#B8A48C', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:zipBusy?'wait':'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <button disabled={zipBusy} onClick={bulkDownloadAdvices} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedPayApps.length?'linear-gradient(135deg, #B97434, #7A431A)':'var(--glass-divider)', border:'none', color:selectedPayApps.length?'#FFF8EE':'#B8A48C', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:zipBusy?'wait':'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <Icon name="download" size={14} color={selectedPayApps.length?'#FFF8EE':'#B8A48C'}/>Bulk download advices{selectedPayApps.length?` (${selectedPayApps.length})`:''}
               </button>
-              <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('invoice','Invoice')}/>
                 <Icon name="upload" size={14} color="#6B4E33"/>Bulk upload invoices
               </label>
-              <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <label title="Upload a folder with one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:10, padding:'9px 14px', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={bulkUploadPayDocs('receipt','Receipt')}/>
                 <Icon name="upload" size={14} color="#6B4E33"/>Bulk upload receipts
               </label>
@@ -1538,7 +1538,7 @@ export default function AdminDashboard() {
 
             <div style={{ overflowX:'auto' }}>
             <div style={{ minWidth:820 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,1.9fr) minmax(0,0.95fr) minmax(0,0.8fr) minmax(0,1.4fr) minmax(0,2fr)', gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,1.9fr) minmax(0,0.95fr) minmax(0,0.8fr) minmax(0,1.4fr) minmax(0,2fr)', gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-muted)', textTransform:'uppercase', borderBottom:'1px solid var(--glass-divider)' }}>
               <input type="checkbox" checked={filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id])}
                 onChange={()=>{ const all = filteredPayApps.length>0 && filteredPayApps.every(a=>paySel[a.id]); setPaySel(all ? {} : Object.fromEntries(filteredPayApps.map(a=>[a.id,true]))); }}
                 style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
@@ -1546,7 +1546,7 @@ export default function AdminDashboard() {
             </div>
 
             {pagedPayments.length === 0 ? (
-              <div style={{ padding:'28px 14px', textAlign:'center', color:'#8A6A4A', fontSize:13.5 }}>
+              <div style={{ padding:'28px 14px', textAlign:'center', color:'var(--text-muted)', fontSize:13.5 }}>
                 {searchQ || payFilter !== 'all' ? 'No vendors match your search or filter.' : 'No approved applications for this event yet.'}
               </div>
             ) : pagedPayments.map((a,idx) => {
@@ -1568,11 +1568,11 @@ export default function AdminDashboard() {
               ];
               const iconBtn = (tone) => ({
                 width:30, height:30, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'pointer',
-                border: tone==='green' ? '1px solid rgba(90,145,110,0.3)' : tone==='muted' ? '1px solid rgba(154,91,38,0.1)' : '1px solid rgba(154,91,38,0.22)',
-                background: tone==='green' ? 'rgba(90,145,110,0.14)' : tone==='muted' ? 'rgba(154,91,38,0.06)' : 'rgba(255,255,255,0.6)',
+                border: tone==='green' ? '1px solid rgba(90,145,110,0.3)' : tone==='muted' ? '1px solid var(--glass-divider)' : '1px solid var(--glass-chip-border)',
+                background: tone==='green' ? 'rgba(90,145,110,0.14)' : tone==='muted' ? 'rgba(154,91,38,0.06)' : 'var(--glass-input)',
               });
               return (
-                <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid var(--glass-divider)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,1.9fr) minmax(0,0.95fr) minmax(0,0.8fr) minmax(0,1.4fr) minmax(0,2fr)', gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
                     <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
@@ -1580,14 +1580,14 @@ export default function AdminDashboard() {
                       <div style={{ minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
                           <span style={{ fontSize:11, fontWeight:700, color:'#B8A48C' }}>#{(page-1)*PER_PAGE+idx+1}</span>
-                          <span style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</span>
+                          <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</span>
                           {advDl && <span title={`Advices downloaded ${advDl}`} style={{ display:'inline-flex', alignItems:'center', gap:3, fontSize:10, fontWeight:700, color:'#3F7A54', background:'rgba(90,145,110,0.16)', borderRadius:6, padding:'2px 6px', whiteSpace:'nowrap' }}><Icon name="check" size={10} color="#3F7A54"/>DL'd</span>}
                         </div>
-                        <div style={{ fontSize:11.5, color:'#8A6A4A', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{calc.tier} · RM {calc.rate}/day × {calc.days}d</div>
+                        <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{calc.tier} · RM {calc.rate}/day × {calc.days}d</div>
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize:14.5, fontWeight:700, color:'#3A2210' }}>RM {money(calc.total)}</div>
+                      <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)' }}>RM {money(calc.total)}</div>
                       {isPartial && overpaidAmt<=0 && <div style={{ fontSize:11, fontWeight:600, color:'#C76A0D', marginTop:2 }}>Outstanding RM {money(calc.total-rec.paid)}</div>}
                       {overpaidAmt>0 && <div style={{ fontSize:11, fontWeight:700, color:'#B03A2E', marginTop:2 }}>+RM {money(overpaidAmt)} over</div>}
                     </div>
@@ -1635,7 +1635,7 @@ export default function AdminDashboard() {
                       {ref.status === 'completed' ? (
                         <>
                           <div style={{ fontSize:11.5, color:'#8a4a3e', marginTop:6 }}>Refund completed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
-                          <button onClick={()=>{ dispatch({type:'MERGE_REFUNDS',payload:{[payKey]:{...ref,status:'closed'}}}); logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'var(--tint-blue-bg)'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(196,74,74,0.3)', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
+                          <button onClick={()=>{ dispatch({type:'MERGE_REFUNDS',payload:{[payKey]:{...ref,status:'closed'}}}); logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'var(--tint-blue-bg)'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'var(--glass-input)', border:'1px solid rgba(196,74,74,0.3)', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
                         </>
                       ) : (
                         <button onClick={()=>set({refundModalKey:payKey,reff:{refCode:'',date:'',time:''}})} style={{ marginTop:9, background:'#B03A2E', color:'#fff', border:'none', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Arrange refund</button>
@@ -1646,7 +1646,7 @@ export default function AdminDashboard() {
                     <div style={{ margin:'0 14px 13px', fontSize:11, color:'#B8A48C' }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
                   )}
                   {notice && notice.kind === 'unread' && (
-                    <div style={{ margin:'0 14px 13px', background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#8A6A4A', lineHeight:1.45 }}>
+                    <div style={{ margin:'0 14px 13px', background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-divider)', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.45 }}>
                       Auto-scan couldn't read an amount from the vendor's payment advice — verify and record manually.
                     </div>
                   )}
@@ -1670,7 +1670,7 @@ export default function AdminDashboard() {
                 (`.scrollarea` in App.jsx) so the pager stays reachable while only the
                 rows above scroll past underneath it, instead of scrolling away with
                 the rest of the tab's content. */}
-            <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
+            <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'var(--glass-header)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid var(--glass-card-border)', borderRadius:'0 0 24px 24px' }}>
               <ModernPager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
             </div>
           </div>
@@ -1710,22 +1710,22 @@ export default function AdminDashboard() {
             {drPaged.map((v,idx) => {
               const dep = depRec(v.id);
               return (
-                <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:drGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:drGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid var(--glass-divider)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={v} size={34}/>
                     <div style={{ minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                      <div style={{ fontSize:11.5, color:'#8A6A4A' }}>{v.owner}</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                      <div style={{ fontSize:11.5, color:'var(--text-muted)' }}>{v.owner}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize:11.5, color:'#6B4E33', display:'flex', flexWrap:'wrap', gap:'4px 12px' }}>
-                    <span>Invoice <b style={{ color:'#3A2210' }}>{dep.inv||'—'}</b></span>
-                    <span>Paid <b style={{ color:'#3A2210' }}>{dep.payDate||'—'}</b></span>
-                    <span>Refunded <b style={{ color:'#3A2210' }}>{dep.refundDate||'—'}</b></span>
+                  <div style={{ fontSize:11.5, color:'var(--text-secondary)', display:'flex', flexWrap:'wrap', gap:'4px 12px' }}>
+                    <span>Invoice <b style={{ color:'var(--text-primary)' }}>{dep.inv||'—'}</b></span>
+                    <span>Paid <b style={{ color:'var(--text-primary)' }}>{dep.payDate||'—'}</b></span>
+                    <span>Refunded <b style={{ color:'var(--text-primary)' }}>{dep.refundDate||'—'}</b></span>
                   </div>
                   <div><Badge status={dep.status}/></div>
                   <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                    <button onClick={()=>{ const d=depRec(v.id); set({depModalVendor:v.id,depf:{...d}}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
+                    <button onClick={()=>{ const d=depRec(v.id); set({depModalVendor:v.id,depf:{...d}}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
                       <Icon name="pencil" size={13} color="#6B4E33"/>Update
                     </button>
                   </div>
@@ -1750,8 +1750,8 @@ export default function AdminDashboard() {
             aboveControls={
               <>
                 <div style={{ marginBottom:14 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
-                  <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
+                  <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', maxWidth:320, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'var(--text-primary)', outline:'none', fontFamily:"'Karla',sans-serif" }}>
                     {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
                   </select>
                 </div>
@@ -1760,7 +1760,7 @@ export default function AdminDashboard() {
                   <div style={{ flex:1, fontSize:12, fontWeight:600, color:editable?'#3F7A54':'#9A6A1E', lineHeight:1.4 }}>
                     {editable ? 'Entry is open — market is currently in progress.' : 'Locked — serial entry is only available during the event dates.'}
                   </div>
-                  <button onClick={()=>set({parkOverride:!parkOverride})} style={{ flexShrink:0, background:'rgba(255,255,255,0.65)', border:`1px solid ${editable?'rgba(90,145,110,0.3)':'rgba(214,152,66,0.3)'}`, color:editable?'#3F7A54':'#9A6A1E', fontSize:11, fontWeight:700, borderRadius:8, padding:'6px 10px', cursor:'pointer' }}>
+                  <button onClick={()=>set({parkOverride:!parkOverride})} style={{ flexShrink:0, background:'var(--glass-input)', border:`1px solid ${editable?'rgba(90,145,110,0.3)':'rgba(214,152,66,0.3)'}`, color:editable?'#3F7A54':'#9A6A1E', fontSize:11, fontWeight:700, borderRadius:8, padding:'6px 10px', cursor:'pointer' }}>
                     {parkOverride ? 'Lock' : 'Override'}
                   </button>
                 </div>
@@ -1781,22 +1781,22 @@ export default function AdminDashboard() {
                 value: parking[`${a.vendorId}-${ev.id}-${i+1}`]||'',
               }));
               return (
-                <div key={a.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:pkGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={a.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:pkGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid var(--glass-divider)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={v} size={34}/>
                     <div style={{ minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
-                      <div style={{ fontSize:11, color:'#8A6A4A' }}>Vehicle owner on record</div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                      <div style={{ fontSize:11, color:'var(--text-muted)' }}>Vehicle owner on record</div>
                     </div>
                   </div>
-                  <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:6, padding:'4px 9px', flexShrink:0, width:'fit-content' }}>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-divider)', borderRadius:6, padding:'4px 9px', flexShrink:0, width:'fit-content' }}>
                     <Icon name="car" size={13} color="#6B4E33"/>{v.plate}
                   </span>
                   <div style={{ display:'flex', gap:8 }}>
                     {cells.map(c => (
                       <div key={c.key} style={{ flex:1, minWidth:70 }}>
-                        <div style={{ fontSize:10, color:'#8A6A4A', marginBottom:4, textAlign:'center' }}>{c.dayLabel}</div>
-                        <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} placeholder="—" style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:editable?'rgba(255,255,255,0.7)':'rgba(154,91,38,0.06)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:700, textAlign:'center', outline:'none', color:'#3A2210', cursor:editable?'text':'not-allowed' }}/>
+                        <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, textAlign:'center' }}>{c.dayLabel}</div>
+                        <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} placeholder="—" style={{ width:'100%', border:'1px solid var(--glass-chip-border)', background:editable?'var(--glass-input)':'rgba(154,91,38,0.06)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:700, textAlign:'center', outline:'none', color:'var(--text-primary)', cursor:editable?'text':'not-allowed' }}/>
                       </div>
                     ))}
                   </div>
@@ -1815,8 +1815,8 @@ export default function AdminDashboard() {
           title="Event Pictures" subtitle="Vendor product photos come from their profile. Booth sharers are grouped with the main vendor."
           aboveControls={
             <div style={{ marginBottom:0 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
-              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPhotoSel({}); setBulkUpMsg(null); }} style={{ width:'100%', maxWidth:320, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif", marginBottom:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
+              <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value,page:1}); setPhotoSel({}); setBulkUpMsg(null); }} style={{ width:'100%', maxWidth:320, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'var(--text-primary)', outline:'none', fontFamily:"'Karla',sans-serif", marginBottom:16 }}>
                 {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </div>
@@ -1836,16 +1836,16 @@ export default function AdminDashboard() {
           filterControl={<FilterPill label={photoFilter==='all'?'All vendors':'New — not downloaded'} value={photoFilter} onChange={v=>{ setPhotoFilter(v); setPhotoSel({}); set({page:1}); }} options={[['all','All vendors'],['new',`New — not downloaded (${boothGroups.filter(g=>!groupDownloaded(g)).length})`]]}/>}
           toolbar={
             <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:8, marginBottom:16 }}>
-              <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:700, color:'#6B4E33', cursor:'pointer', background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', borderRadius:9, padding:'8px 12px' }}>
+              <label style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:12, fontWeight:700, color:'var(--text-secondary)', cursor:'pointer', background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', borderRadius:9, padding:'8px 12px' }}>
                 <input type="checkbox" style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}
                   checked={filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id])}
                   onChange={()=>{ const all = filteredGroups.length>0 && filteredGroups.every(g=>photoSel[g.id]); setPhotoSel(all ? {} : Object.fromEntries(filteredGroups.map(g=>[g.id,true]))); }}/>
                 Select all
               </label>
-              <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(154,91,38,0.1)', border:'none', color:selectedGroups.length?'#FFF8EE':'#B8A48C', fontSize:12, fontWeight:700, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
+              <button disabled={zipBusy} onClick={bulkDownloadSel} style={{ display:'inline-flex', alignItems:'center', gap:6, background:selectedGroups.length?'linear-gradient(135deg, #B97434, #7A431A)':'var(--glass-divider)', border:'none', color:selectedGroups.length?'#FFF8EE':'#B8A48C', fontSize:12, fontWeight:700, borderRadius:9, padding:'9px 14px', cursor:zipBusy?'wait':'pointer' }}>
                 <Icon name="download" size={14} color={selectedGroups.length?'#FFF8EE':'#B8A48C'}/>Bulk download{selectedGroups.length?` (${selectedGroups.length})`:''}
               </button>
-              <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.6)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
+              <label title="Upload a folder containing one sub-folder per business name" style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:9, padding:'9px 14px', cursor:'pointer' }}>
                 <input type="file" webkitdirectory="" directory="" multiple style={{ display:'none' }} onChange={handleBulkUpload}/>
                 <Icon name="upload" size={14} color="#6B4E33"/>Bulk upload
               </label>
@@ -1861,16 +1861,16 @@ export default function AdminDashboard() {
             const isSel = !!photoSel[g.id];
             const mainV = vById(g.members[0]);
             return (
-              <div key={g.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div key={g.id} className="dc-row-hover" style={{ borderBottom:'1px solid var(--glass-divider)' }}>
                 <div style={{ display:'grid', gridTemplateColumns:epGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                   <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={mainV} size={34}/>
-                    <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{mainV.business}</div>
                   </div>
                   <div>
                     {g.shared && (
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, color:'#9A5B26', background:'rgba(154,91,38,0.14)', borderRadius:999, padding:'4px 10px' }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, color:'#9A5B26', background:'var(--glass-divider)', borderRadius:999, padding:'4px 10px' }}>
                         <Icon name="users" size={12} color="#9A5B26"/>Shared · {g.members.length} vendors
                       </span>
                     )}
@@ -1883,22 +1883,22 @@ export default function AdminDashboard() {
                     const dl = photoDownloads[key];
                     const adminPhotos = eventPhotos[key] || [];
                     return (
-                      <div key={vid} style={{ marginTop:mi>0?12:0, paddingTop:mi>0?12:0, borderTop:mi>0?'1px dashed rgba(154,91,38,0.16)':'none' }}>
+                      <div key={vid} style={{ marginTop:mi>0?12:0, paddingTop:mi>0?12:0, borderTop:mi>0?'1px dashed var(--glass-card-border)':'none' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:13, fontWeight:700, color:'#3A2210' }}>{v.business}</span>
-                          {mi>0 && <span style={{ fontSize:10.5, fontWeight:700, color:'#8A6A4A', background:'rgba(154,91,38,0.08)', borderRadius:6, padding:'2px 7px' }}>Booth sharer</span>}
+                          <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{v.business}</span>
+                          {mi>0 && <span style={{ fontSize:10.5, fontWeight:700, color:'var(--text-muted)', background:'rgba(154,91,38,0.08)', borderRadius:6, padding:'2px 7px' }}>Booth sharer</span>}
                           {dl && <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, color:'#3F7A54', background:'rgba(90,145,110,0.16)', borderRadius:6, padding:'2px 7px' }}><Icon name="check" size={11} color="#3F7A54"/>Downloaded {dl}</span>}
                           <div style={{ flex:1 }}/>
-                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
+                          <button disabled={zipBusy} onClick={()=>downloadVendorZip(v)} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'6px 10px', cursor:zipBusy?'wait':'pointer', flexShrink:0 }}>
                             <Icon name="download" size={12} color="#6B4E33"/>Download ({(v.productPhotos||[]).length})
                           </button>
                         </div>
-                        <div style={{ fontSize:11, fontWeight:700, color:'#8A6A4A', marginTop:9 }}>Product photos ({(v.productPhotos||[]).length}) — from vendor profile</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginTop:9 }}>Product photos ({(v.productPhotos||[]).length}) — from vendor profile</div>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:6 }}>
                           {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={64}/>)}
-                          {!(v.productPhotos||[]).length && <span style={{ fontSize:11.5, color:'#8A6A4A' }}>None uploaded yet.</span>}
+                          {!(v.productPhotos||[]).length && <span style={{ fontSize:11.5, color:'var(--text-muted)' }}>None uploaded yet.</span>}
                         </div>
-                        <div style={{ fontSize:11, fontWeight:700, color:'#8A6A4A', marginTop:11 }}>Event photos for vendor ({adminPhotos.length}) — vendor downloads these</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginTop:11 }}>Event photos for vendor ({adminPhotos.length}) — vendor downloads these</div>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:6, alignItems:'center' }}>
                           {adminPhotos.map(ph => (
                             <PhotoTile key={ph.id} photo={ph} size={64} onRemove={()=>{
@@ -1938,8 +1938,8 @@ export default function AdminDashboard() {
           aboveControls={
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', gap:12, marginBottom:16, flexWrap:'wrap' }}>
               <div style={{ flex:'1 1 240px', minWidth:0 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
-                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'#3A2210', outline:'none', fontFamily:"'Karla',sans-serif" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Select event</div>
+                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,page:1})} style={{ width:'100%', border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 14px', fontSize:14, color:'var(--text-primary)', outline:'none', fontFamily:"'Karla',sans-serif" }}>
                   {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
               </div>
@@ -1953,7 +1953,7 @@ export default function AdminDashboard() {
                     showToast('Vendor Pass report downloaded','download');
                   } finally { setPassReportBusy(false); }
                 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid rgba(154,91,38,0.22)', borderRadius:999, fontSize:13, fontWeight:700, color:'#6B4E33', background:'rgba(255,255,255,0.6)', cursor: passReportBusy?'default':'pointer', flexShrink:0, fontFamily:"'Karla',sans-serif" }}>
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor: passReportBusy?'default':'pointer', flexShrink:0, fontFamily:"'Karla',sans-serif" }}>
                 <Icon name="download" size={14} color="#6B4E33"/>{passReportBusy ? 'Preparing…' : 'Export report (PDF)'}
               </button>
             </div>
@@ -1997,18 +1997,18 @@ export default function AdminDashboard() {
             const summaryParts = ['approved','pending','rejected'].filter(s=>statusCounts[s]).map(s=>`${statusCounts[s]} ${s}`);
 
             return (
-              <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid var(--glass-divider)' }}>
                 <div style={{ display:'grid', gridTemplateColumns:vpGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={v} size={36}/>
-                    <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                   </div>
                   <div>
                     {passApp ? (
-                      <input value={passApp.boothNumber||''} onChange={e=>updateBooth(e.target.value)} placeholder="e.g. A12" style={{ width:'100%', maxWidth:140, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:9, padding:'8px 10px', fontSize:13, color:'#3A2210', outline:'none' }}/>
+                      <input value={passApp.boothNumber||''} onChange={e=>updateBooth(e.target.value)} placeholder="e.g. A12" style={{ width:'100%', maxWidth:140, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:9, padding:'8px 10px', fontSize:13, color:'var(--text-primary)', outline:'none' }}/>
                     ) : <span style={{ fontSize:12, color:'#B8A48C' }}>—</span>}
                   </div>
-                  <div style={{ fontSize:11.5, color:'#6B4E33' }}>
+                  <div style={{ fontSize:11.5, color:'var(--text-secondary)' }}>
                     {!passApp ? 'No application yet' : `${passApp.people.length} holder${passApp.people.length!==1?'s':''}${summaryParts.length?` · ${summaryParts.join(', ')}`:''}${passApp.extraApproved?` · +${passApp.extraApproved} extra`:''}`}
                   </div>
                 </div>
@@ -2021,7 +2021,7 @@ export default function AdminDashboard() {
                           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                             <div onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0, cursor:'pointer' }}>
                               <PhotoTile photo={p.photo} size={34}/>
-                              <span style={{ fontSize:12.5, fontWeight:700, color:'#3A2210', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
+                              <span style={{ fontSize:12.5, fontWeight:700, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
                               <Icon name="eye" size={12} color="#8A6A4A"/>
                             </div>
                             <Badge status={p.status}/>
@@ -2039,17 +2039,17 @@ export default function AdminDashboard() {
                           )}
 
                           {rejectingPersonId === p.id && (
-                            <div style={{ marginTop:9, background:'rgba(255,255,255,0.7)', border:'1px solid rgba(154,91,38,0.22)', borderRadius:10, padding:10 }}>
-                              <div style={{ fontSize:11, fontWeight:700, color:'#3A2210', marginBottom:7 }}>Why reject {p.name}'s photo?</div>
-                              <select value={rejectReasonKey} onChange={e=>setRejectReasonKey(e.target.value)} style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.9)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'#3A2210', outline:'none' }}>
+                            <div style={{ marginTop:9, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', borderRadius:10, padding:10 }}>
+                              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)', marginBottom:7 }}>Why reject {p.name}'s photo?</div>
+                              <select value={rejectReasonKey} onChange={e=>setRejectReasonKey(e.target.value)} style={{ width:'100%', border:'1px solid var(--glass-chip-border)', background:'var(--glass-card-solid)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'var(--text-primary)', outline:'none' }}>
                                 <option value="">Select a reason…</option>
                                 {Object.entries(PASS_REJECT_REASONS).map(([k,label]) => <option key={k} value={k}>{label}</option>)}
                               </select>
                               {rejectReasonKey === 'other' && (
-                                <textarea value={rejectReasonOther} onChange={e=>setRejectReasonOther(e.target.value)} placeholder="Describe the reason" style={{ width:'100%', border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.9)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'#3A2210', outline:'none', marginTop:8, minHeight:52, resize:'none', boxSizing:'border-box' }}/>
+                                <textarea value={rejectReasonOther} onChange={e=>setRejectReasonOther(e.target.value)} placeholder="Describe the reason" style={{ width:'100%', border:'1px solid var(--glass-chip-border)', background:'var(--glass-card-solid)', borderRadius:9, padding:'8px 9px', fontSize:12.5, color:'var(--text-primary)', outline:'none', marginTop:8, minHeight:52, resize:'none', boxSizing:'border-box' }}/>
                               )}
                               <div style={{ display:'flex', gap:8, marginTop:9 }}>
-                                <button onClick={()=>{ setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'rgba(154,91,38,0.08)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
+                                <button onClick={()=>{ setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther(''); }} style={{ flex:1, background:'rgba(154,91,38,0.08)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
                                 <button onClick={()=>confirmReject(p)} style={{ flex:1, background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Confirm reject</button>
                               </div>
                             </div>
@@ -2060,15 +2060,15 @@ export default function AdminDashboard() {
 
                     {addingPassFor === passApp.id ? (
                       <div style={{ marginTop:12, background:'rgba(154,91,38,0.06)', borderRadius:12, padding:10 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:'#3A2210', marginBottom:7 }}>How many additional pass slots to grant?</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)', marginBottom:7 }}>How many additional pass slots to grant?</div>
                         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                          <input type="number" min={1} value={addPassCount} onChange={e=>setAddPassCount(e.target.value)} style={{ width:70, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:9, padding:'8px 9px', fontSize:13, color:'#3A2210', outline:'none' }}/>
-                          <button onClick={()=>{ setAddingPassFor(null); setAddPassCount(1); }} style={{ flex:1, background:'rgba(154,91,38,0.08)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
+                          <input type="number" min={1} value={addPassCount} onChange={e=>setAddPassCount(e.target.value)} style={{ width:70, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:9, padding:'8px 9px', fontSize:13, color:'var(--text-primary)', outline:'none' }}/>
+                          <button onClick={()=>{ setAddingPassFor(null); setAddPassCount(1); }} style={{ flex:1, background:'rgba(154,91,38,0.08)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Cancel</button>
                           <button onClick={confirmAddPass} style={{ flex:1, background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Grant</button>
                         </div>
                       </div>
                     ) : (
-                      <button onClick={()=>{ setAddingPassFor(passApp.id); setAddPassCount(1); }} style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:6, background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.22)', color:'#6B4E33', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
+                      <button onClick={()=>{ setAddingPassFor(passApp.id); setAddPassCount(1); }} style={{ marginTop:12, display:'inline-flex', alignItems:'center', gap:6, background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>
                         <Icon name="plus" size={13} color="#6B4E33"/>Add pass
                       </button>
                     )}
@@ -2092,14 +2092,14 @@ export default function AdminDashboard() {
               container silently defeats `position:sticky` (see rule 35). */}
           <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
             <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
-            <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+            <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, var(--glass-chip-border), transparent 70%)', filter:'blur(60px)' }}/>
           </div>
 
           <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:26 }}>
             <div>
-              <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Categories</div>
-              <div style={{ margin:0, fontSize:14, color:'#8A6A4A' }}>Manage vendor categories and browse every registered vendor.</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'var(--text-primary)' }}>Categories</div>
+              <div style={{ margin:0, fontSize:14, color:'var(--text-muted)' }}>Manage vendor categories and browse every registered vendor.</div>
             </div>
             <button onClick={()=>set({catEditId:'new'})} style={{ display:'flex', alignItems:'center', gap:8, padding:'13px 22px', border:'none', borderRadius:999, fontSize:14.5, fontWeight:700, color:'#FFF8EE', background:'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow:'0 8px 20px rgba(122,67,26,0.35)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="plus" size={15} color="#FFF8EE"/>Add New Category
@@ -2155,16 +2155,16 @@ export default function AdminDashboard() {
           <div style={{ display:'flex', alignItems:'stretch', gap:24, flexWrap:'wrap' }}>
 
             {/* LEFT — All Vendors table */}
-            <div style={{ flex:'1 1 640px', minWidth:340, background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+            <div style={{ flex:'1 1 640px', minWidth:340, background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
 
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap', marginBottom:18 }}>
-                <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210' }}>All Vendors</div>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'var(--text-primary)' }}>All Vendors</div>
                 <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', minWidth:220 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', minWidth:220 }}>
                     <Icon name="search" size={15} color="#9A5B26"/>
-                    <input value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)} placeholder="Search Vendor…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'#3A2210', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
+                    <input value={vendorSearch} onChange={e=>setVendorSearch(e.target.value)} placeholder="Search Vendor…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'var(--text-primary)', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
                   </div>
-                  <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', color:'#6B4E33', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+                  <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', color:'var(--text-secondary)', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                     <Icon name="sliders" size={14} color="#6B4E33"/>
                     <span style={{ whiteSpace:'nowrap' }}>{catFilter === 'all' ? 'Filters' : catFilter}</span>
                     <select value={catFilter} onChange={e=>set({catFilter:e.target.value, page:1})} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}>
@@ -2175,30 +2175,30 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-muted)', textTransform:'uppercase', borderBottom:'1px solid var(--glass-divider)' }}>
                 <div>Vendor Name</div><div>Categories</div><div>Joined Since</div><div>Market Joined</div><div/>
               </div>
 
               {pagedCatVendors.length === 0 ? (
-                <div style={{ padding:'28px 14px', textAlign:'center', color:'#8A6A4A', fontSize:13.5 }}>
+                <div style={{ padding:'28px 14px', textAlign:'center', color:'var(--text-muted)', fontSize:13.5 }}>
                   {searchedCatVendors.length === 0 && (vendorSearch || catFilter !== 'all') ? 'No vendors match your search or filter.' : 'No vendors yet.'}
                 </div>
               ) : pagedCatVendors.map(v => {
                 const history = vendorHistory(v.id);
                 return (
-                  <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, alignItems:'center', padding:'14px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, alignItems:'center', padding:'14px 14px', borderBottom:'1px solid var(--glass-divider)' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
                       <VendorAvatar v={v} size={38}/>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontSize:14.5, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
-                        <div style={{ fontSize:12, color:'#8A6A4A', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.owner}</div>
+                        <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                        <div style={{ fontSize:12, color:'var(--text-muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.owner}</div>
                       </div>
                     </div>
-                    <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:12, fontWeight:700, background:'rgba(154,91,38,0.14)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
-                    <div style={{ fontSize:13.5, color:'#6B4E33' }}>{v.regDate}</div>
-                    <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>{history.total} market{history.total===1?'':'s'}</div>
+                    <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:12, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
+                    <div style={{ fontSize:13.5, color:'var(--text-secondary)' }}>{v.regDate}</div>
+                    <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{history.total} market{history.total===1?'':'s'}</div>
                     <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} title="View Profile" style={{ width:30, height:30, borderRadius:9, border:'none', background:'transparent', color:'#8A6A4A', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                      <button onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})} title="View Profile" style={{ width:30, height:30, borderRadius:9, border:'none', background:'transparent', color:'var(--text-muted)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
                         <Icon name="kebab" size={16} color="#8A6A4A"/>
                       </button>
                     </div>
@@ -2209,27 +2209,27 @@ export default function AdminDashboard() {
               {/* Sticky footer, scoped to this left panel only — sits in its own
                   column, so it can't visually collide with the right panel's card
                   next to it (rule 35's sticky-footer treatment, applied here too). */}
-              <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
+              <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'var(--glass-header)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid var(--glass-card-border)', borderRadius:'0 0 24px 24px' }}>
                 <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
               </div>
             </div>
 
             {/* RIGHT — Category side panel */}
-            <div style={{ flex:'0 1 340px', minWidth:280, background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:22, boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)', display:'flex', flexDirection:'column' }}>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210', marginBottom:16 }}>Categories That We Have So Far….</div>
+            <div style={{ flex:'0 1 340px', minWidth:280, background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:22, boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)', display:'flex', flexDirection:'column' }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'var(--text-primary)', marginBottom:16 }}>Categories That We Have So Far….</div>
               <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                 {cats.map(c => {
                   const count = vendors.filter(v=>v.category===c.name).length;
                   return (
-                    <div key={c.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderRadius:16, border:'1px solid rgba(154,91,38,0.16)', background:'rgba(253,243,228,0.7)' }}>
-                      <div style={{ width:44, height:44, borderRadius:12, background:'rgba(154,91,38,0.14)', display:'flex', alignItems:'center', justifyContent:'center', color:'#7A431A', flexShrink:0 }}>
+                    <div key={c.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderRadius:16, border:'1px solid var(--glass-card-border)', background:'var(--glass-input)' }}>
+                      <div style={{ width:44, height:44, borderRadius:12, background:'var(--glass-divider)', display:'flex', alignItems:'center', justifyContent:'center', color:'#7A431A', flexShrink:0 }}>
                         <Icon name={c.icon} size={19} color="#7A431A"/>
                       </div>
                       <div style={{ minWidth:0, flex:1 }}>
-                        <div style={{ fontSize:14.5, fontWeight:700, color:'#3A2210', marginBottom:3 }}>{c.name}</div>
-                        <div style={{ fontSize:11.5, color:'#8A6A4A', lineHeight:1.4 }}>{c.desc}</div>
+                        <div style={{ fontSize:14.5, fontWeight:700, color:'var(--text-primary)', marginBottom:3 }}>{c.name}</div>
+                        <div style={{ fontSize:11.5, color:'var(--text-muted)', lineHeight:1.4 }}>{c.desc}</div>
                       </div>
-                      <div style={{ width:26, height:26, borderRadius:'50%', background:'rgba(154,91,38,0.16)', color:'#6B4E33', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{count}</div>
+                      <div style={{ width:26, height:26, borderRadius:'50%', background:'var(--glass-card-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{count}</div>
                       <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ width:26, height:26, borderRadius:'50%', border:'none', background:'rgba(196,74,74,0.14)', color:'#B23A3A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
                         <Icon name="x" size={12} color="#B23A3A"/>
                       </button>
@@ -2336,14 +2336,14 @@ export default function AdminDashboard() {
       {aTab === 'compliance' && (() => {
         const policyAndTabs = (
           <>
-            <div style={{ background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:16, padding:'13px 14px', marginBottom:13, display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+            <div style={{ background:'var(--glass-card)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:'13px 14px', marginBottom:13, display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
               <div style={{ flex:1, minWidth:200 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:'#3A2210' }}>Offence policy</div>
-                <div style={{ fontSize:11.5, color:'#8A6A4A', marginTop:2, lineHeight:1.4 }}>Vendors with offences sit out this many upcoming markets. A reminder appears on their next applications, with an override option.</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Offence policy</div>
+                <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2, lineHeight:1.4 }}>Vendors with offences sit out this many upcoming markets. A reminder appears on their next applications, with an override option.</div>
               </div>
               <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                 {[1,2].map(n => (
-                  <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(255,255,255,0.6)', border:`1px solid ${skipN===n?'transparent':'rgba(154,91,38,0.22)'}`, color:skipN===n?'#FFF8EE':'#6B4E33', fontSize:12.5, fontWeight:700, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
+                  <button key={n} onClick={()=>{ set({settings:{...settings, skipMarkets:n}}); showToast(`Policy updated — skip ${n} market${n>1?'s':''}`,'shield'); }} style={{ background:skipN===n?'linear-gradient(135deg, #B97434, #7A431A)':'var(--glass-input)', border:`1px solid ${skipN===n?'transparent':'var(--glass-chip-border)'}`, color:skipN===n?'#FFF8EE':'var(--text-secondary)', fontSize:12.5, fontWeight:700, borderRadius:10, padding:'9px 16px', cursor:'pointer' }}>
                     Skip {n} market{n>1?'s':''}
                   </button>
                 ))}
@@ -2351,7 +2351,7 @@ export default function AdminDashboard() {
             </div>
             <div style={{ display:'flex', background:'rgba(154,91,38,0.08)', borderRadius:12, padding:4, gap:4, marginBottom:16 }}>
               {[['log','Log offences'],['review','Vendor review']].map(([id,label]) => (
-                <button key={id} onClick={()=>set({compTab:id})} style={{ flex:1, border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:compTab===id?'rgba(255,255,255,0.9)':'transparent', color:compTab===id?'#3A2210':'#8A6A4A', boxShadow:compTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
+                <button key={id} onClick={()=>set({compTab:id})} style={{ flex:1, border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 4px', cursor:'pointer', background:compTab===id?'var(--glass-card-solid)':'transparent', color:compTab===id?'var(--text-primary)':'var(--text-muted)', boxShadow:compTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
               ))}
             </div>
           </>
@@ -2366,11 +2366,11 @@ export default function AdminDashboard() {
               title="Compliance" subtitle="Per-vendor offence history and evidence."
               aboveControls={policyAndTabs}
               banner={
-                <div style={{ background:'rgba(255,255,255,0.55)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:16, padding:'13px 14px', marginBottom:14 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:'#3A2210', marginBottom:9 }}>Offence legend</div>
+                <div style={{ background:'var(--glass-card)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:'13px 14px', marginBottom:14 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)', marginBottom:9 }}>Offence legend</div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 16px' }}>
                     {Object.entries(offenseTypes).map(([type,ot]) => (
-                      <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, color:'#6B4E33' }}>
+                      <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, color:'var(--text-secondary)' }}>
                         <span style={{ width:8, height:8, borderRadius:'50%', background:ot.color }}/>
                         {ot.label}
                       </span>
@@ -2389,19 +2389,19 @@ export default function AdminDashboard() {
               {reviewPaged.map((v,idx) => {
                 const vOff = offenses.filter(o=>o.vendorId===v.id);
                 return (
-                  <div key={v.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div key={v.id} className="dc-row-hover" style={{ borderBottom:'1px solid var(--glass-divider)' }}>
                     <div style={{ display:'grid', gridTemplateColumns:crGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                         <VendorAvatar v={v} size={34}/>
-                        <div style={{ fontSize:14, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
+                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><span style={{ fontSize:11, fontWeight:700, color:'#B8A48C', marginRight:6 }}>#{(page-1)*PER_PAGE+idx+1}</span>{v.business}</div>
                       </div>
-                      <div style={{ fontSize:12.5, color:'#6B4E33' }}>{v.category}</div>
+                      <div style={{ fontSize:12.5, color:'var(--text-secondary)' }}>{v.category}</div>
                       <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:'#6B4E33', background:'rgba(154,91,38,0.1)', borderRadius:999, padding:'5px 11px' }}>{vOff.length} total</span>
+                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-divider)', borderRadius:999, padding:'5px 11px' }}>{vOff.length} total</span>
                       </div>
                     </div>
                     {vOff.length === 0 ? (
-                      <div style={{ margin:'0 14px 13px', fontSize:11.5, color:'#8A6A4A' }}>No offences on record.</div>
+                      <div style={{ margin:'0 14px 13px', fontSize:11.5, color:'var(--text-muted)' }}>No offences on record.</div>
                     ) : (
                       <div style={{ margin:'0 14px 13px', display:'flex', flexDirection:'column', gap:8 }}>
                         {vOff.map(o => {
@@ -2412,7 +2412,7 @@ export default function AdminDashboard() {
                             <div key={o.id} style={{ background:'rgba(154,91,38,0.06)', borderRadius:11, padding:'10px 11px' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                                 <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>
-                                <span style={{ fontSize:11.5, color:'#6B4E33' }}>{eById(o.eventId).name || 'Unknown event'}</span>
+                                <span style={{ fontSize:11.5, color:'var(--text-secondary)' }}>{eById(o.eventId).name || 'Unknown event'}</span>
                                 <button title="Remove this offence" onClick={()=>{ if(!window.confirm(`Remove this ${ot.label||'offence'} record for ${v.business}?`)) return; dispatch({type:'MERGE_OFFENSES', payload: offenses.filter(x=>x.id!==o.id)}); logActivity('Admin', `removed a ${ot.label||'offence'} record for ${v.business}.`, {icon:'shield', tint:'var(--bg-subtle)'}); showToast('Offence removed','x'); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', padding:2, flexShrink:0 }}>
                                   <Icon name="x" size={13} color="#8A6A4A"/>
                                 </button>
@@ -2421,7 +2421,7 @@ export default function AdminDashboard() {
                                 {oPhotos.map(ph => (
                                   <PhotoTile key={ph.id} photo={ph} size={56} onRemove={()=>{ updOffense({photos: oPhotos.filter(x=>x.id!==ph.id)}); showToast('Evidence photo removed','x'); }}/>
                                 ))}
-                                <label title="Upload evidence photos the vendor can see" style={{ width:56, height:56, borderRadius:10, border:'2px dashed rgba(154,91,38,0.3)', background:'rgba(255,255,255,0.7)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1, cursor:'pointer', flexShrink:0 }}>
+                                <label title="Upload evidence photos the vendor can see" style={{ width:56, height:56, borderRadius:10, border:'2px dashed rgba(154,91,38,0.3)', background:'var(--glass-input)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1, cursor:'pointer', flexShrink:0 }}>
                                   <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={async e=>{
                                     const files = [...e.target.files]; e.target.value='';
                                     if (!files.length) return;
@@ -2453,17 +2453,17 @@ export default function AdminDashboard() {
           <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
             <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
               <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
-              <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+              <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, var(--glass-chip-border), transparent 70%)', filter:'blur(60px)' }}/>
             </div>
             <div style={{ position:'relative', zIndex:1 }}>
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>Compliance</div>
-                <div style={{ fontSize:14, color:'#8A6A4A' }}>Tag vendors with an offence type for the selected market.</div>
+                <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'var(--text-primary)' }}>Compliance</div>
+                <div style={{ fontSize:14, color:'var(--text-muted)' }}>Tag vendors with an offence type for the selected market.</div>
               </div>
               {policyAndTabs}
-              <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
+              <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:'22px 24px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
                 <div style={{ display:'flex', gap:9, marginBottom:16 }}>
-                  <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'#3A2210', outline:'none' }}/>
+                  <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
                   <button onClick={()=>{
                     const n = newOffType.trim();
                     if (!n) return;
@@ -2475,8 +2475,8 @@ export default function AdminDashboard() {
                     showToast('Offence type added','shield');
                   }} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', border:'none', fontSize:14, fontWeight:700, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Add</button>
                 </div>
-                <div style={{ fontSize:12, fontWeight:700, color:'#8A6A4A', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Event</div>
-                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.7)', borderRadius:12, padding:'11px 13px', fontSize:14, color:'#3A2210', outline:'none', marginBottom:16, fontFamily:"'Karla',sans-serif" }}>
+                <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Event</div>
+                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:16, fontFamily:"'Karla',sans-serif" }}>
                   {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
                 <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
@@ -2484,14 +2484,14 @@ export default function AdminDashboard() {
                     const sel = compSel[type]||[];
                     const eventVendors = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
                     return (
-                      <div key={type} style={{ background:'rgba(154,91,38,0.06)', border:'1px solid rgba(154,91,38,0.14)', borderRadius:14, padding:'13px 14px' }}>
+                      <div key={type} style={{ background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-divider)', borderRadius:14, padding:'13px 14px' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:9 }}>
                           <span style={{ width:10, height:10, borderRadius:'50%', background:ot.color, flexShrink:0 }}/>
                           <div style={{ flex:1 }}>
-                            <div style={{ fontSize:13.5, fontWeight:700, color:'#3A2210' }}>{ot.label}</div>
+                            <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{ot.label}</div>
                           </div>
                           {offenses.every(o=>o.type!==type) && (
-                            <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'rgba(255,255,255,0.7)', border:'none', width:26, height:26, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                            <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'var(--glass-input)', border:'none', width:26, height:26, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
                               <Icon name="x" size={13} color="#8A6A4A"/>
                             </button>
                           )}
@@ -2499,7 +2499,7 @@ export default function AdminDashboard() {
                         {sel.length > 0 && (
                           <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
                             {sel.map(vid => (
-                              <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(154,91,38,0.14)', border:'1px solid rgba(154,91,38,0.22)', color:'#9A5B26', fontSize:11.5, fontWeight:700, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
+                              <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-divider)', border:'1px solid var(--glass-chip-border)', color:'#9A5B26', fontSize:11.5, fontWeight:700, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
                                 {vById(vid).business}<Icon name="x" size={13} color="#9A5B26"/>
                               </button>
                             ))}
@@ -2507,7 +2507,7 @@ export default function AdminDashboard() {
                         )}
                         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:9 }}>
                           {eventVendors.filter(vid=>!sel.includes(vid)).map(vid => (
-                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=[...(s[type]||[]),vid]; set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'rgba(255,255,255,0.7)', border:'1px dashed rgba(154,91,38,0.3)', color:'#6B4E33', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', cursor:'pointer' }}>+ {vById(vid).business}</button>
+                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=[...(s[type]||[]),vid]; set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--glass-input)', border:'1px dashed rgba(154,91,38,0.3)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', cursor:'pointer' }}>+ {vById(vid).business}</button>
                           ))}
                         </div>
                       </div>
@@ -2889,7 +2889,7 @@ export default function AdminDashboard() {
                       onClick={()=> setExpandedAdmin(isOpen ? null : a.id)}
                       style={{ width:'100%', display:'flex', alignItems:'center', gap:11, padding:'12px 14px', background:'none', border:'none', cursor:'pointer', textAlign:'left' }}
                     >
-                      <div style={{ width:36, height:36, borderRadius:'50%', background: a.role==='super' ? '#3A2210' : 'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#9A5B26', fontWeight:700, fontSize:13, flexShrink:0 }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background: a.role==='super' ? 'var(--text-primary)' : 'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', color: a.role==='super' ? '#FAF8F5' : '#9A5B26', fontWeight:700, fontSize:13, flexShrink:0 }}>
                         {a.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
@@ -2897,7 +2897,7 @@ export default function AdminDashboard() {
                           <span style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{a.name}</span>
                           <span style={{ fontSize:11, color:'var(--text-muted)' }}>{a.id}</span>
                           {a.role === 'super' ? (
-                            <span style={{ fontSize:10, fontWeight:700, color:'#FAF8F5', background:'#3A2210', borderRadius:999, padding:'2px 8px' }}>Super admin</span>
+                            <span style={{ fontSize:10, fontWeight:700, color:'#FAF8F5', background:'var(--text-primary)', borderRadius:999, padding:'2px 8px' }}>Super admin</span>
                           ) : a.mustReset ? (
                             <span style={{ fontSize:10, fontWeight:600, color:'var(--tint-amber-text)', background:'var(--tint-amber-bg)', borderRadius:999, padding:'2px 8px' }}>Awaiting first sign-in</span>
                           ) : (
@@ -2987,7 +2987,7 @@ export default function AdminDashboard() {
       {aTab === 'profile' && (
         <div style={{ padding:'16px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:18, display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:54, height:54, borderRadius:'50%', background:'#3A2210', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:18, flexShrink:0 }}>SA</div>
+            <div style={{ width:54, height:54, borderRadius:'50%', background:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:18, flexShrink:0 }}>SA</div>
             <div>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Siti Aminah</div>
               <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>Portal Administrator</div>
