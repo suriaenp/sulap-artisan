@@ -6,6 +6,7 @@ import VendorAvatar from '../components/VendorAvatar';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import PortalHeader from '../components/PortalHeader';
 import PortalFooter from '../components/PortalFooter';
+import { ModernPager, TableShell, MiniTablePanel, FilterPill, IconBtn } from '../components/TableShell';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
@@ -117,43 +118,6 @@ function Pager({ total, perPage, page, onPage }) {
   );
 }
 
-// Numbered-pill pagination (page 1, 2, 3 … last, with a "Page X of Y" label) — used
-// where a denser, more modern pager reads better than the plain Prev/Next of `Pager`.
-// Fixed "01 02 03 04 05 … last" pill pagination — the head window stays put
-// regardless of the active page (matching the reference screenshot exactly);
-// Previous/Next still step through every page one at a time.
-// Styled to match the Categories tab's design handoff (Canvas-4.dc.html) exactly —
-// amber gradient on the active pill and the Next button, plain outline everywhere
-// else. Only used by that tab, so it's fine for its colors to be hardcoded rather
-// than theme-variable-driven (same call as the Sheet component elsewhere — see
-// PROJECT_NOTES rule 19/31).
-function ModernPager({ total, perPage, page, onPage }) {
-  const pages = Math.ceil(total / perPage) || 1;
-  // Always render, even for a single page — so every tab's sticky footer bar
-  // is consistently present (Prev/Next just come up disabled) instead of the
-  // whole bar disappearing on tabs with too little seed data to need paging.
-  const pad = n => String(n).padStart(2, '0');
-  const headCount = Math.min(5, pages);
-  const head = Array.from({ length: headCount }, (_, i) => i + 1);
-  const hasTail = pages > headCount;
-  const hasGap = pages > headCount + 1;
-  const outlineStyle = (dis) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', color:dis?'#B8A48C':'#8A6A4A', fontSize:13, fontWeight:700, cursor:dis?'not-allowed':'pointer', fontFamily:"'Karla',sans-serif", opacity:dis?0.6:1 });
-  const gradientStyle = (dis) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'none', background:dis?'rgba(154,91,38,0.35)':'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', fontSize:13, fontWeight:700, cursor:dis?'not-allowed':'pointer', fontFamily:"'Karla',sans-serif" });
-  const pillStyle = (active) => ({ width:34, height:34, borderRadius:10, border:active?'none':'1px solid rgba(154,91,38,0.2)', background:active?'linear-gradient(135deg, #B97434, #7A431A)':'rgba(255,255,255,0.6)', color:active?'#FFF8EE':'#6B4E33', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Karla',sans-serif" });
-  return (
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, padding:'16px 14px' }}>
-      <div style={{ fontSize:13, color:'#8A6A4A' }}>Page {page} of {pages}</div>
-      <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
-        <button disabled={page<=1} onClick={()=>onPage(page-1)} style={outlineStyle(page<=1)}>‹ Previous</button>
-        {head.map(n => <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>)}
-        {hasGap && <span style={{ width:22, textAlign:'center', color:'#8A6A4A', fontSize:13 }}>…</span>}
-        {hasTail && <button onClick={()=>onPage(pages)} style={pillStyle(pages===page)}>{pad(pages)}</button>}
-        <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={gradientStyle(page>=pages)}>Next ›</button>
-      </div>
-    </div>
-  );
-}
-
 function SearchBox({ value, onChange, placeholder = 'Search by business or owner name' }) {
   return (
     <div style={{ position:'relative', marginBottom:14, maxWidth:360 }}>
@@ -175,136 +139,6 @@ function NoSearchMatch({ query }) {
     <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
       No vendors match "{query}".
     </div>
-  );
-}
-
-// ── Shared "glass table" shell ──────────────────────────────────────────────
-// The Categories/Payments table look (decorative ambient glow scoped to its
-// own clipped layer — never the tab's own overflow, which would silently
-// break the sticky footer's `position:sticky` — translucent glass panel,
-// header-row + grid-row table, and a sticky `ModernPager` footer) factored
-// out so every admin list tab shares one implementation instead of each
-// re-declaring the same ~80 lines of chrome. Hardcoded to the handoff's own
-// hex/rgba palette rather than `--bg-card`/`--text-primary`, same deliberate
-// non-dark-aware tradeoff as Categories (PROJECT_NOTES rule 31) and Payments
-// (rule 32) — this panel stays a light cream card regardless of night mode.
-function TableShell({
-  title, subtitle, headerAction,
-  aboveControls, banner,
-  panelTitle,
-  searchValue, onSearchChange, searchPlaceholder = 'Search vendor…',
-  filterControl, toolbar,
-  headerCells, gridTemplate, minWidth = 700,
-  isEmpty, emptyMessage,
-  children,
-  total, perPage, page, onPage,
-}) {
-  return (
-    // `minHeight` keeps the decorative glow circles (sized for a tall, fully-
-    // populated page) from dominating short-content tabs — without it, a tab
-    // with only 1-2 rows shrinks the wrapper down to roughly the glow circles'
-    // own diameter, so they cover almost the entire visible area instead of
-    // just softly shading the corners, reading as a heavy smudge/shadow.
-    <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
-      <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
-        <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
-        <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
-      </div>
-      <div style={{ position:'relative', zIndex:1 }}>
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:20 }}>
-          <div>
-            <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'#3A2210' }}>{title}</div>
-            {subtitle && <div style={{ margin:0, fontSize:14, color:'#8A6A4A' }}>{subtitle}</div>}
-          </div>
-          {headerAction}
-        </div>
-
-        {aboveControls}
-        {banner}
-
-        <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:24, padding:'22px 24px 8px', boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, flexWrap:'wrap', marginBottom:16 }}>
-            <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, color:'#3A2210' }}>{panelTitle}</div>
-            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-              {onSearchChange && (
-                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.2)', background:'rgba(255,255,255,0.6)', minWidth:200 }}>
-                  <Icon name="search" size={15} color="#9A5B26"/>
-                  <input value={searchValue} onChange={e=>onSearchChange(e.target.value)} placeholder={searchPlaceholder} style={{ border:'none', outline:'none', background:'transparent', fontSize:13.5, color:'#3A2210', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
-                </div>
-              )}
-              {filterControl}
-            </div>
-          </div>
-
-          {toolbar}
-
-          <div style={{ overflowX:'auto' }}>
-            <div style={{ minWidth }}>
-              <div style={{ display:'grid', gridTemplateColumns:gridTemplate, gap:10, alignItems:'center', padding:'0 14px 12px', fontSize:12, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
-                {headerCells}
-              </div>
-              {isEmpty ? (
-                <div style={{ padding:'28px 14px', textAlign:'center', color:'#8A6A4A', fontSize:13.5 }}>{emptyMessage}</div>
-              ) : children}
-            </div>
-          </div>
-
-          <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
-            <ModernPager total={total} perPage={perPage} page={page} onPage={onPage}/>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Compact non-sticky table used for a secondary/nested list within a tab that
-// already has its own TableShell (e.g. a collapsible "rejected"/"decided"
-// sub-list) — same header-row + grid-row look, no duplicate page title/glow.
-function MiniTablePanel({ headerCells, gridTemplate, minWidth = 700, children }) {
-  return (
-    <div style={{ background:'rgba(255,255,255,0.55)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid rgba(154,91,38,0.16)', borderRadius:20, padding:'14px 18px 6px', boxSizing:'border-box', marginTop:13 }}>
-      <div style={{ overflowX:'auto' }}>
-        <div style={{ minWidth }}>
-          <div style={{ display:'grid', gridTemplateColumns:gridTemplate, gap:10, alignItems:'center', padding:'0 12px 10px', fontSize:11.5, fontWeight:700, letterSpacing:'0.06em', color:'#8A6A4A', textTransform:'uppercase', borderBottom:'1px solid rgba(154,91,38,0.14)' }}>
-            {headerCells}
-          </div>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Filter-pill control shared by every table's panel header — a native
-// `<select>` layered transparent over a styled pill (icon + current value),
-// same technique as Categories' "Filters" control (rule 31).
-function FilterPill({ icon = 'sliders', label, value, onChange, options }) {
-  return (
-    <div style={{ position:'relative', display:'inline-flex', alignItems:'center', gap:8, padding:'10px 16px', borderRadius:12, border:'1px solid rgba(154,91,38,0.22)', background:'rgba(255,255,255,0.6)', color:'#6B4E33', fontSize:13.5, fontWeight:700, cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
-      <Icon name={icon} size={14} color="#6B4E33"/>
-      <span style={{ whiteSpace:'nowrap' }}>{label}</span>
-      <select value={value} onChange={e=>onChange(e.target.value)} style={{ position:'absolute', inset:0, opacity:0, cursor:'pointer', width:'100%', height:'100%' }}>
-        {options.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
-    </div>
-  );
-}
-
-// Round icon-only action button matching the Payments tab's Documents/Actions
-// column buttons (rule 33) — tone: 'green' (positive/view), 'red' (destructive),
-// 'outline' (neutral), 'muted' (disabled/waiting).
-function IconBtn({ tone = 'outline', size = 30, title, onClick, children, disabled }) {
-  const styles = {
-    green:  { border:'1px solid rgba(90,145,110,0.3)',  background:'rgba(90,145,110,0.14)' },
-    red:    { border:'1px solid rgba(196,74,74,0.3)',   background:'rgba(196,74,74,0.1)' },
-    muted:  { border:'1px solid rgba(154,91,38,0.1)',   background:'rgba(154,91,38,0.06)' },
-    outline:{ border:'1px solid rgba(154,91,38,0.22)',  background:'rgba(255,255,255,0.6)' },
-  };
-  return (
-    <button title={title} onClick={onClick} disabled={disabled} style={{ width:size, height:size, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:disabled?'default':'pointer', opacity:disabled?0.5:1, ...styles[tone] }}>
-      {children}
-    </button>
   );
 }
 
@@ -644,7 +478,7 @@ export default function AdminDashboard() {
           total={searchedPending.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}
         >
           {pagedVendors.map((v,idx) => (
-            <div key={v.id} style={{ display:'grid', gridTemplateColumns:vaGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+            <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:vaGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                 <VendorAvatar v={v} size={36}/>
                 <div style={{ minWidth:0 }}>
@@ -675,7 +509,7 @@ export default function AdminDashboard() {
                 <MiniTablePanel gridTemplate="minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)" minWidth={620}
                   headerCells={<><div>Vendor</div><div>Category</div><div>Registered</div><div style={{ textAlign:'right' }}>Action</div></>}>
                   {searchedRejected.map(v => (
-                    <div key={v.id} style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                    <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.6fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                         <VendorAvatar v={v} size={32}/>
                         <div style={{ minWidth:0 }}>
@@ -736,7 +570,7 @@ export default function AdminDashboard() {
             const typeCounts = {};
             vOff.forEach(o=>{ typeCounts[o.type]=(typeCounts[o.type]||0)+1; });
             return (
-              <div key={v.id} style={{ display:'grid', gridTemplateColumns:vlGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:vlGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                   <VendorAvatar v={v} size={36}/>
                   <div style={{ minWidth:0 }}>
@@ -812,7 +646,7 @@ export default function AdminDashboard() {
                 return (oldVal||'') !== (newVal||'');
               });
               return (
-                <div key={req.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={req.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:prGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                       <VendorAvatar v={v} size={34}/>
@@ -854,7 +688,7 @@ export default function AdminDashboard() {
                     {decided.map(req => {
                       const v = vendors.find(x=>x.id===req.vendorId)||{};
                       return (
-                        <div key={req.id} style={{ display:'grid', gridTemplateColumns:'minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                        <div key={req.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr)', gap:10, alignItems:'center', padding:'12px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                             <VendorAvatar v={v} size={30}/>
                             <div style={{ fontSize:13, fontWeight:700, color:'#3A2210', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
@@ -1230,7 +1064,7 @@ export default function AdminDashboard() {
               const onHold = holdOffs.length > 0 && !overridden;
               const h = vendorHistory(a.vendorId);
               return (
-                <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:eaGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                       <VendorAvatar v={v} size={36}/>
@@ -1401,7 +1235,7 @@ export default function AdminDashboard() {
                 background: tone==='green' ? 'rgba(90,145,110,0.14)' : tone==='muted' ? 'rgba(154,91,38,0.06)' : 'rgba(255,255,255,0.6)',
               });
               return (
-                <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                   <div style={{ display:'grid', gridTemplateColumns:'26px minmax(0,1.9fr) minmax(0,0.95fr) minmax(0,0.8fr) minmax(0,1.4fr) minmax(0,2fr)', gap:10, alignItems:'center', padding:'13px 14px' }}>
                     <input type="checkbox" checked={!!paySel[a.id]} onChange={()=>setPaySel(s=>({...s,[a.id]:!s[a.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
                     <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
@@ -1539,7 +1373,7 @@ export default function AdminDashboard() {
             {drPaged.map((v,idx) => {
               const dep = depRec(v.id);
               return (
-                <div key={v.id} style={{ display:'grid', gridTemplateColumns:drGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:drGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={v} size={34}/>
                     <div style={{ minWidth:0 }}>
@@ -1610,7 +1444,7 @@ export default function AdminDashboard() {
                 value: parking[`${a.vendorId}-${ev.id}-${i+1}`]||'',
               }));
               return (
-                <div key={a.id} style={{ display:'grid', gridTemplateColumns:pkGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                <div key={a.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:pkGrid, gap:10, alignItems:'center', padding:'13px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={v} size={34}/>
                     <div style={{ minWidth:0 }}>
@@ -1690,7 +1524,7 @@ export default function AdminDashboard() {
             const isSel = !!photoSel[g.id];
             const mainV = vById(g.members[0]);
             return (
-              <div key={g.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div key={g.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                 <div style={{ display:'grid', gridTemplateColumns:epGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                   <input type="checkbox" checked={isSel} onChange={()=>setPhotoSel(s=>({...s,[g.id]:!s[g.id]}))} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
@@ -1826,7 +1660,7 @@ export default function AdminDashboard() {
             const summaryParts = ['approved','pending','rejected'].filter(s=>statusCounts[s]).map(s=>`${statusCounts[s]} ${s}`);
 
             return (
-              <div key={a.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+              <div key={a.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                 <div style={{ display:'grid', gridTemplateColumns:vpGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                     <VendorAvatar v={v} size={36}/>
@@ -2015,7 +1849,7 @@ export default function AdminDashboard() {
               ) : pagedCatVendors.map(v => {
                 const history = vendorHistory(v.id);
                 return (
-                  <div key={v.id} style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, alignItems:'center', padding:'14px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div key={v.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,2.1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 40px', gap:10, alignItems:'center', padding:'14px 14px', borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
                       <VendorAvatar v={v} size={38}/>
                       <div style={{ minWidth:0 }}>
@@ -2218,7 +2052,7 @@ export default function AdminDashboard() {
               {reviewPaged.map((v,idx) => {
                 const vOff = offenses.filter(o=>o.vendorId===v.id);
                 return (
-                  <div key={v.id} style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
+                  <div key={v.id} className="dc-row-hover" style={{ borderBottom:'1px solid rgba(154,91,38,0.1)' }}>
                     <div style={{ display:'grid', gridTemplateColumns:crGrid, gap:10, alignItems:'center', padding:'13px 14px' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                         <VendorAvatar v={v} size={34}/>
