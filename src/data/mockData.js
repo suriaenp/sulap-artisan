@@ -23,9 +23,9 @@ export const isEventPhoto = (img) => typeof img === 'string' && img.trim().start
 export const eventImgFromFile = (dataUrl) => `url("${dataUrl}") center/cover no-repeat`;
 
 export const INITIAL_EVENTS = [
-  { id:'e1', name:'Tamu Weekend Bazaar', dateRange:'12 – 14 Jul 2026', location:'Gaya Street, KK', days:3, applied:48, fnb:300, nonfnb:250, startTime:'08:00', endTime:'16:00', lastApp:'2026-07-05', startDate:'2026-07-12', endDate:'2026-07-14', img:"url('/assets/event-tamu.png') center/cover no-repeat" },
-  { id:'e2', name:'Borneo Makers Fair',  dateRange:'26 – 27 Jul 2026', location:'Likas Square',   days:2, applied:32, fnb:280, nonfnb:230, startTime:'10:00', endTime:'18:00', lastApp:'2026-06-21', startDate:'2026-07-26', endDate:'2026-07-27', img:"url('/assets/event-makers.png') center/cover no-repeat" },
-  { id:'e3', name:'Harvest Night Market', dateRange:'2 – 4 Aug 2026', location:'Gaya Street, KK', days:3, applied:60, fnb:320, nonfnb:270, startTime:'17:00', endTime:'23:00', lastApp:'2026-07-26', startDate:'2026-08-02', endDate:'2026-08-04', img:"url('/assets/event-harvest.png') center/cover no-repeat" },
+  { id:'e1', name:'Tamu Weekend Bazaar', dateRange:'12 – 14 Jul 2026', location:'Gaya Street, KK', days:3, applied:48, fnb:300, nonfnb:250, startTime:'08:00', endTime:'16:00', lastApp:'2026-07-05', startDate:'2026-07-12', endDate:'2026-07-14', img:"url('/assets/events/e1-tamu-weekend.jpg') center/cover no-repeat" },
+  { id:'e2', name:'Borneo Makers Fair',  dateRange:'26 – 27 Jul 2026', location:'Likas Square',   days:2, applied:32, fnb:280, nonfnb:230, startTime:'10:00', endTime:'18:00', lastApp:'2026-06-21', startDate:'2026-07-26', endDate:'2026-07-27', img:"url('/assets/events/e2-borneo-makers.jpg') center/cover no-repeat" },
+  { id:'e3', name:'Harvest Night Market', dateRange:'2 – 4 Aug 2026', location:'Gaya Street, KK', days:3, applied:60, fnb:320, nonfnb:270, startTime:'17:00', endTime:'23:00', lastApp:'2026-07-26', startDate:'2026-08-02', endDate:'2026-08-04', img:"url('/assets/events/e3-harvest-night.jpg') center/cover no-repeat" },
   // Six more events (added 2026-07-17) spanning every eventStatus()/applications-open
   // combination so the admin Events tab, Dashboard, and vendor Available Markets
   // all have real variety to demo: e4 ongoing, e5/e6/e9 upcoming+open, e2 (above)
