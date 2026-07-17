@@ -1918,11 +1918,17 @@ export default function AdminDashboard() {
 
       {/* ── Categories ── */}
       {aTab === 'categories' && (
-        <div style={{ position:'relative', padding:'28px 24px 32px', overflow:'hidden' }}>
-          {/* Decorative ambient glow — matches the design handoff (Canvas-4.dc.html); contained
-              to this tab's own box so it can't bleed into the sidebar or other tabs. */}
-          <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)', pointerEvents:'none', zIndex:0 }}/>
-          <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)', pointerEvents:'none', zIndex:0 }}/>
+        <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
+          {/* Decorative ambient glow — matches the design handoff (Canvas-4.dc.html).
+              Clipped by its own absolutely-positioned layer (not `overflow:hidden` on
+              this whole tab wrapper) so the sticky pagination footer below can still
+              stick to the real page scroll container — any `overflow` value other than
+              `visible` on an ancestor between a sticky element and its scrolling
+              container silently defeats `position:sticky` (see rule 35). */}
+          <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
+            <div style={{ position:'absolute', top:-120, right:-80, width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(233,160,92,0.35), transparent 70%)', filter:'blur(50px)' }}/>
+            <div style={{ position:'absolute', bottom:-160, left:-100, width:460, height:460, borderRadius:'50%', background:'radial-gradient(circle at 40% 40%, rgba(154,91,38,0.22), transparent 70%)', filter:'blur(60px)' }}/>
+          </div>
 
           <div style={{ position:'relative', zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20, flexWrap:'wrap', marginBottom:26 }}>
@@ -2035,7 +2041,12 @@ export default function AdminDashboard() {
                 );
               })}
 
-              <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+              {/* Sticky footer, scoped to this left panel only — sits in its own
+                  column, so it can't visually collide with the right panel's card
+                  next to it (rule 35's sticky-footer treatment, applied here too). */}
+              <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'rgba(253,246,235,0.94)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid rgba(154,91,38,0.16)', borderRadius:'0 0 24px 24px' }}>
+                <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
+              </div>
             </div>
 
             {/* RIGHT — Category side panel */}
