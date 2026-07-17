@@ -1670,9 +1670,7 @@ export default function AdminDashboard() {
                 (`.scrollarea` in App.jsx) so the pager stays reachable while only the
                 rows above scroll past underneath it, instead of scrolling away with
                 the rest of the tab's content. */}
-            <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'var(--glass-header)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid var(--glass-card-border)', borderRadius:'0 0 24px 24px' }}>
-              <ModernPager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-            </div>
+            <ModernPager total={filteredPayApps.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
           </div>
           </div>
         </div>
@@ -2209,9 +2207,7 @@ export default function AdminDashboard() {
               {/* Sticky footer, scoped to this left panel only — sits in its own
                   column, so it can't visually collide with the right panel's card
                   next to it (rule 35's sticky-footer treatment, applied here too). */}
-              <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'var(--glass-header)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid var(--glass-card-border)', borderRadius:'0 0 24px 24px' }}>
-                <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
-              </div>
+              <ModernPager total={searchedCatVendors.length} perPage={PER_PAGE} page={page} onPage={p=>set({page:p})}/>
             </div>
 
             {/* RIGHT — Category side panel */}

@@ -242,6 +242,43 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
 /* Tab content slides up as it arrives — keyed per tab in both dashboards */
 .tab-panel { animation: tabIn 0.3s var(--ease-spring); }
 
+/* ModernPager's docking wrapper (components/TableShell.jsx) — desktop keeps
+   the original sticky-to-the-card-bottom bar (always visible, even for a
+   single page — rule 38's deliberate cross-tab consistency call). Below
+   768px that same sticky behavior was overlapping the last couple of table
+   rows while scrolling a long list on a short viewport, reading as a
+   translucent bar floating over data rather than a footer — so on mobile it
+   docks to the actual screen bottom instead (`position: fixed`), and hides
+   itself entirely when there's nothing to page through (`--empty`), since a
+   permanently-visible inert control costs a lot more screen on mobile than
+   it does on desktop (rule 48). `.tab-panel` gets matching bottom padding on
+   mobile so the fixed bar never covers a tab's last row/footer. */
+.pager-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: 8px;
+  border-radius: 0 0 24px 24px;
+  background: var(--glass-header);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--glass-card-border);
+}
+@media (max-width: 767px) {
+  .pager-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    margin-top: 0;
+    border-radius: 0;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.14);
+  }
+  .pager-dock--empty { display: none; }
+  .tab-panel { padding-bottom: 84px; }
+}
+
 /* Cards breathe on hover (pointer devices only) */
 @media (hover: hover) {
   .admin-cards > div, .event-rail-card {

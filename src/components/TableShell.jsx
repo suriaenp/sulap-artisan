@@ -1,4 +1,24 @@
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from './Icon';
+
+// Every glass card in this app sets `backdrop-filter` (the blur), which per
+// spec makes that card a new *containing block* for any `position: fixed`
+// descendant — so a fixed-positioned pager docked at `bottom: 0` resolves
+// against the card's own (scrollable) height, not the real viewport, landing
+// far below the visible screen instead of pinned to it. `useIsMobile` +
+// `createPortal` (below) sidestep this by rendering the mobile dock directly
+// under `document.body`, outside every filtered ancestor, once fixed.
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
 
 // Shared "glass table" system, originated by the Categories/Payments tabs
 // (PROJECT_NOTES rules 29-37) and now reused by every admin list tab, and —
@@ -18,9 +38,20 @@ import Icon from './Icon';
 // used where a denser, more modern pager reads better than a plain Prev/Next.
 // Fixed "01 02 03 04 05 … last" pill pagination — the head window stays put
 // regardless of the active page; Previous/Next still step through every page
-// one at a time. Always renders, even for a single page, so every tab's
-// sticky footer bar is consistently present instead of disappearing on tabs
-// with too little data to need paging.
+// one at a time.
+//
+// Renders its own docking wrapper (`.pager-dock`, index.css) rather than
+// leaving each call site to hand-roll one — on desktop that's a `position:
+// sticky` bar pinned to the bottom of the table card (unchanged, always
+// shows "Page 1 of 1" even for a single page, so every tab's footer looks
+// consistent — a deliberate choice, rule 38). Below 768px, `.pager-dock`
+// becomes a `position: fixed` bar docked to the actual screen bottom instead
+// — sticky-within-the-card was overlapping the last couple of rows as you
+// scrolled through a long list on a short mobile viewport, reading as a
+// translucent bar floating over data rather than a footer (rule 48). A fixed
+// bar with nothing to page through is a bigger cost on a small screen than
+// on desktop, so `.pager-dock--empty` hides it there specifically — see
+// rule 48 for why desktop keeps the always-visible "Page 1 of 1" behavior.
 export function ModernPager({ total, perPage, page, onPage }) {
   const pages = Math.ceil(total / perPage) || 1;
   const pad = n => String(n).padStart(2, '0');
@@ -31,18 +62,26 @@ export function ModernPager({ total, perPage, page, onPage }) {
   const outlineStyle = (dis) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', color:'var(--text-secondary)', fontSize:13, fontWeight:700, cursor:dis?'not-allowed':'pointer', fontFamily:"'Karla',sans-serif", opacity:dis?0.5:1 });
   const gradientStyle = (dis) => ({ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'none', background:dis?'rgba(154,91,38,0.35)':'var(--accent-gradient)', color:'#FFF8EE', fontSize:13, fontWeight:700, cursor:dis?'not-allowed':'pointer', fontFamily:"'Karla',sans-serif" });
   const pillStyle = (active) => ({ width:34, height:34, borderRadius:10, border:active?'none':'1px solid var(--glass-chip-border)', background:active?'var(--accent-gradient)':'var(--glass-input)', color:active?'#FFF8EE':'var(--text-secondary)', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:"'Karla',sans-serif" });
-  return (
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, padding:'16px 14px' }}>
-      <div style={{ fontSize:13, color:'var(--text-muted)' }}>Page {page} of {pages}</div>
-      <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
-        <button disabled={page<=1} onClick={()=>onPage(page-1)} style={outlineStyle(page<=1)}>‹ Previous</button>
-        {head.map(n => <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>)}
-        {hasGap && <span style={{ width:22, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>…</span>}
-        {hasTail && <button onClick={()=>onPage(pages)} style={pillStyle(pages===page)}>{pad(pages)}</button>}
-        <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={gradientStyle(page>=pages)}>Next ›</button>
+  const isMobile = useIsMobile();
+  const dock = (
+    <div className={`pager-dock${pages <= 1 ? ' pager-dock--empty' : ''}`}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, padding:'16px 14px' }}>
+        <div style={{ fontSize:13, color:'var(--text-muted)' }}>Page {page} of {pages}</div>
+        <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+          <button disabled={page<=1} onClick={()=>onPage(page-1)} style={outlineStyle(page<=1)}>‹ Previous</button>
+          {head.map(n => <button key={n} onClick={()=>onPage(n)} style={pillStyle(n===page)}>{pad(n)}</button>)}
+          {hasGap && <span style={{ width:22, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>…</span>}
+          {hasTail && <button onClick={()=>onPage(pages)} style={pillStyle(pages===page)}>{pad(pages)}</button>}
+          <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={gradientStyle(page>=pages)}>Next ›</button>
+        </div>
       </div>
     </div>
   );
+  // On mobile the dock is `position: fixed` (index.css) — portaled straight to
+  // <body> so it escapes every ancestor glass-card's `backdrop-filter`, which
+  // would otherwise trap it as a containing block (see note above). Desktop's
+  // `position: sticky` doesn't have that problem, so it stays right in place.
+  return isMobile && typeof document !== 'undefined' ? createPortal(dock, document.body) : dock;
 }
 
 // The Categories/Payments table look (decorative ambient glow scoped to its
@@ -112,9 +151,7 @@ export function TableShell({
             </div>
           </div>
 
-          <div style={{ position:'sticky', bottom:0, zIndex:5, marginTop:8, background:'var(--glass-header)', backdropFilter:'blur(14px)', WebkitBackdropFilter:'blur(14px)', borderTop:'1px solid var(--glass-card-border)', borderRadius:'0 0 24px 24px' }}>
-            <ModernPager total={total} perPage={perPage} page={page} onPage={onPage}/>
-          </div>
+          <ModernPager total={total} perPage={perPage} page={page} onPage={onPage}/>
         </div>
       </div>
     </div>
