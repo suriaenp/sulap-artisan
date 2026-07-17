@@ -209,7 +209,7 @@ export default function VendorDashboard() {
             const myOff = offenses.filter(o => o.vendorId === CURRENT_VENDOR_ID);
             const skipN = settings.skipMarkets ?? 1;
             if (!myOff.length) return (
-              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <div style={{ width:64, height:64, borderRadius:'50%', background:'#E8F5F0', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <Icon name="shield" size={30} color="#2D6A4F"/>
                 </div>
@@ -233,19 +233,19 @@ export default function VendorDashboard() {
                 </div>
                 <div className="admin-cards">
                   {groups.map(g => (
-                    <div key={g.eventId} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14 }}>
-                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:15.5, fontWeight:400, color:'#1C1A17' }}>{g.ev.name||'Unknown market'}</div>
-                      {g.ev.dateRange && <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>{g.ev.dateRange}</div>}
+                    <div key={g.eventId} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:14 }}>
+                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:15.5, fontWeight:400, color:'var(--text-primary)' }}>{g.ev.name||'Unknown market'}</div>
+                      {g.ev.dateRange && <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2 }}>{g.ev.dateRange}</div>}
                       <div style={{ display:'flex', flexDirection:'column', gap:11, marginTop:12 }}>
                         {g.offs.map((o,oi) => {
                           const ot = offenseTypes[o.type]||{};
                           const oPhotos = o.photos||[];
                           return (
-                            <div key={o.id} style={oi>0 ? { paddingTop:11, borderTop:'1px solid #f1ece4' } : undefined}>
+                            <div key={o.id} style={oi>0 ? { paddingTop:11, borderTop:'1px solid var(--glass-divider)' } : undefined}>
                               <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label||'Offence'}</span>
                               {oPhotos.length > 0 ? (
                                 <>
-                                  <div style={{ fontSize:11, fontWeight:600, color:'#A09890', marginTop:10 }}>Photos from the Sulap team ({oPhotos.length})</div>
+                                  <div style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', marginTop:10 }}>Photos from the Sulap team ({oPhotos.length})</div>
                                   <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:7 }}>
                                     {oPhotos.map((ph,i) => (
                                       <PhotoTile key={ph.id} photo={ph} size={72} onDownload={()=>downloadPhoto(ph, `${safeName(g.ev.name||'offence')} - evidence - ${String(i+1).padStart(2,'0')}.${photoExt(ph)}`)}/>
@@ -253,7 +253,7 @@ export default function VendorDashboard() {
                                   </div>
                                 </>
                               ) : (
-                                <div style={{ fontSize:11.5, color:'#A09890', marginTop:9 }}>No photos attached to this record.</div>
+                                <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:9 }}>No photos attached to this record.</div>
                               )}
                             </div>
                           );
@@ -262,7 +262,7 @@ export default function VendorDashboard() {
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize:11.5, color:'#A09890', lineHeight:1.5 }}>If you believe a record was logged in error, contact the Sulap team with your booth details.</div>
+                <div style={{ fontSize:11.5, color:'var(--text-muted)', lineHeight:1.5 }}>If you believe a record was logged in error, contact the Sulap team with your booth details.</div>
               </>
             );
           })()}
@@ -273,9 +273,9 @@ export default function VendorDashboard() {
       {vTab === 'profile' && (
         <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           {/* Vendor details — locked, request-based */}
-          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+          <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>Vendor details</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Vendor details</div>
               {!editingDetails && !detailsReq && (
                 <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
                   <Icon name="pencil" size={13} color="#9A5B26"/>Request a change
@@ -306,18 +306,18 @@ export default function VendorDashboard() {
                     )}
                   </div>
                 ))}
-                <div style={{ fontSize:11, color:'#A09890' }}>Your changes are sent to Sulap Artisan for review — they won't appear here until admin approves.</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)' }}>Your changes are sent to Sulap Artisan for review — they won't appear here until admin approves.</div>
                 <div style={{ display:'flex', gap:9, marginTop:2 }}>
-                  <button onClick={()=>setEditingDetails(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
+                  <button onClick={()=>setEditingDetails(false)} style={{ flex:1, background:'#F2EDE6', color:'var(--text-primary)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
                   <button onClick={sendDetailsRequest} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
                 </div>
               </div>
             ) : (
               <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
                 {DETAILS_FIELDS.map(([k,label],i,arr) => (
-                  <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
-                    <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{label}</span>
-                    <span style={{ fontSize:13.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{me[k] || '—'}</span>
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid var(--glass-divider)':'none' }}>
+                    <span style={{ fontSize:12.5, color:'var(--text-muted)', flexShrink:0 }}>{label}</span>
+                    <span style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)', textAlign:'right' }}>{me[k] || '—'}</span>
                   </div>
                 ))}
               </div>
@@ -325,9 +325,9 @@ export default function VendorDashboard() {
           </div>
 
           {/* Social media & power supply — directly vendor-editable */}
-          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+          <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>Social media &amp; power supply</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Social media &amp; power supply</div>
               {!editingSocial && (
                 <span onClick={startEditSocial} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
                   <Icon name="pencil" size={13} color="#9A5B26"/>Edit
@@ -347,16 +347,16 @@ export default function VendorDashboard() {
                   <textarea value={socialForm.power} onChange={e=>setSocialForm({ ...socialForm, power:e.target.value })} placeholder="List machines + voltage" style={{ ...inp, minHeight:74, resize:'none' }} />
                 </div>
                 <div style={{ display:'flex', gap:9, marginTop:2 }}>
-                  <button onClick={()=>setEditingSocial(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
+                  <button onClick={()=>setEditingSocial(false)} style={{ flex:1, background:'#F2EDE6', color:'var(--text-primary)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
                   <button onClick={saveSocial} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Save</button>
                 </div>
               </div>
             ) : (
               <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
                 {[['Instagram',me.ig],['Facebook',me.fb],['TikTok',me.tiktok],['Power supply needs',me.power]].map(([k,v],i,arr) => (
-                  <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
-                    <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{k}</span>
-                    <span style={{ fontSize:13.5, fontWeight:600, color: k==='Power supply needs'?'#1C1A17':'#9A5B26', textAlign:'right' }}>{v || '—'}</span>
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid var(--glass-divider)':'none' }}>
+                    <span style={{ fontSize:12.5, color:'var(--text-muted)', flexShrink:0 }}>{k}</span>
+                    <span style={{ fontSize:13.5, fontWeight:600, color: k==='Power supply needs'?'var(--text-primary)':'#9A5B26', textAlign:'right' }}>{v || '—'}</span>
                   </div>
                 ))}
               </div>
@@ -365,11 +365,11 @@ export default function VendorDashboard() {
 
           {/* E-Invoice & bank details — locked, request-based, required (once approved) before applying to markets */}
           {me.status === 'approved' ? (
-            <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+            <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                 <div>
-                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>E-Invoice &amp; bank details</div>
-                  <div style={{ fontSize:11.5, color:'#A09890', marginTop:2 }}>Used for e-invoicing and deposit refunds</div>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>E-Invoice &amp; bank details</div>
+                  <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2 }}>Used for e-invoicing and deposit refunds</div>
                 </div>
                 {!editingEI && !einvoiceReq && (
                   <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
@@ -398,27 +398,27 @@ export default function VendorDashboard() {
                     <div key={k}>
                       <label style={lbl}>{label}</label>
                       <input value={eiForm[k]} onChange={e=>setEiForm({ ...eiForm, [k]:e.target.value })} placeholder={hint} style={inp} />
-                      {hint && <div style={{ fontSize:10.5, color:'#A09890', marginTop:4 }}>{hint}</div>}
+                      {hint && <div style={{ fontSize:10.5, color:'var(--text-muted)', marginTop:4 }}>{hint}</div>}
                     </div>
                   ))}
                   <div style={{ display:'flex', gap:9, marginTop:2 }}>
-                    <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
+                    <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'var(--text-primary)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
                     <button onClick={saveEI} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
                   </div>
                 </div>
               ) : (
                 <div style={{ marginTop:14, display:'flex', flexDirection:'column' }}>
                   {EINVOICE_FIELDS.map(([k,label],i,arr) => (
-                    <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid #f1ece4':'none' }}>
-                      <span style={{ fontSize:12.5, color:'#A09890', flexShrink:0 }}>{label}</span>
-                      <span style={{ fontSize:13.5, fontWeight:600, color:'#1C1A17', textAlign:'right' }}>{(me.einvoice&&me.einvoice[k]) || '—'}</span>
+                    <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:14, padding:'11px 0', borderBottom:i<arr.length-1?'1px solid var(--glass-divider)':'none' }}>
+                      <span style={{ fontSize:12.5, color:'var(--text-muted)', flexShrink:0 }}>{label}</span>
+                      <span style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)', textAlign:'right' }}>{(me.einvoice&&me.einvoice[k]) || '—'}</span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
           ) : (
-            <div style={{ display:'flex', gap:9, background:'#F2EDE6', border:'1px solid #e3d8ca', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#6B6560', lineHeight:1.45 }}>
+            <div style={{ display:'flex', gap:9, background:'#F2EDE6', border:'1px solid #e3d8ca', borderRadius:12, padding:'12px 13px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.45 }}>
               <Icon name="info" size={15} color="#A09890" style={{ marginTop:1 }} />
               You'll be asked to complete E-Invoice &amp; bank details here once your vendor registration is approved.
             </div>
@@ -436,15 +436,15 @@ export default function VendorDashboard() {
             const st = myApp?.status;
             const vendorApproved = me.status === 'approved';
             return (
-              <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
+              <div key={ev.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
                 <div style={{ display:'flex', gap:13, padding:13 }}>
                   <div style={{ width:110, height:66, borderRadius:12, background:ev.img, flexShrink:0 }}/>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17', lineHeight:1.15 }}>{ev.name}</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#6B6560', marginTop:5 }}>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)', lineHeight:1.15 }}>{ev.name}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-secondary)', marginTop:5 }}>
                       <Icon name="calendar" size={13} color="#A09890"/>{ev.dateRange}
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:9, fontSize:12, color:'#6B6560', marginTop:3 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:9, fontSize:12, color:'var(--text-secondary)', marginTop:3 }}>
                       <span style={{ display:'flex', alignItems:'center', gap:5 }}><Icon name="clock" size={13} color="#A09890"/>{ev.startTime && ev.endTime ? `${fmtTime(ev.startTime)} – ${fmtTime(ev.endTime)}` : 'TBC'}</span>
                     </div>
                   </div>
@@ -462,7 +462,7 @@ export default function VendorDashboard() {
                       if (!open)   { showToast('Applications closed for this market','lock'); return; }
                       set({ showApplyModal:true, applyEventId:ev.id, applyShare:null, applyPartners:[], applyPartnerSearch:'' });
                     }}
-                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved||!einvoiceOk)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):((!vendorApproved||!einvoiceOk)?'#F2EDE6':(open?'#9A5B26':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):((!vendorApproved||!einvoiceOk)?'#A09890':(open?'#FAF8F5':'#A09890')) }}
+                    style={{ width:'100%', marginTop:11, border:'none', borderRadius:11, padding:11, fontSize:13, fontWeight:600, cursor: (applied||!open||!vendorApproved||!einvoiceOk)?'default':'pointer', background: applied?(st==='rejected'?'#FDEEEC':'#E8F5F0'):((!vendorApproved||!einvoiceOk)?'#F2EDE6':(open?'#9A5B26':'#F2EDE6')), color: applied?(st==='rejected'?'#B03A2E':'#2D6A4F'):((!vendorApproved||!einvoiceOk)?'var(--text-muted)':(open?'#FAF8F5':'var(--text-muted)')) }}
                   >
                     {applied ? (st==='approved'?'Approved': st==='rejected'?'Not selected':'Applied') : (!vendorApproved ? 'Awaiting registration approval' : !einvoiceOk ? 'Complete E-Invoice info to apply' : (open?'Apply to this market':'Applications closed'))}
                   </button>
@@ -479,9 +479,9 @@ export default function VendorDashboard() {
           {(() => {
             const myApps = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID);
             if (!myApps.length) return (
-              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="folder" size={34} color="#bcae9c" />
-                <div style={{ fontSize:14, fontWeight:600, color:'#6B6560', marginTop:13 }}>No applications yet</div>
+                <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginTop:13 }}>No applications yet</div>
                 <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Head to Available markets and apply to your first event.</div>
               </div>
             );
@@ -491,10 +491,10 @@ export default function VendorDashboard() {
                   const ev = events.find(e => e.id === a.eventId) || {};
                   const partnerNames = (a.partners||[]).map(pid => (vendors.find(v=>v.id===pid)?.business||'Unknown'));
                   return (
-                    <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <div key={a.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:14, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
-                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'#6B6560', marginTop:5 }}>
+                        <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>{ev.name}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-secondary)', marginTop:5 }}>
                           <Icon name="calendar" size={13} color="#A09890"/>{ev.dateRange}
                         </div>
                         <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'#9A5B26', marginTop:6 }}>
@@ -515,12 +515,12 @@ export default function VendorDashboard() {
       {/* ── Product Photos ── */}
       {vTab === 'photos' && (
         <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
-          <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+          <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17' }}>Product photos</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Product photos</div>
               <span style={{ fontSize:12, fontWeight:600, color:'#9A5B26', background:'#F3E4CC', borderRadius:999, padding:'4px 11px' }}>{(me.productPhotos||[]).length} of 8</span>
             </div>
-            <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginTop:7 }}>These photos represent your brand across every market you apply to. When you update them here, the Sulap team automatically sees your latest set.</div>
+            <div style={{ fontSize:12.5, color:'var(--text-secondary)', lineHeight:1.5, marginTop:7 }}>These photos represent your brand across every market you apply to. When you update them here, the Sulap team automatically sees your latest set.</div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:14 }}>
               {(me.productPhotos||[]).map(ph => (
                 <PhotoTile key={ph.id} photo={ph} size={90} onRemove={()=>{
@@ -560,9 +560,9 @@ export default function VendorDashboard() {
           {(() => {
             const myApproved = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved');
             if (!myApproved.length) return (
-              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="camera" size={34} color="#bcae9c"/>
-                <div style={{ fontSize:14, fontWeight:600, color:'#6B6560', marginTop:13 }}>No event pictures yet</div>
+                <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginTop:13 }}>No event pictures yet</div>
                 <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Once you're approved for a market, photos taken by the Sulap team will appear here.</div>
               </div>
             );
@@ -572,11 +572,11 @@ export default function VendorDashboard() {
                   const ev = events.find(e => e.id === a.eventId) || {};
                   const photos = eventPhotos[`${CURRENT_VENDOR_ID}-${ev.id}`] || [];
                   return (
-                    <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+                    <div key={a.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
-                          <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange} · {photos.length} photo(s) from the Sulap team</div>
+                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>{ev.name}</div>
+                          <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>{ev.dateRange} · {photos.length} photo(s) from the Sulap team</div>
                         </div>
                         {photos.length > 0 && (
                           <button onClick={async ()=>{
@@ -598,7 +598,7 @@ export default function VendorDashboard() {
                           ))}
                         </div>
                       ) : (
-                        <div style={{ display:'flex', alignItems:'center', gap:8, background:'#FBF7F1', borderRadius:11, padding:'11px 13px', marginTop:12, fontSize:12.5, color:'#A09890' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, background:'#FBF7F1', borderRadius:11, padding:'11px 13px', marginTop:12, fontSize:12.5, color:'var(--text-muted)' }}>
                           <Icon name="clock" size={14} color="#A09890"/>The Sulap team hasn't uploaded photos for this market yet.
                         </div>
                       )}
@@ -618,12 +618,12 @@ export default function VendorDashboard() {
             { icon:'file', tint:'#E8F5F0', iconColor:'#2D6A4F', title:'SSM Registration', sub:'Uploaded · ssm_cert.pdf', subColor:'#2D6A4F', action:'Replace' },
             { icon:'badge', tint:'#FEF8EC', iconColor:'#B7770D', title:'Halal / Food Cert', sub:'Optional · not uploaded', subColor:'#B7770D', action:'Upload' },
           ].map(d => (
-            <div key={d.title} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:15, display:'flex', alignItems:'center', gap:13 }}>
+            <div key={d.title} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:15, display:'flex', alignItems:'center', gap:13 }}>
               <div style={{ width:42, height:42, borderRadius:11, background:d.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <Icon name={d.icon} size={20} color={d.iconColor}/>
               </div>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17' }}>{d.title}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{d.title}</div>
                 <div style={{ fontSize:12, color:d.subColor, marginTop:2 }}>{d.sub}</div>
               </div>
               <span style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>{d.action}</span>
@@ -631,8 +631,8 @@ export default function VendorDashboard() {
           ))}
           <div style={{ border:'2px dashed #d8c6b2', borderRadius:16, background:'#FBF7F1', padding:24, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
             <Icon name="folder" size={26} color="#9A5B26"/>
-            <div style={{ fontSize:13.5, fontWeight:600, color:'#1C1A17', marginTop:9 }}>Add another document</div>
-            <div style={{ fontSize:11.5, color:'#A09890', marginTop:3 }}>PDF, JPG or PNG up to 10MB</div>
+            <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)', marginTop:9 }}>Add another document</div>
+            <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:3 }}>PDF, JPG or PNG up to 10MB</div>
           </div>
         </div>
       )}
@@ -644,19 +644,19 @@ export default function VendorDashboard() {
           {(() => {
             const dep = depRec(CURRENT_VENDOR_ID);
             return (
-              <div style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:16, padding:'14px 15px' }}>
+              <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:'14px 15px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <Icon name="receipt" size={16} color="#9A5B26"/>
-                    <span style={{ fontSize:14, fontWeight:700, color:'#1C1A17' }}>Security deposit</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Security deposit</span>
                   </div>
                   <Badge status={dep.status} />
                 </div>
-                <div style={{ fontSize:12, color:'#6B6560', lineHeight:1.45, marginTop:8 }}>A refundable RM100 deposit is required once per vendor. It will be returned after your first market.</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px', marginTop:9, fontSize:11.5, color:'#A09890' }}>
-                  <span>Invoice <b style={{ color:'#6B6560' }}>{dep.inv||'—'}</b></span>
-                  <span>Paid <b style={{ color:'#6B6560' }}>{dep.payDate||'—'}</b></span>
-                  <span>Refunded <b style={{ color:'#6B6560' }}>{dep.refundDate||'—'}</b></span>
+                <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.45, marginTop:8 }}>A refundable RM100 deposit is required once per vendor. It will be returned after your first market.</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:'6px 16px', marginTop:9, fontSize:11.5, color:'var(--text-muted)' }}>
+                  <span>Invoice <b style={{ color:'var(--text-secondary)' }}>{dep.inv||'—'}</b></span>
+                  <span>Paid <b style={{ color:'var(--text-secondary)' }}>{dep.payDate||'—'}</b></span>
+                  <span>Refunded <b style={{ color:'var(--text-secondary)' }}>{dep.refundDate||'—'}</b></span>
                 </div>
               </div>
             );
@@ -680,31 +680,31 @@ export default function VendorDashboard() {
               await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, dispatch, showToast, logActivity, who: me.business });
             };
             return (
-              <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
+              <div key={a.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
                 <div style={{ padding:'15px 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
-                    <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange}</div>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>{ev.name}</div>
+                    <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>{ev.dateRange}</div>
                   </div>
                   <Badge status={rec.status} />
                 </div>
                 <div style={{ padding:'0 16px 14px' }}>
                   <div style={{ background:'#FBF7F1', borderRadius:12, padding:'11px 13px', marginBottom:11 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6560' }}><span>{calc.tier} · RM {calc.rate}/day × {calc.days} days</span><span>RM {money(calc.base)}</span></div>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6560', marginTop:5 }}><span>SST (6%)</span><span>RM {money(calc.sst)}</span></div>
-                    {calc.needsDeposit && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#6B6560', marginTop:5 }}><span>Security deposit (one-time)</span><span>RM 100.00</span></div>}
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:8, paddingTop:8, borderTop:'1px solid #efe7dc' }}>
-                      <span style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>Total due</span>
-                      <span style={{ fontFamily:"'Marcellus',serif", fontSize:21, fontWeight:400, color:'#1C1A17' }}>RM {money(calc.total)}</span>
+                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--text-secondary)' }}><span>{calc.tier} · RM {calc.rate}/day × {calc.days} days</span><span>RM {money(calc.base)}</span></div>
+                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--text-secondary)', marginTop:5 }}><span>SST (6%)</span><span>RM {money(calc.sst)}</span></div>
+                    {calc.needsDeposit && <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'var(--text-secondary)', marginTop:5 }}><span>Security deposit (one-time)</span><span>RM 100.00</span></div>}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:8, paddingTop:8, borderTop:'1px solid var(--glass-divider)' }}>
+                      <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>Total due</span>
+                      <span style={{ fontFamily:"'Marcellus',serif", fontSize:21, fontWeight:400, color:'var(--text-primary)' }}>RM {money(calc.total)}</span>
                     </div>
                     {isPartial && overpaidAmt <= 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:11.5, color:'#C76A0D', fontWeight:600, marginTop:5 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
                   </div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <div style={{ flex:1, display:'flex', alignItems:'center', gap:8, background:'#FAF8F5', border:'1px solid #efe7dc', borderRadius:10, padding:'9px 11px' }}>
-                      <Icon name="file" size={15} color="#9A5B26"/><span style={{ fontSize:12, color:'#6B6560' }}>{rec.invoice ? rec.invoice.name : 'Invoice not issued yet'}</span>
+                    <div style={{ flex:1, display:'flex', alignItems:'center', gap:8, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', borderRadius:10, padding:'9px 11px' }}>
+                      <Icon name="file" size={15} color="#9A5B26"/><span style={{ fontSize:12, color:'var(--text-secondary)' }}>{rec.invoice ? rec.invoice.name : 'Invoice not issued yet'}</span>
                     </div>
-                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', gap:6, background:rec.invoice?'#9A5B26':'#F2EDE6', color:rec.invoice?'#FAF8F5':'#A09890', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
-                      <Icon name="eye" size={14} color={rec.invoice?'#FAF8F5':'#A09890'}/>Invoice
+                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', gap:6, background:rec.invoice?'#9A5B26':'#F2EDE6', color:rec.invoice?'#FAF8F5':'var(--text-muted)', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
+                      <Icon name="eye" size={14} color={rec.invoice?'#FAF8F5':'var(--text-muted)'}/>Invoice
                     </button>
                   </div>
                   <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:9 }}>
@@ -713,7 +713,7 @@ export default function VendorDashboard() {
                         <Icon name="eye" size={14} color="#2D6A4F"/>Payment advice uploaded — view
                       </button>
                     ) : (
-                      <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer', textAlign:'center' }}>
+                      <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer', textAlign:'center' }}>
                         <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={e=>uploadAdvice('advice',e)}/>
                         <Icon name="upload" size={14} color="#6B6560"/>Upload payment advice (PDF or photo) — amount is read automatically
                       </label>
@@ -723,7 +723,7 @@ export default function VendorDashboard() {
                         <Icon name="eye" size={14} color="#2D6A4F"/>Second payment advice uploaded — view
                       </button>
                     ) : (
-                      <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#6B6560', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer', textAlign:'center' }}>
+                      <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer', textAlign:'center' }}>
                         <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={e=>uploadAdvice('advice2',e)}/>
                         <Icon name="upload" size={14} color="#6B6560"/>Upload second payment advice (remaining balance)
                       </label>
@@ -756,7 +756,7 @@ export default function VendorDashboard() {
                     </div>
                   )}
                   {overpaidAmt > 0 && ref.status === 'closed' && (
-                    <div style={{ fontSize:11, color:'#A09890', marginTop:9 }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:9 }}>Refund closed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
                   )}
                 </div>
               </div>
@@ -775,9 +775,9 @@ export default function VendorDashboard() {
           {(() => {
             const myParkApps = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved');
             if (!myParkApps.length) return (
-              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="car" size={34} color="#bcae9c"/>
-                <div style={{ fontSize:14, fontWeight:600, color:'#6B6560', marginTop:13 }}>No parking assigned yet</div>
+                <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginTop:13 }}>No parking assigned yet</div>
                 <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Parking serials appear here once admin allocates them before market day.</div>
               </div>
             );
@@ -795,16 +795,16 @@ export default function VendorDashboard() {
                   // Today's pass leads the row; the rest keep their day order behind it.
                   const orderedDayInfo = [...dayInfo].sort((a,b) => (a.dayStatus==='active'?0:1) - (b.dayStatus==='active'?0:1));
                   return (
-                    <div key={a.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+                    <div key={a.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
-                          <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.location} · {ev.dateRange}</div>
+                          <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>{ev.name}</div>
+                          <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>{ev.location} · {ev.dateRange}</div>
                         </div>
                         <span style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'5px 11px', background:hasTicket?'#E8F5F0':'#FEF8EC', color:hasTicket?'#2D6A4F':'#B7770D' }}>{hasTicket?'Assigned':'Pending'}</span>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:12, background:'#F2EDE6', borderRadius:10, padding:'8px 12px', width:'fit-content' }}>
-                        <Icon name="car" size={15} color="#9A5B26"/><span style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{me.plate}</span>
+                        <Icon name="car" size={15} color="#9A5B26"/><span style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)' }}>{me.plate}</span>
                       </div>
                       <div style={{ display:'flex', flexWrap:'wrap', gap:16, marginTop:14, justifyContent:'center' }}>
                         {orderedDayInfo.map(d => (
@@ -844,9 +844,9 @@ export default function VendorDashboard() {
               .filter(x => x.ev)
               .sort((x,y) => new Date(x.ev.startDate) - new Date(y.ev.startDate));
             if (!chain.length) return (
-              <div style={{ textAlign:'center', padding:'60px 30px', color:'#A09890', display:'flex', flexDirection:'column', alignItems:'center' }}>
+              <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="badge" size={34} color="#bcae9c"/>
-                <div style={{ fontSize:14, fontWeight:600, color:'#6B6560', marginTop:13 }}>No Vendor Pass to apply for yet</div>
+                <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginTop:13 }}>No Vendor Pass to apply for yet</div>
                 <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Once you're approved for a market, you can apply for your Vendor Pass here.</div>
               </div>
             );
@@ -862,16 +862,16 @@ export default function VendorDashboard() {
               if (passApp?.people.some(p => p.status === 'approved')) anyApproved = true;
 
               return (
-                <div key={ev.id} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:18, padding:16 }}>
+                <div key={ev.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'#1C1A17' }}>{ev.name}</div>
-                      <div style={{ fontSize:12, color:'#6B6560', marginTop:4 }}>{ev.dateRange}</div>
+                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>{ev.name}</div>
+                      <div style={{ fontSize:12, color:'var(--text-secondary)', marginTop:4 }}>{ev.dateRange}</div>
                     </div>
                   </div>
 
                   {!passApp && !canStart && (
-                    <div style={{ display:'flex', gap:9, background:'#F2EDE6', borderRadius:12, padding:'12px 13px', fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginTop:13 }}>
+                    <div style={{ display:'flex', gap:9, background:'#F2EDE6', borderRadius:12, padding:'12px 13px', fontSize:12.5, color:'var(--text-secondary)', lineHeight:1.5, marginTop:13 }}>
                       <Icon name="lock" size={15} color="#A09890" style={{ marginTop:1 }}/>
                       You can apply for a Vendor Pass here once {chain[idx-1].ev.name} ({chain[idx-1].ev.dateRange}) has passed.
                     </div>
@@ -879,7 +879,7 @@ export default function VendorDashboard() {
 
                   {showInitialForm && (
                     <div style={{ marginTop:14 }}>
-                      <div style={{ fontSize:12.5, color:'#6B6560', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to {PASS_SELF_SERVICE_MAX} people (name + photo each).</div>
+                      <div style={{ fontSize:12.5, color:'var(--text-secondary)', lineHeight:1.5, marginBottom:12 }}>Apply for your Vendor Pass — add up to {PASS_SELF_SERVICE_MAX} people (name + photo each).</div>
                       <PassPhotoNotice/>
                       {getInitialForm(ev.id).map((p, i) => (
                         <div key={i} style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
@@ -908,7 +908,7 @@ export default function VendorDashboard() {
                           const isEditing = editingPersonId === p.id;
                           if (isEditing) return (
                             <div key={p.id} style={{ background:'#F7F3EC', borderRadius:14, padding:14 }}>
-                              <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:9 }}>Edit pass holder</div>
+                              <div style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)', marginBottom:9 }}>Edit pass holder</div>
                               <PassPhotoNotice/>
                               <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:11 }}>
                                 <PhotoPickerPair size={52} photo={personEditForm?.photo} onPick={async e => {
@@ -920,7 +920,7 @@ export default function VendorDashboard() {
                                 <input value={personEditForm?.name||''} onChange={e=>setPersonEditForm(f=>({ ...f, name:e.target.value }))} placeholder="Full name" style={{ ...inp, flex:1 }}/>
                               </div>
                               <div style={{ display:'flex', gap:9 }}>
-                                <button onClick={cancelEditPerson} style={{ flex:1, background:'#F2EDE6', color:'#1C1A17', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:11, cursor:'pointer' }}>Cancel</button>
+                                <button onClick={cancelEditPerson} style={{ flex:1, background:'#F2EDE6', color:'var(--text-primary)', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:11, cursor:'pointer' }}>Cancel</button>
                                 <button onClick={()=>submitPersonEdit(passApp, p, ev)} className="cta" style={{ flex:2, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:11, cursor:'pointer' }}>Save &amp; resubmit for review</button>
                               </div>
                             </div>
@@ -929,7 +929,7 @@ export default function VendorDashboard() {
                             <div key={p.id} style={{ display:'flex', alignItems:'center', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'10px 12px' }}>
                               <PhotoTile photo={p.photo} size={40}/>
                               <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.name}</div>
+                                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{p.name}</div>
                                 <div style={{ fontSize:11.5, color:'#B7770D', marginTop:2 }}>Awaiting admin review</div>
                               </div>
                             </div>
@@ -939,7 +939,7 @@ export default function VendorDashboard() {
                               <div style={{ display:'flex', alignItems:'center', gap:9 }}>
                                 <PhotoTile photo={p.photo} size={40}/>
                                 <div style={{ flex:1, minWidth:0 }}>
-                                  <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.name}</div>
+                                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{p.name}</div>
                                   <div style={{ fontSize:11.5, color:'#B03A2E', marginTop:2 }}>Not approved{p.rejectReason ? ` — ${p.rejectReason}` : ''}</div>
                                 </div>
                               </div>
@@ -959,7 +959,7 @@ export default function VendorDashboard() {
 
                       {passApp.people.length < maxSlots && (
                         <div style={{ marginTop:16, background:'#F7F3EC', borderRadius:14, padding:14 }}>
-                          <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:9 }}>Add pass holder {passApp.people.length+1} of {maxSlots}</div>
+                          <div style={{ fontSize:12.5, fontWeight:600, color:'var(--text-primary)', marginBottom:9 }}>Add pass holder {passApp.people.length+1} of {maxSlots}</div>
                           <PassPhotoNotice/>
                           <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
                             <PhotoPickerPair size={48} photo={extraForms[passApp.id]?.photo} onPick={async e => {
@@ -975,7 +975,7 @@ export default function VendorDashboard() {
                       )}
 
                       {passApp.people.length >= maxSlots && (
-                        <div style={{ display:'flex', gap:9, background:'#F2EDE6', borderRadius:12, padding:'12px 13px', fontSize:12, color:'#6B6560', lineHeight:1.45, marginTop:16 }}>
+                        <div style={{ display:'flex', gap:9, background:'#F2EDE6', borderRadius:12, padding:'12px 13px', fontSize:12, color:'var(--text-secondary)', lineHeight:1.45, marginTop:16 }}>
                           <Icon name="info" size={15} color="#A09890" style={{ marginTop:1 }}/>
                           Need more than {maxSlots} passes? Contact the Sulap team — additional slots beyond this are granted by admin.
                         </div>
@@ -984,8 +984,8 @@ export default function VendorDashboard() {
                   )}
 
                   {passApp && (
-                    <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid #f1ece4', textAlign:'right' }}>
-                      <span onClick={()=>resetMyPassForTesting(ev.id, ev)} style={{ fontSize:11, fontWeight:600, color:'#A09890', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>
+                    <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid var(--glass-divider)', textAlign:'right' }}>
+                      <span onClick={()=>resetMyPassForTesting(ev.id, ev)} style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>
                         Reset my Vendor Pass (testing)
                       </span>
                     </div>
@@ -1014,5 +1014,5 @@ export default function VendorDashboard() {
   );
 }
 
-const lbl = { display:'block', fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:6 };
+const lbl = { display:'block', fontSize:12.5, fontWeight:600, color:'var(--text-primary)', marginBottom:6 };
 const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:12, padding:'13px 14px', fontSize:14.5, outline:'none', display:'block' };
