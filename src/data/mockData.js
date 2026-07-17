@@ -2,6 +2,12 @@
 // downloads as a real generated image. Real uploads replace these with data URLs.
 const P = (id, name, c1, c2) => ({ id, name, grad: [c1, c2] });
 
+// Real-photo factory (added 2026-07-17) — { id, name, url } renders the actual
+// downloaded stock photo (public/assets/vendors/*) exactly like a real upload
+// would (see fileToPhoto() in lib/photoFiles.js), used for the 7 hand-authored
+// vendors' logos/product photos instead of the gradient-tile placeholder.
+const U = (id, name, url) => ({ id, name, url });
+
 export const EVENT_IMG_PALETTE = [
   'linear-gradient(135deg,#B97434,#9A5B26)',
   'linear-gradient(135deg,#F0D8DD,#B97434)',
@@ -20,6 +26,18 @@ export const INITIAL_EVENTS = [
   { id:'e1', name:'Tamu Weekend Bazaar', dateRange:'12 – 14 Jul 2026', location:'Gaya Street, KK', days:3, applied:48, fnb:300, nonfnb:250, startTime:'08:00', endTime:'16:00', lastApp:'2026-07-05', startDate:'2026-07-12', endDate:'2026-07-14', img:"url('/assets/event-tamu.png') center/cover no-repeat" },
   { id:'e2', name:'Borneo Makers Fair',  dateRange:'26 – 27 Jul 2026', location:'Likas Square',   days:2, applied:32, fnb:280, nonfnb:230, startTime:'10:00', endTime:'18:00', lastApp:'2026-06-21', startDate:'2026-07-26', endDate:'2026-07-27', img:"url('/assets/event-makers.png') center/cover no-repeat" },
   { id:'e3', name:'Harvest Night Market', dateRange:'2 – 4 Aug 2026', location:'Gaya Street, KK', days:3, applied:60, fnb:320, nonfnb:270, startTime:'17:00', endTime:'23:00', lastApp:'2026-07-26', startDate:'2026-08-02', endDate:'2026-08-04', img:"url('/assets/event-harvest.png') center/cover no-repeat" },
+  // Six more events (added 2026-07-17) spanning every eventStatus()/applications-open
+  // combination so the admin Events tab, Dashboard, and vendor Available Markets
+  // all have real variety to demo: e4 ongoing, e5/e6/e9 upcoming+open, e2 (above)
+  // + e7 upcoming+closed, e8 concluded, e7 also doubles as the "Dates TBC" sample.
+  { id:'e4', name:'Kadazan Heritage Bazaar', dateRange:'15 – 19 Jul 2026', location:'Karamunsing Complex, KK', days:5, applied:41, fnb:260, nonfnb:220, startTime:'09:00', endTime:'21:00', lastApp:'2026-07-08', startDate:'2026-07-15', endDate:'2026-07-19', img:"url('/assets/events/e4-kadazan-heritage.jpg') center/cover no-repeat" },
+  { id:'e5', name:'Sunset Batik Market', dateRange:'8 – 9 Aug 2026', location:'Waterfront Esplanade, KK', days:2, applied:22, fnb:240, nonfnb:200, startTime:'16:00', endTime:'22:00', lastApp:'2026-07-30', startDate:'2026-08-08', endDate:'2026-08-09', img:"url('/assets/events/e5-sunset-batik.jpg') center/cover no-repeat" },
+  { id:'e6', name:'Riverside Food Carnival', dateRange:'15 – 17 Aug 2026', location:'Riverside Promenade, KK', days:3, applied:15, fnb:300, nonfnb:260, startTime:'17:00', endTime:'23:00', lastApp:'2026-08-05', startDate:'2026-08-15', endDate:'2026-08-17', img:"url('/assets/events/e6-riverside-food.jpg') center/cover no-repeat" },
+  // Dates intentionally unset — demos the "Dates TBC" status badge (eventStatus()
+  // in lib/helpers.js) while applications are still open off the lastApp date alone.
+  { id:'e7', name:'Artisan Night Bazaar', dateRange:'Dates to be confirmed', location:'Suria Sabah Mall Concourse', days:2, applied:9, fnb:250, nonfnb:210, startTime:'18:00', endTime:'23:00', lastApp:'2026-08-15', startDate:null, endDate:null, img:"url('/assets/events/e7-artisan-night-bazaar.jpg') center/cover no-repeat" },
+  { id:'e8', name:'Handmade Sunday Market', dateRange:'5 – 6 Jul 2026', location:'Segama Bridge, KK', days:2, applied:30, fnb:220, nonfnb:190, startTime:'09:00', endTime:'17:00', lastApp:'2026-06-25', startDate:'2026-07-05', endDate:'2026-07-06', img:"url('/assets/events/e8-handmade-sunday.jpg') center/cover no-repeat" },
+  { id:'e9', name:'Borneo Culture Fest', dateRange:'5 – 7 Sep 2026', location:'Suria Sabah Mall, Concourse & Rooftop', days:3, applied:12, fnb:320, nonfnb:280, startTime:'10:00', endTime:'22:00', lastApp:'2026-08-20', startDate:'2026-09-05', endDate:'2026-09-07', img:"url('/assets/events/e9-borneo-culture-fest.jpg') center/cover no-repeat" },
 ];
 
 // E-Invoice & bank info collected once a vendor is approved — required before
@@ -32,15 +50,21 @@ const EI = (companyName='', regNo='', tin='', sstNo='', regAddress='', bankName=
 export const EMPTY_EINVOICE = EI();
 
 export const INITIAL_VENDORS = [
-  { id:'v1', business:'Nutmeg & Clay',   owner:'Aisyah Rahman', category:'Handcraft / Art',          email:'aisyah@nutmegclay.my',  phone:'013-8842210', ig:'@nutmegclay',     fb:'Nutmeg & Clay',   tiktok:'@nutmegclay',  plate:'SAB 1842 K', regDate:'14 Jun', tcAcceptedAt:'14 Jun 2026, 10:24 AM', status:'approved', power:'1× kiln display light (240V), 1× LED string', logo:P('v1logo','nutmeg-clay-logo.jpg','#E8C5B8','#7A431A'), productPhotos:[P('v1p1','stoneware-mugs.jpg','#E8C5B8','#A56548'),P('v1p2','botanical-planters.jpg','#D9C6A5','#8B6F4E'),P('v1p3','tableware-set.jpg','#C9A99B','#7A4A38')], desc:'Hand-thrown stoneware ceramics and small-batch botanical homewares, made in Kota Kinabalu. Mugs, planters, tableware and gift sets.', einvoice:EI('Aisyah Rahman','202301112233','IG88112233445','N/A','No. 21, Jalan Kelawat, 88300 Kota Kinabalu, Sabah','Maybank','156209988771','Aisyah Rahman') },
-  { id:'v2', business:'Borneo Brews',    owner:'Daniel Lim',    category:'Food & Beverage',          email:'hello@borneobrews.co',   phone:'016-7720145', ig:'@borneobrews',    fb:'Borneo Brews Co', tiktok:'@borneobrews', plate:'SA 9021 P',  regDate:'15 Jun', tcAcceptedAt:'15 Jun 2026, 2:03 PM', status:'approved', power:'1× espresso machine (240V, 13A), 1× grinder, 1× chest freezer', logo:P('v2logo','borneo-brews-logo.jpg','#D7B899','#4A3728'), productPhotos:[P('v2p1','cold-brew-bottles.jpg','#D7B899','#6F4E37'),P('v2p2','pour-over-set.jpg','#C9AE8B','#4A3728'),P('v2p3','coffee-beans.jpg','#B58B5E','#3E2A1A'),P('v2p4','iced-latte.jpg','#E3CDB0','#8B5E3C')], desc:'Specialty cold brew, single-origin pour-overs and Sabah-grown coffee beans. Cups, bottles and retail bags.', einvoice:EI('Borneo Brews Sdn Bhd','202401123456','C2345678901','S01-2345-67891012','Lot 12, Jalan Gaya, 88000 Kota Kinabalu, Sabah','Maybank','156201234567','Borneo Brews Sdn Bhd') },
-  { id:'v3', business:'Rattan Republic', owner:'Nadia Yusof',   category:'Fashion',                  email:'nadia@rattanrepublic.my',phone:'011-23398871', ig:'@rattan.republic',fb:'Rattan Republic', tiktok:'@rattanrepublic',plate:'SAB 553 T', regDate:'16 Jun', tcAcceptedAt:'16 Jun 2026, 9:47 AM', status:'approved', power:'None', logo:null, productPhotos:[P('v3p1','rattan-tote.jpg','#E2CBA8','#9C7A52'),P('v3p2','woven-hat.jpg','#D9BE93','#8A6B42'),P('v3p3','clutch-bags.jpg','#CBB088','#7A5C38'),P('v3p4','market-basket.jpg','#E6D2B0','#A5824F'),P('v3p5','earrings-set.jpg','#D4B98F','#8F7046')], desc:'Handwoven rattan bags, hats and accessories using traditional Sabahan weaving techniques.', einvoice:EI() },
-  { id:'v4', business:'Pulau Soap Co.',  owner:'Grace Wong',    category:'Beauty & Wellness',        email:'grace@pulausoap.my',     phone:'014-6650092', ig:'@pulausoap',      fb:'Pulau Soap Co',   tiktok:'@pulausoap',   plate:'SS 1180 A',  regDate:'17 Jun', tcAcceptedAt:'17 Jun 2026, 8:31 PM', status:'approved', power:'1× display fridge (240V)', logo:P('v4logo','pulau-soap-logo.jpg','#F0D8DD','#B97434'), productPhotos:[P('v4p1','botanical-soaps.jpg','#F0D8DD','#B97434'),P('v4p2','body-scrubs.jpg','#DCE8DD','#7FA88B')], desc:'Cold-process artisan soaps, body scrubs and balms made with island botanicals. Plastic-free packaging.', einvoice:EI('Grace Wong','IG12345678901','','N/A','No. 8, Jalan Pulau, 88100 Kota Kinabalu, Sabah','CIMB Bank','7012345678','Grace Wong') },
-  { id:'v5', business:'Kinabalu Kopi',   owner:'Faiz Anuar',    category:'Food & Beverage',          email:'faiz@kkkopi.my',         phone:'012-3041188', ig:'@kinabalukopi',   fb:'Kinabalu Kopi',   tiktok:'@kkkopi',      plate:'SAB 700 G',  regDate:'18 Jun', tcAcceptedAt:'18 Jun 2026, 11:15 AM', status:'approved', power:'1× coffee machine (240V, 13A), 1× water boiler', logo:P('v5logo','kinabalu-kopi-logo.jpg','#C8A176','#5C3A21'), productPhotos:[P('v5p1','kopi-o-classic.jpg','#C8A176','#5C3A21'),P('v5p2','kaya-toast.jpg','#E8CFA3','#B07E3F'),P('v5p3','retail-packs.jpg','#B98F63','#4A2E18')], desc:'Traditional Sabah kopi, kaya toast and local kuih. Hot and iced drinks plus retail coffee packs.', einvoice:EI() },
-  { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  tcAcceptedAt:'9 Jul 2026, 4:56 PM', status:'pending',  power:'None', logo:P('v6logo','kadazan-silver-logo.jpg','#D8D8DC','#6E6E78'), productPhotos:[P('v6p1','motif-rings.jpg','#D8D8DC','#8A8A94'),P('v6p2','pendants.jpg','#C9C9CF','#6E6E78'),P('v6p3','pattern-cuffs.jpg','#E2E2E6','#9A9AA4')], desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.', einvoice:EI() },
-  { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', tcAcceptedAt:'10 Jul 2026, 1:12 PM', status:'pending',  power:'None', logo:null, productPhotos:[P('v7p1','pandan-baskets.jpg','#D9E3C9','#7C9153'),P('v7p2','placemats.jpg','#CBD8B5','#6B8046'),P('v7p3','storage-boxes.jpg','#E1E8D2','#8CA05E'),P('v7p4','bamboo-trays.jpg','#D2DFBE','#75894C')], desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.', einvoice:EI() },
+  { id:'v1', business:'Nutmeg & Clay',   owner:'Aisyah Rahman', category:'Handcraft / Art',          email:'aisyah@nutmegclay.my',  phone:'013-8842210', ig:'@nutmegclay',     fb:'Nutmeg & Clay',   tiktok:'@nutmegclay',  plate:'SAB 1842 K', regDate:'14 Jun', tcAcceptedAt:'14 Jun 2026, 10:24 AM', status:'approved', power:'1× kiln display light (240V), 1× LED string', logo:U('v1logo','nutmeg-clay-logo.jpg','/assets/vendors/v1-logo.jpg'), productPhotos:[U('v1p1','stoneware-mugs.jpg','/assets/vendors/v1-p1.jpg'),U('v1p2','botanical-planters.jpg','/assets/vendors/v1-p2.jpg'),U('v1p3','tableware-set.jpg','/assets/vendors/v1-p3.jpg')], desc:'Hand-thrown stoneware ceramics and small-batch botanical homewares, made in Kota Kinabalu. Mugs, planters, tableware and gift sets.', einvoice:EI('Aisyah Rahman','202301112233','IG88112233445','N/A','No. 21, Jalan Kelawat, 88300 Kota Kinabalu, Sabah','Maybank','156209988771','Aisyah Rahman') },
+  { id:'v2', business:'Borneo Brews',    owner:'Daniel Lim',    category:'Food & Beverage',          email:'hello@borneobrews.co',   phone:'016-7720145', ig:'@borneobrews',    fb:'Borneo Brews Co', tiktok:'@borneobrews', plate:'SA 9021 P',  regDate:'15 Jun', tcAcceptedAt:'15 Jun 2026, 2:03 PM', status:'approved', power:'1× espresso machine (240V, 13A), 1× grinder, 1× chest freezer', logo:U('v2logo','borneo-brews-logo.jpg','/assets/vendors/v2-logo.jpg'), productPhotos:[U('v2p1','cold-brew-bottles.jpg','/assets/vendors/v2-p1.jpg'),U('v2p2','pour-over-set.jpg','/assets/vendors/v2-p2.jpg'),U('v2p3','coffee-beans.jpg','/assets/vendors/v2-p3.jpg'),U('v2p4','iced-latte.jpg','/assets/vendors/v2-p4.jpg')], desc:'Specialty cold brew, single-origin pour-overs and Sabah-grown coffee beans. Cups, bottles and retail bags.', einvoice:EI('Borneo Brews Sdn Bhd','202401123456','C2345678901','S01-2345-67891012','Lot 12, Jalan Gaya, 88000 Kota Kinabalu, Sabah','Maybank','156201234567','Borneo Brews Sdn Bhd') },
+  { id:'v3', business:'Rattan Republic', owner:'Nadia Yusof',   category:'Fashion',                  email:'nadia@rattanrepublic.my',phone:'011-23398871', ig:'@rattan.republic',fb:'Rattan Republic', tiktok:'@rattanrepublic',plate:'SAB 553 T', regDate:'16 Jun', tcAcceptedAt:'16 Jun 2026, 9:47 AM', status:'approved', power:'None', logo:U('v3logo','rattan-republic-logo.jpg','/assets/vendors/v3-logo.jpg'), productPhotos:[U('v3p1','rattan-tote.jpg','/assets/vendors/v3-p1.jpg'),U('v3p2','woven-hat.jpg','/assets/vendors/v3-p2.jpg'),U('v3p3','clutch-bags.jpg','/assets/vendors/v3-p3.jpg'),U('v3p4','market-basket.jpg','/assets/vendors/v3-p4.jpg'),U('v3p5','earrings-set.jpg','/assets/vendors/v3-p5.jpg')], desc:'Handwoven rattan bags, hats and accessories using traditional Sabahan weaving techniques.', einvoice:EI() },
+  { id:'v4', business:'Pulau Soap Co.',  owner:'Grace Wong',    category:'Beauty & Wellness',        email:'grace@pulausoap.my',     phone:'014-6650092', ig:'@pulausoap',      fb:'Pulau Soap Co',   tiktok:'@pulausoap',   plate:'SS 1180 A',  regDate:'17 Jun', tcAcceptedAt:'17 Jun 2026, 8:31 PM', status:'approved', power:'1× display fridge (240V)', logo:U('v4logo','pulau-soap-logo.jpg','/assets/vendors/v4-logo.jpg'), productPhotos:[U('v4p1','botanical-soaps.jpg','/assets/vendors/v4-p1.jpg'),U('v4p2','body-scrubs.jpg','/assets/vendors/v4-p2.jpg')], desc:'Cold-process artisan soaps, body scrubs and balms made with island botanicals. Plastic-free packaging.', einvoice:EI('Grace Wong','IG12345678901','','N/A','No. 8, Jalan Pulau, 88100 Kota Kinabalu, Sabah','CIMB Bank','7012345678','Grace Wong') },
+  { id:'v5', business:'Kinabalu Kopi',   owner:'Faiz Anuar',    category:'Food & Beverage',          email:'faiz@kkkopi.my',         phone:'012-3041188', ig:'@kinabalukopi',   fb:'Kinabalu Kopi',   tiktok:'@kkkopi',      plate:'SAB 700 G',  regDate:'18 Jun', tcAcceptedAt:'18 Jun 2026, 11:15 AM', status:'approved', power:'1× coffee machine (240V, 13A), 1× water boiler', logo:U('v5logo','kinabalu-kopi-logo.jpg','/assets/vendors/v5-logo.jpg'), productPhotos:[U('v5p1','kopi-o-classic.jpg','/assets/vendors/v5-p1.jpg'),U('v5p2','kaya-toast.jpg','/assets/vendors/v5-p2.jpg'),U('v5p3','retail-packs.jpg','/assets/vendors/v5-p3.jpg')], desc:'Traditional Sabah kopi, kaya toast and local kuih. Hot and iced drinks plus retail coffee packs.', einvoice:EI() },
+  { id:'v6', business:'Kadazan Silver',  owner:'Melissa Anak Robert', category:'Jewellery',          email:'melissa@kadazansilver.my', phone:'019-8801234', ig:'@kadazansilver',  fb:'Kadazan Silver',  tiktok:'@kadazansilver', plate:'SAB 2201 R', regDate:'9 Jul',  tcAcceptedAt:'9 Jul 2026, 4:56 PM', status:'pending',  power:'None', logo:U('v6logo','kadazan-silver-logo.jpg','/assets/vendors/v6-logo.jpg'), productPhotos:[U('v6p1','motif-rings.jpg','/assets/vendors/v6-p1.jpg'),U('v6p2','pendants.jpg','/assets/vendors/v6-p2.jpg'),U('v6p3','pattern-cuffs.jpg','/assets/vendors/v6-p3.jpg')], desc:'Handcrafted silver jewellery inspired by Kadazan-Dusun motifs — rings, pendants and traditional-pattern cuffs.', einvoice:EI() },
+  { id:'v7', business:'Rumah Anyaman',   owner:'Joseph Majanil', category:'Home & Lifestyle',        email:'joseph@rumahanyaman.my', phone:'017-2093345', ig:'@rumahanyaman',   fb:'Rumah Anyaman',   tiktok:'@rumahanyaman', plate:'SS 442 B',   regDate:'10 Jul', tcAcceptedAt:'10 Jul 2026, 1:12 PM', status:'pending',  power:'None', logo:U('v7logo','rumah-anyaman-logo.jpg','/assets/vendors/v7-logo.jpg'), productPhotos:[U('v7p1','pandan-baskets.jpg','/assets/vendors/v7-p1.jpg'),U('v7p2','placemats.jpg','/assets/vendors/v7-p2.jpg'),U('v7p3','storage-boxes.jpg','/assets/vendors/v7-p3.jpg'),U('v7p4','bamboo-trays.jpg','/assets/vendors/v7-p4.jpg')], desc:'Woven pandan and bamboo homeware — baskets, placemats and storage pieces made by a Kudat weaving collective.', einvoice:EI() },
   ...genDemoVendors(68), // v8..v75 — filler vendors so the Categories tab's "All Vendors" table has enough rows to demo real pagination
   ...genDemoVendors(30, { startNum: 76, status: 'pending' }), // v76..v105 — pending fillers so Vendor Applications has 30+ rows to manually check (2026-07-16)
+  // rejected/suspended fillers (added 2026-07-17) — until now no vendor anywhere
+  // in the mock data carried either status, so the Vendor Applications "Show N
+  // rejected applications" collapsed section and Vendor Listing's Suspend/
+  // Reinstate flow had nothing to demo against.
+  ...genDemoVendors(5, { startNum: 106, status: 'rejected' }),  // v106..v110
+  ...genDemoVendors(5, { startNum: 111, status: 'suspended' }), // v111..v115
 ];
 
 // Deterministic filler vendors (not hand-authored like v1–v7 above) — exist purely
@@ -100,6 +124,10 @@ function genDemoApps(vendorIds, eventId, status, idPrefix, anchorDate) {
 }
 const DEMO_APP_APPROVED_VENDORS = Array.from({ length: 30 }, (_, i) => 'v' + (8 + i));   // v8..v37
 const DEMO_APP_PENDING_VENDORS  = Array.from({ length: 30 }, (_, i) => 'v' + (38 + i));  // v38..v67
+// 'shortlisted' had no demo rows anywhere (added 2026-07-17) — the Event
+// Applications "Shortlist" sub-tab groups shortlisted+approved together, but
+// with zero shortlisted rows it only ever showed the already-approved batch.
+const DEMO_APP_SHORTLISTED_VENDORS = Array.from({ length: 8 }, (_, i) => 'v' + (68 + i)); // v68..v75
 
 export const INITIAL_APPS = [
   { id:'a1', vendorId:'v2', eventId:'e1', status:'pending',  shared:false, partners:[], appliedAt:'2026-07-01T09:30:00' },
@@ -112,6 +140,18 @@ export const INITIAL_APPS = [
   { id:'a8', vendorId:'v3', eventId:'e1', status:'approved', shared:false, partners:[], appliedAt:'2026-06-28T15:10:00' },
   ...genDemoApps(DEMO_APP_APPROVED_VENDORS, 'e1', 'approved', 'da-appr-', new Date('2026-07-16T12:00:00')),
   ...genDemoApps(DEMO_APP_PENDING_VENDORS,  'e1', 'pending',  'da-pend-', new Date('2026-07-16T12:00:00')),
+  ...genDemoApps(DEMO_APP_SHORTLISTED_VENDORS, 'e1', 'shortlisted', 'da-short-', new Date('2026-07-16T12:00:00')),
+  // A handful of hand-authored applications to the new events (2026-07-17) so
+  // the Event Applications/Payments/Dashboard "select event" dropdowns aren't
+  // e1-only — mixed statuses, reusing existing hand-authored vendors.
+  { id:'a9',  vendorId:'v2', eventId:'e4', status:'pending',     shared:false, partners:[], appliedAt:'2026-07-10T09:00:00' },
+  { id:'a10', vendorId:'v5', eventId:'e4', status:'approved',    shared:false, partners:[], appliedAt:'2026-07-09T11:30:00' },
+  { id:'a11', vendorId:'v8', eventId:'e4', status:'shortlisted', shared:false, partners:[], appliedAt:'2026-07-11T14:00:00' },
+  { id:'a12', vendorId:'v9', eventId:'e4', status:'shortlisted', shared:false, partners:[], appliedAt:'2026-07-11T15:20:00' },
+  { id:'a13', vendorId:'v3', eventId:'e6', status:'pending',     shared:false, partners:[], appliedAt:'2026-07-14T10:00:00' },
+  { id:'a14', vendorId:'v10',eventId:'e6', status:'approved',    shared:false, partners:[], appliedAt:'2026-07-13T16:45:00' },
+  { id:'a15', vendorId:'v6', eventId:'e9', status:'pending',     shared:false, partners:[], appliedAt:'2026-07-15T08:10:00' },
+  { id:'a16', vendorId:'v11',eventId:'e9', status:'approved',    shared:false, partners:[], appliedAt:'2026-07-14T13:00:00' },
 ];
 
 // Payment docs (advice/advice2/invoice/receipt) are file objects like photos.
@@ -306,7 +346,7 @@ export const INITIAL_CONTENT = {
   // Hero section (public home page, top of page)
   heroTitle:    'Showcase your craft at Sulap Artisan markets',
   heroSubtitle: 'Join a curated community of Sabahan makers at Suria Sabah Shopping Mall. Apply online, book your booth, and bring your craft to thousands of visitors.',
-  heroImage:    null, // data URL from admin upload, else gradient placeholder
+  heroImage:    '/assets/content/hero.jpg', // real photo (2026-07-17); data URL from admin upload takes over from here, else gradient placeholder
   heroTag1:     '40+ Artisan Vendors',
   heroTag2:     'Monthly Markets',
 
@@ -319,10 +359,10 @@ export const INITIAL_CONTENT = {
   whyJoinTitle:    'Why join Sulap Artisan?',
   whyJoinSubtitle: 'A market platform built for local makers, run by Suria Sabah Shopping Mall.',
   whyJoinImages: [
-    { id: 'wj-img1', image: null },
-    { id: 'wj-img2', image: null },
-    { id: 'wj-img3', image: null },
-    { id: 'wj-img4', image: null },
+    { id: 'wj-img1', image: '/assets/content/why-join-1.jpg' },
+    { id: 'wj-img2', image: '/assets/content/why-join-2.jpg' },
+    { id: 'wj-img3', image: '/assets/content/why-join-3.jpg' },
+    { id: 'wj-img4', image: '/assets/content/why-join-4.jpg' },
   ],
   whyJoinItems: [
     { id: 'wj1', title: 'Prime mall location',        body: 'Trade in the heart of Kota Kinabalu with steady daily footfall.' },
@@ -336,8 +376,10 @@ export const INITIAL_CONTENT = {
   // Content tab); this seed set is just a starting point, not a fixed count.
   galleryHeading: 'OUR GALLERY',
   galleryImages: [
-    { id: 'g1', image: null }, { id: 'g2', image: null }, { id: 'g3', image: null }, { id: 'g4', image: null },
-    { id: 'g5', image: null }, { id: 'g6', image: null }, { id: 'g7', image: null }, { id: 'g8', image: null },
+    { id: 'g1', image: '/assets/content/gallery-1.jpg' }, { id: 'g2', image: '/assets/content/gallery-2.jpg' },
+    { id: 'g3', image: '/assets/content/gallery-3.jpg' }, { id: 'g4', image: '/assets/content/gallery-4.jpg' },
+    { id: 'g5', image: '/assets/content/gallery-5.jpg' }, { id: 'g6', image: '/assets/content/gallery-6.jpg' },
+    { id: 'g7', image: '/assets/content/gallery-7.jpg' }, { id: 'g8', image: '/assets/content/gallery-8.jpg' },
   ],
 
   // CTA banner (public home page, above the footer)
