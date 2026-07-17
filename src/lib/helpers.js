@@ -22,6 +22,7 @@ export function fmtTime(t) {
 export function badge(status) {
   const map = {
     pending:   ['#FEF8EC', '#B7770D', 'Pending'],
+    shortlisted: ['#EEF1FB', '#3D5BC4', 'Shortlisted'],
     approved:  ['#E8F5F0', '#2D6A4F', 'Approved'],
     rejected:  ['#FDEEEC', '#B03A2E', 'Rejected'],
     suspended: ['#F2EDE6', '#8B6F4E', 'Suspended'],

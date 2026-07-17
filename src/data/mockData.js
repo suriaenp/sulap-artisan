@@ -87,23 +87,31 @@ function genDemoVendors(count, { startNum = 8, status = 'approved' } = {}) {
 // the other batch of 30 gives Event Applications' own Applications sub-tab
 // (`status:'pending'`) the same. Added 2026-07-16 alongside the table-style
 // rollout so every touched tab has enough rows to manually check.
-function genDemoApps(vendorIds, eventId, status, idPrefix) {
-  return vendorIds.map((vid, i) => ({ id: `${idPrefix}${i + 1}`, vendorId: vid, eventId, status, shared: false, partners: [] }));
+// `appliedAt` (ISO string) drives the Dashboard's "Recent Applications" table
+// (most-recent-first) and is stamped for real when a vendor submits a new
+// application (see the `newApp` object in components/Modals.jsx) — these seed
+// values are just plausible fill-in dates so that table has something to sort
+// on out of the box.
+function genDemoApps(vendorIds, eventId, status, idPrefix, anchorDate) {
+  return vendorIds.map((vid, i) => ({
+    id: `${idPrefix}${i + 1}`, vendorId: vid, eventId, status, shared: false, partners: [],
+    appliedAt: new Date(anchorDate.getTime() - (i + 1) * 86400000).toISOString(),
+  }));
 }
 const DEMO_APP_APPROVED_VENDORS = Array.from({ length: 30 }, (_, i) => 'v' + (8 + i));   // v8..v37
 const DEMO_APP_PENDING_VENDORS  = Array.from({ length: 30 }, (_, i) => 'v' + (38 + i));  // v38..v67
 
 export const INITIAL_APPS = [
-  { id:'a1', vendorId:'v2', eventId:'e1', status:'pending',  shared:false, partners:[] },
-  { id:'a2', vendorId:'v1', eventId:'e1', status:'approved', shared:true,  partners:['v4'] },
-  { id:'a3', vendorId:'v4', eventId:'e1', status:'approved', shared:true,  partners:['v1'] },
-  { id:'a4', vendorId:'v3', eventId:'e2', status:'pending',  shared:false, partners:[] },
-  { id:'a5', vendorId:'v5', eventId:'e2', status:'approved', shared:false, partners:[] },
-  { id:'a6', vendorId:'v3', eventId:'e3', status:'pending',  shared:false, partners:[] },
-  { id:'a7', vendorId:'v5', eventId:'e1', status:'approved', shared:false, partners:[] },
-  { id:'a8', vendorId:'v3', eventId:'e1', status:'approved', shared:false, partners:[] },
-  ...genDemoApps(DEMO_APP_APPROVED_VENDORS, 'e1', 'approved', 'da-appr-'),
-  ...genDemoApps(DEMO_APP_PENDING_VENDORS,  'e1', 'pending',  'da-pend-'),
+  { id:'a1', vendorId:'v2', eventId:'e1', status:'pending',  shared:false, partners:[], appliedAt:'2026-07-01T09:30:00' },
+  { id:'a2', vendorId:'v1', eventId:'e1', status:'approved', shared:true,  partners:['v4'], appliedAt:'2026-06-20T10:15:00' },
+  { id:'a3', vendorId:'v4', eventId:'e1', status:'approved', shared:true,  partners:['v1'], appliedAt:'2026-06-22T14:00:00' },
+  { id:'a4', vendorId:'v3', eventId:'e2', status:'pending',  shared:false, partners:[], appliedAt:'2026-06-15T11:45:00' },
+  { id:'a5', vendorId:'v5', eventId:'e2', status:'approved', shared:false, partners:[], appliedAt:'2026-06-10T16:20:00' },
+  { id:'a6', vendorId:'v3', eventId:'e3', status:'pending',  shared:false, partners:[], appliedAt:'2026-07-15T13:05:00' },
+  { id:'a7', vendorId:'v5', eventId:'e1', status:'approved', shared:false, partners:[], appliedAt:'2026-06-25T08:40:00' },
+  { id:'a8', vendorId:'v3', eventId:'e1', status:'approved', shared:false, partners:[], appliedAt:'2026-06-28T15:10:00' },
+  ...genDemoApps(DEMO_APP_APPROVED_VENDORS, 'e1', 'approved', 'da-appr-', new Date('2026-07-16T12:00:00')),
+  ...genDemoApps(DEMO_APP_PENDING_VENDORS,  'e1', 'pending',  'da-pend-', new Date('2026-07-16T12:00:00')),
 ];
 
 // Payment docs (advice/advice2/invoice/receipt) are file objects like photos.

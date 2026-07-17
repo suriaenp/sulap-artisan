@@ -502,7 +502,7 @@ export function ApplyModal() {
   const submit = () => {
     if (applyShare === null) { showToast("Tell us if you'll share a booth",'info'); return; }
     if (applyShare && applyPartners.length === 0) { showToast('Add at least one booth partner','info'); return; }
-    const newApp = { id:'a'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners] };
+    const newApp = { id:'a'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners], appliedAt:new Date().toISOString() };
     dispatch({type:'MERGE_APPS',payload:[...apps,newApp]});
     set({showApplyModal:false,applyEventId:null});
     logActivity(me.business, `applied for ${ev.name}.`, {icon:'clipboard', tint:'#F3E4CC', type:'vendor'});

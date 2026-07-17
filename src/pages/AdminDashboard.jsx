@@ -9,7 +9,7 @@ import PortalFooter from '../components/PortalFooter';
 import { ModernPager, TableShell, MiniTablePanel, FilterPill, IconBtn } from '../components/TableShell';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, parseDateOnly, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
 import { VENDOR_TABS } from './VendorDashboard';
 import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
@@ -21,7 +21,7 @@ import { downloadPassReport } from '../lib/passReport';
 // Admin Roles permission matrix all render from this list, so adding or
 // removing a tab here automatically updates role management too.
 export const ADMIN_TABS = [
-  { id:'overview',   label:'Overview',            icon:'bars' },
+  { id:'overview',   label:'Dashboard',           icon:'grid' },
   { id:'vendors',    label:'Vendor Applications', icon:'users' },
   { id:'vendorList', label:'Vendor Listing',      icon:'file' },
   { id:'profileReq', label:'Profile Requests',    icon:'pencil' },
@@ -170,6 +170,17 @@ export default function AdminDashboard() {
   const [vendorSearch, setVendorSearch] = useState(''); // search box shared across vendor-listing tabs
   useEffect(() => { setVendorSearch(''); }, [aTab]);
   const [eventSearch, setEventSearch] = useState('');
+
+  // ── Dashboard tab (rule: renamed from Overview, 2026-07) ──
+  const todayYear = new Date().getFullYear();
+  const [dashMarket, setDashMarket] = useState('all');                 // Booth Bookings donut filter
+  const [dashRevFrom, setDashRevFrom] = useState(`${todayYear}-01-01`); // Vendor Revenue date range
+  const [dashRevUntil, setDashRevUntil] = useState(`${todayYear}-12-31`);
+  const [dashAppSearch, setDashAppSearch] = useState('');              // Recent Applications search
+  const [dashAppPeriod, setDashAppPeriod] = useState('all');           // 'week' | 'month' | 'all'
+  const now = new Date();
+  const [dashCalMonth, setDashCalMonth] = useState(now.getMonth());
+  const [dashCalYear, setDashCalYear] = useState(now.getFullYear());
   const [eventSearchOpen, setEventSearchOpen] = useState(false);
   useEffect(() => { setEventSearch(''); setEventSearchOpen(false); }, [aTab]);
   const [rejectingPersonId, setRejectingPersonId] = useState(null); // pass-holder id currently showing the reject-reason picker
@@ -419,44 +430,370 @@ export default function AdminDashboard() {
       <div key={aTab} className="tab-panel">
 
       {/* ── Overview ── */}
-      {aTab === 'overview' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          <div className="overview-grid">
-            {[
-              { icon:'users',   tint:'var(--tint-pink-bg)', iconColor:'#9A5B26', value:vendors.length,                        label:'Total vendors',     sub:'registered' },
-              { icon:'clock',   tint:'var(--tint-amber-bg)', iconColor:'var(--tint-amber-text)', value:vendors.filter(v=>v.status==='pending').length, label:'Pending review', sub:'awaiting approval' },
-              { icon:'tent',    tint:'var(--tint-green-bg)', iconColor:'var(--tint-green-text)', value:events.length,                         label:'Active events',     sub:'this season' },
-              { icon:'receipt', tint:'var(--tint-blue-bg)', iconColor:'var(--tint-blue-text)', value:Object.values(payments).filter(p=>p.status==='paid').length, label:'Payments confirmed', sub:'this event' },
-            ].map(c => (
-              <div key={c.label} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'13px 14px' }}>
-                <div style={{ width:34, height:34, borderRadius:10, background:c.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  <Icon name={c.icon} size={17} color={c.iconColor}/>
+      {aTab === 'overview' && (() => {
+        const vById = id => vendors.find(v => v.id === id) || {};
+        const evById = id => events.find(e => e.id === id) || {};
+        const glassCard = { background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:22, boxSizing:'border-box', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' };
+        const pillSelect = { padding:'8px 14px', borderRadius:999, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', fontSize:12.5, fontWeight:700, color:'var(--text-secondary)', cursor:'pointer', fontFamily:"'Karla',sans-serif" };
+
+        // ── Stat cards ──
+        const statCards = [
+          { icon:'calendar', value:events.length, label:'Number of Markets' },
+          { icon:'users',    value:vendors.length, label:'Total Vendors' },
+          { icon:'check',    value:apps.filter(a=>a.status==='approved').length, label:'Booths Confirmed' },
+        ];
+
+        // ── Booth Bookings donut (Confirmed / Shortlisted / Pending, by market) ──
+        const marketOptions = [{ id:'all', name:'All Markets' }, ...events.map(e=>({ id:e.id, name:e.name }))];
+        const boothApps = dashMarket === 'all' ? apps : apps.filter(a => a.eventId === dashMarket);
+        const confirmedN = boothApps.filter(a=>a.status==='approved').length;
+        const shortlistedN = boothApps.filter(a=>a.status==='shortlisted').length;
+        const pendingN = boothApps.filter(a=>a.status==='pending').length;
+        const boothTotal = confirmedN + shortlistedN + pendingN;
+        const pct = n => boothTotal ? Math.round((n / boothTotal) * 100) : 0;
+        const confPct = pct(confirmedN), shortPct = pct(shortlistedN), pendPct = pct(pendingN);
+
+        // ── Vendor Revenue (X = market, Y = revenue collected), From/To date filter ──
+        const revFromD = parseDateOnly(dashRevFrom), revUntilD = parseDateOnly(dashRevUntil);
+        const revByMarket = events
+          .filter(ev => ev.startDate && parseDateOnly(ev.startDate) >= revFromD && parseDateOnly(ev.startDate) <= revUntilD)
+          .map(ev => ({
+            id: ev.id, name: ev.name,
+            total: apps.filter(a => a.eventId === ev.id && a.status === 'approved')
+              .reduce((sum,a) => sum + (payments[`${a.vendorId}-${ev.id}`]?.paid || 0), 0),
+          }));
+        const totalRevenue = revByMarket.reduce((s,m) => s + m.total, 0);
+        const maxRev = Math.max(1, ...revByMarket.map(m => m.total));
+
+        // ── Popular Categories (share of approved vendors) ──
+        const approvedVendors = vendors.filter(v => v.status === 'approved');
+        const catCounts = {};
+        approvedVendors.forEach(v => { catCounts[v.category] = (catCounts[v.category] || 0) + 1; });
+        const catGradients = ['linear-gradient(90deg,#B97434,#7A431A)', 'linear-gradient(90deg,#3A2210,#5C3A1E)', 'linear-gradient(90deg,#5FAF97,#2F6E5B)', 'linear-gradient(90deg,#6B4F8C,#4A3564)'];
+        const popularCats = Object.entries(catCounts).sort((a,b) => b[1]-a[1]).slice(0,4)
+          .map(([name,count], i) => ({ name, count, pct: approvedVendors.length ? Math.round((count/approvedVendors.length)*100) : 0, color: catGradients[i % catGradients.length] }));
+
+        // ── Recent Applications (event applications, most recent first) ──
+        const periodCutoff = dashAppPeriod === 'week' ? Date.now() - 7*86400000 : dashAppPeriod === 'month' ? Date.now() - 30*86400000 : null;
+        const q = dashAppSearch.trim().toLowerCase();
+        let recentApps = apps
+          .filter(a => !periodCutoff || (a.appliedAt && new Date(a.appliedAt).getTime() >= periodCutoff))
+          .filter(a => {
+            if (!q) return true;
+            const v = vById(a.vendorId), ev = evById(a.eventId);
+            return (v.business||'').toLowerCase().includes(q) || (ev.name||'').toLowerCase().includes(q);
+          })
+          .sort((a,b) => new Date(b.appliedAt||0) - new Date(a.appliedAt||0));
+        const recentAppsTotal = recentApps.length;
+        recentApps = recentApps.slice(0, 8);
+
+        // ── Upcoming Event (nearest future by start date) ──
+        const today0 = new Date(); today0.setHours(0,0,0,0);
+        const upcoming = events
+          .filter(ev => ev.startDate && parseDateOnly(ev.startDate) >= today0)
+          .sort((a,b) => parseDateOnly(a.startDate) - parseDateOnly(b.startDate))[0];
+
+        // ── Calendar (current month grid + agenda from real event/deadline dates) ──
+        const firstDay = new Date(dashCalYear, dashCalMonth, 1).getDay();
+        const daysInMonth = new Date(dashCalYear, dashCalMonth+1, 0).getDate();
+        const daysInPrevMonth = new Date(dashCalYear, dashCalMonth, 0).getDate();
+        const eventDaySet = new Set();
+        events.forEach(ev => {
+          if (!ev.startDate || !ev.endDate) return;
+          let d = parseDateOnly(ev.startDate); const end = parseDateOnly(ev.endDate);
+          while (d <= end) {
+            if (d.getFullYear()===dashCalYear && d.getMonth()===dashCalMonth) eventDaySet.add(d.getDate());
+            d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1);
+          }
+        });
+        const calCells = [];
+        for (let i=0;i<firstDay;i++) calCells.push({ label:daysInPrevMonth-firstDay+i+1, muted:true, hasDot:false, isToday:false });
+        for (let d=1; d<=daysInMonth; d++) calCells.push({ label:d, muted:false, hasDot:eventDaySet.has(d), isToday: d===now.getDate() && dashCalMonth===now.getMonth() && dashCalYear===now.getFullYear() });
+        let nextD=1; while (calCells.length % 7 !== 0) calCells.push({ label:nextD++, muted:true, hasDot:false, isToday:false });
+        const agendaItems = [];
+        events.forEach(ev => {
+          if (ev.startDate) {
+            const d = parseDateOnly(ev.startDate);
+            if (d.getFullYear()===dashCalYear && d.getMonth()===dashCalMonth) agendaItems.push({ day:d.getDate(), title:ev.name, subtitle:ev.location, time:`${fmtTime(ev.startTime)} - ${fmtTime(ev.endTime)}`, badge:'event' });
+          }
+          if (ev.lastApp) {
+            const d = parseDateOnly(ev.lastApp);
+            if (d.getFullYear()===dashCalYear && d.getMonth()===dashCalMonth) agendaItems.push({ day:d.getDate(), title:'Application deadline', subtitle:ev.name, time:'', badge:'deadline' });
+          }
+        });
+        agendaItems.sort((a,b) => a.day-b.day);
+        const monthLabel = new Date(dashCalYear, dashCalMonth, 1).toLocaleDateString('en-US', { month:'long', year:'numeric' });
+
+        return (
+        <div style={{ position:'relative', padding:'20px 20px 32px', display:'flex', flexWrap:'wrap', alignItems:'flex-start', gap:24 }}>
+
+          {/* MAIN COLUMN */}
+          <div style={{ flex:'1 1 700px', minWidth:0, display:'flex', flexDirection:'column', gap:20 }}>
+
+            {/* Stat cards */}
+            <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+              {statCards.map(c => (
+                <div key={c.label} style={{ flex:'1 1 200px', display:'flex', alignItems:'center', gap:14, ...glassCard, padding:18 }}>
+                  <div style={{ width:44, height:44, borderRadius:'50%', background:'var(--accent-gradient)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FFF8EE', flexShrink:0 }}>
+                    <Icon name={c.icon} size={19} color="#FFF8EE"/>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12.5, color:'var(--text-muted)', marginBottom:3 }}>{c.label}</div>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, color:'var(--text-primary)' }}>{c.value}</div>
+                  </div>
                 </div>
-                <div style={{ fontFamily:"'Marcellus',serif", fontSize:26, fontWeight:400, color:'var(--text-primary)', marginTop:10, lineHeight:1 }}>{c.value}</div>
-                <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', marginTop:5 }}>{c.label}</div>
-                <div style={{ fontSize:10.5, color:'var(--text-muted)', marginTop:2 }}>{c.sub}</div>
+              ))}
+            </div>
+
+            {/* Booth Bookings + Vendor Revenue/Categories */}
+            <div style={{ display:'flex', gap:16, flexWrap:'wrap', alignItems:'stretch' }}>
+              <div style={{ flex:'1 1 280px', minWidth:260, ...glassCard, display:'flex', flexDirection:'column' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, gap:10, flexWrap:'wrap' }}>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:17, color:'var(--text-primary)' }}>Booth Bookings</div>
+                  <select value={dashMarket} onChange={e=>setDashMarket(e.target.value)} style={pillSelect}>
+                    {marketOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ position:'relative', width:170, height:170, margin:'4px auto 18px', borderRadius:'50%', background:`conic-gradient(#B97434 0% ${confPct}%, #3A2210 ${confPct}% ${confPct+shortPct}%, rgba(154,91,38,0.3) ${confPct+shortPct}% 100%)` }}>
+                  <div style={{ position:'absolute', inset:20, borderRadius:'50%', background:'var(--donut-hole)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                    <div style={{ fontSize:11.5, color:'var(--text-muted)', marginBottom:3 }}>Total Applicants</div>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:22, color:'var(--text-primary)' }}>{boothTotal}</div>
+                  </div>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {[['Confirmed', confirmedN, confPct, '#B97434'], ['Shortlisted', shortlistedN, shortPct, '#3A2210'], ['Pending', pendingN, pendPct, 'rgba(154,91,38,0.5)']].map(([label,val,p,color]) => (
+                    <div key={label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <div style={{ width:4, height:26, borderRadius:3, background:color }}/>
+                        <div>
+                          <div style={{ fontSize:12, color:'var(--text-muted)' }}>{label}</div>
+                          <div style={{ fontSize:15, fontWeight:700, color:'var(--text-primary)' }}>{val}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:12, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-divider)', padding:'4px 10px', borderRadius:999 }}>{p}%</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', margin:'20px 2px 10px' }}>Quick actions</div>
-          <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
-            {[
-              { icon:'users',   label:'Review vendor applications', tab:'vendors' },
-              { icon:'tent',    label:'Create a new event',         tab:'events'  },
-              { icon:'receipt', label:'Manage payments',            tab:'payments'},
-              { icon:'shield',  label:'Log vendor offences',        tab:'compliance'},
-            ].map(a => (
-              <button key={a.label} onClick={()=>set({aTab:a.tab,page:1})} style={{ display:'flex', alignItems:'center', gap:12, background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:'13px 14px', cursor:'pointer', textAlign:'left', fontFamily:"'Karla'" }}>
-                <div style={{ width:34, height:34, borderRadius:10, background:'var(--tint-pink-bg)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <Icon name={a.icon} size={17} color="#9A5B26"/>
+
+              <div style={{ flex:'1 1 380px', minWidth:300, display:'flex', flexDirection:'column', gap:16 }}>
+                <div style={glassCard}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4, gap:10, flexWrap:'wrap' }}>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:17, color:'var(--text-primary)' }}>Vendor Revenue</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                      <input type="date" value={dashRevFrom} onChange={e=>setDashRevFrom(e.target.value)} style={{ ...pillSelect, fontWeight:600 }}/>
+                      <span style={{ fontSize:12, color:'var(--text-muted)' }}>to</span>
+                      <input type="date" value={dashRevUntil} onChange={e=>setDashRevUntil(e.target.value)} style={{ ...pillSelect, fontWeight:600 }}/>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:2 }}>Total Revenue</div>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:22, color:'var(--text-primary)', marginBottom:14 }}>RM {money(totalRevenue)}</div>
+                  {revByMarket.length === 0 ? (
+                    <div style={{ fontSize:12.5, color:'var(--text-muted)', padding:'14px 0' }}>No markets in this date range.</div>
+                  ) : (
+                    <div style={{ display:'flex', alignItems:'flex-end', gap:16, height:150, borderTop:'1px solid var(--glass-divider)', paddingTop:10 }}>
+                      {revByMarket.map(m => (
+                        <div key={m.id} style={{ flex:'1 1 0', minWidth:0, display:'flex', flexDirection:'column', alignItems:'center', gap:8, height:'100%', justifyContent:'flex-end' }}>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)' }}>RM {fmt(m.total)}</div>
+                          <div style={{ width:28, borderRadius:'6px 6px 0 0', background:'var(--accent-gradient)', height:`${Math.max(4, Math.round((m.total/maxRev)*110))}px` }}/>
+                          <div style={{ fontSize:11, color:'var(--text-muted)', textAlign:'center', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:80 }}>{m.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span style={{ flex:1, fontSize:13.5, fontWeight:600, color:'var(--text-primary)' }}>{a.label}</span>
-                <span style={{ fontSize:17, color:'var(--text-muted)' }}>›</span>
-              </button>
-            ))}
+
+                <div style={{ ...glassCard, flex:'1 1 auto' }}>
+                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:17, color:'var(--text-primary)', marginBottom:16 }}>Popular Categories</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
+                    {popularCats.length === 0 ? (
+                      <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>No approved vendors yet.</div>
+                    ) : popularCats.map(c => (
+                      <div key={c.name} style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        <div style={{ width:90, fontSize:12.5, fontWeight:700, color:'var(--text-primary)', flexShrink:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</div>
+                        <div style={{ flex:'1 1 auto', height:26, borderRadius:8, background:'var(--glass-divider)', position:'relative', overflow:'hidden' }}>
+                          <div style={{ position:'absolute', inset:0, width:`${c.pct}%`, background:c.color, borderRadius:8, display:'flex', alignItems:'center', paddingLeft:10 }}>
+                            <span style={{ fontSize:11, fontWeight:700, color:'#FFF8EE', whiteSpace:'nowrap' }}>{c.pct}%</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize:12, color:'var(--text-secondary)', whiteSpace:'nowrap', flexShrink:0 }}><b style={{ color:'var(--text-primary)' }}>{c.count}</b> vendors</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* All Events */}
+            <div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, color:'var(--text-primary)' }}>All Events</div>
+                <button onClick={()=>set({aTab:'events',page:1})} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:700, color:'#7A431A' }}>
+                  View All Events<Icon name="arrowLeft" size={12} color="#7A431A" style={{ transform:'rotate(180deg)' }}/>
+                </button>
+              </div>
+              <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
+                {events.map(ev => (
+                  <div key={ev.id} className="dc-row-hover" style={{ flex:'1 1 200px', minWidth:180, maxWidth:240, background:'var(--glass-card-solid, var(--bg-card))', border:'1px solid var(--glass-divider)', borderRadius:20, overflow:'hidden', boxShadow:'0 12px 30px rgba(122,67,26,0.1)' }}>
+                    <div style={{ width:'100%', aspectRatio:'4/5', background: ev.img || 'var(--accent-gradient)' }}/>
+                    <div style={{ padding:14 }}>
+                      <div style={{ fontFamily:"'Marcellus',serif", fontSize:15, color:'var(--text-primary)', marginBottom:5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.name}</div>
+                      <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:10, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.location}</div>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11.5, color:'var(--text-secondary)' }}>
+                          <Icon name="calendar" size={12} color="var(--text-muted)"/>{ev.dateRange}
+                        </div>
+                        <div style={{ fontSize:13, fontWeight:700, color:'#7A431A' }}>From RM {Math.min(ev.fnb, ev.nonfnb)}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent Applications */}
+            <div style={glassCard}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, flexWrap:'wrap', marginBottom:16 }}>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, color:'var(--text-primary)' }}>Recent Applications</div>
+                <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 14px', borderRadius:12, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', minWidth:180 }}>
+                    <Icon name="search" size={14} color="#9A5B26"/>
+                    <input value={dashAppSearch} onChange={e=>setDashAppSearch(e.target.value)} placeholder="Search vendor, event…" style={{ border:'none', outline:'none', background:'transparent', fontSize:13, color:'var(--text-primary)', width:'100%', fontFamily:"'Karla',sans-serif" }}/>
+                  </div>
+                  <select value={dashAppPeriod} onChange={e=>setDashAppPeriod(e.target.value)} style={pillSelect}>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="all">All Time</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ overflowX:'auto' }}>
+                <div style={{ minWidth:760 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,1fr)', gap:10, padding:'0 10px 12px', fontSize:11, fontWeight:700, letterSpacing:'0.06em', color:'var(--text-muted)', textTransform:'uppercase', borderBottom:'1px solid var(--glass-divider)' }}>
+                    <div>App ID</div><div>Date</div><div>Vendor</div><div>Event</div><div>Category</div><div>Amount</div><div>Status</div>
+                  </div>
+                  {recentApps.length === 0 ? (
+                    <div style={{ padding:'24px 10px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>No applications match this filter.</div>
+                  ) : recentApps.map(a => {
+                    const v = vById(a.vendorId), ev = evById(a.eventId);
+                    const amt = payments[`${a.vendorId}-${a.eventId}`]?.paid || 0;
+                    const st = badge(a.status);
+                    return (
+                      <div key={a.id} className="dc-row-hover" style={{ display:'grid', gridTemplateColumns:'minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.4fr) minmax(0,1.6fr) minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,1fr)', gap:10, alignItems:'center', padding:'12px 10px', borderBottom:'1px solid var(--glass-divider)' }}>
+                        <div style={{ fontSize:12.5, fontWeight:700, color:'var(--text-primary)' }}>#{a.id}</div>
+                        <div style={{ fontSize:12, color:'var(--text-secondary)' }}>{a.appliedAt ? fmtShort(a.appliedAt) : '—'}</div>
+                        <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                        <div style={{ fontSize:12, color:'var(--text-secondary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.name}</div>
+                        <div style={{ fontSize:12, color:'var(--text-muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.category}</div>
+                        <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{amt ? `RM ${fmt(amt)}` : '—'}</div>
+                        <div><span style={{ display:'inline-block', padding:'4px 11px', borderRadius:999, fontSize:11, fontWeight:700, background:st.bg, color:st.color }}>{st.label}</span></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ paddingTop:12, fontSize:12, color:'var(--text-muted)' }}>Showing {recentApps.length} of {recentAppsTotal} applications</div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div style={{ flex:'1 1 300px', minWidth:280, maxWidth:360, display:'flex', flexDirection:'column', gap:20 }}>
+
+            {/* Upcoming Event */}
+            <div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, color:'var(--text-primary)', marginBottom:12 }}>Upcoming Event</div>
+              {upcoming ? (
+                <div style={{ ...glassCard, padding:0, overflow:'hidden' }}>
+                  <div style={{ width:'100%', aspectRatio:'4/5', background: upcoming.img || 'var(--accent-gradient)' }}/>
+                  <div style={{ padding:16 }}>
+                    <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, color:'var(--text-primary)', marginBottom:5 }}>{upcoming.name}</div>
+                    <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:10 }}>{upcoming.location}</div>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:7, fontSize:12, color:'var(--text-secondary)' }}>
+                        <Icon name="calendar" size={13} color="var(--text-muted)"/>
+                        <div>
+                          <div style={{ fontWeight:700, color:'var(--text-primary)' }}>{upcoming.dateRange}</div>
+                          <div>{fmtTime(upcoming.startTime)} - {fmtTime(upcoming.endTime)}</div>
+                        </div>
+                      </div>
+                      <button onClick={()=>set({eventDetailId:upcoming.id})} style={{ padding:'9px 16px', border:'none', borderRadius:999, fontSize:12.5, fontWeight:700, color:'#FFF8EE', background:'var(--accent-gradient)', cursor:'pointer' }}>View Details</button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ ...glassCard, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>No upcoming markets scheduled.</div>
+              )}
+            </div>
+
+            {/* Calendar */}
+            <div style={glassCard}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:15.5, color:'var(--text-primary)' }}>{monthLabel}</div>
+                <div style={{ display:'flex', gap:6 }}>
+                  <button onClick={()=>{ const m=dashCalMonth-1; if(m<0){setDashCalMonth(11);setDashCalYear(dashCalYear-1);} else setDashCalMonth(m); }} style={{ width:26, height:26, borderRadius:'50%', border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', color:'var(--text-secondary)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                    <Icon name="arrowLeft" size={12} color="currentColor"/>
+                  </button>
+                  <button onClick={()=>{ const m=dashCalMonth+1; if(m>11){setDashCalMonth(0);setDashCalYear(dashCalYear+1);} else setDashCalMonth(m); }} style={{ width:26, height:26, borderRadius:'50%', border:'none', background:'var(--accent-gradient)', color:'#FFF8EE', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+                    <Icon name="arrowLeft" size={12} color="currentColor" style={{ transform:'rotate(180deg)' }}/>
+                  </button>
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:4 }}>
+                {['Su','Mo','Tu','We','Th','Fr','Sa'].map(wd => <div key={wd} style={{ textAlign:'center', fontSize:10.5, fontWeight:700, color:'var(--text-muted)', padding:'3px 0' }}>{wd}</div>)}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:16 }}>
+                {calCells.map((c,i) => (
+                  <div key={i} style={{ position:'relative', textAlign:'center', padding:'6px 0', borderRadius:'50%', fontSize:12, fontWeight: c.isToday?700:500, color: c.isToday?'#FFF8EE':c.muted?'var(--text-muted)':'var(--text-primary)', background: c.isToday?'var(--accent-gradient)':'transparent' }}>
+                    {c.label}
+                    {c.hasDot && <span style={{ position:'absolute', bottom:1, left:'50%', transform:'translateX(-50%)', width:4, height:4, borderRadius:'50%', background:'#B97434' }}/>}
+                  </div>
+                ))}
+              </div>
+              <div style={{ height:1, background:'var(--glass-divider)', marginBottom:14 }}/>
+              {agendaItems.length === 0 ? (
+                <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing scheduled this month.</div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {agendaItems.map((ag,i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:11 }}>
+                      <div style={{ width:40, height:40, borderRadius:12, background: ag.badge==='deadline' ? 'rgba(154,91,38,0.16)' : 'var(--accent-gradient)', color: ag.badge==='deadline' ? '#7A431A' : '#FFF8EE', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:14, fontWeight:700 }}>
+                        {ag.day}
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ag.title}</div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ag.subtitle}{ag.time ? ` · ${ag.time}` : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Activity — reuses the live app-wide activity log */}
+            <div style={glassCard}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16.5, color:'var(--text-primary)', marginBottom:14 }}>Recent Activity</div>
+              {activity.length === 0 ? (
+                <div style={{ fontSize:12, color:'var(--text-muted)' }}>No activity yet.</div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+                  {activity.slice(0,6).map((act,i) => (
+                    <div key={i} className="dc-row-hover" style={{ display:'flex', alignItems:'flex-start', gap:11, padding:6 }}>
+                      <div style={{ width:30, height:30, borderRadius:'50%', background:act.tint, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <Icon name={act.icon} size={13} color="#7A431A"/>
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <div style={{ fontSize:12.5, color:'var(--text-primary)', lineHeight:1.45 }}><b>{act.who}</b> {act.what}</div>
+                        <div style={{ fontSize:10.5, color:'var(--text-muted)', marginTop:2 }}>{act.when}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── Vendor Applications (new sign-ups awaiting a decision) ── */}
       {aTab === 'vendors' && (() => {
