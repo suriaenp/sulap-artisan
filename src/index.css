@@ -100,6 +100,23 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
   --tint-amber-border-soft: #F3EBD5;
   --tint-blue-bg: #EEF1FB;
   --tint-blue-text: #3D5BC4;
+
+  /* Glass/translucent surfaces — the "dynamic translucent" card system from
+     the 2026-07 design refresh (Sidebar/PortalHeader/PortalFooter/TableShell/
+     Dashboard). Kept separate from --bg-card etc. above since those back
+     solid cards, while these sit over the ambient gradient-blob background
+     and need real transparency to read as glass. */
+  --glass-card: rgba(255,255,255,0.55);
+  --glass-card-solid: #FFFFFF;
+  --glass-card-border: rgba(154,91,38,0.16);
+  --glass-chip-border: rgba(154,91,38,0.2);
+  --glass-divider: rgba(154,91,38,0.14);
+  --glass-input: rgba(255,255,255,0.6);
+  --glass-sidebar: rgba(255,255,255,0.3);
+  --glass-header: rgba(253,248,240,0.75);
+  --donut-hole: #FCF6EC;
+  --accent-gradient: linear-gradient(135deg, #B97434, #7A431A);
+  --row-hover-bg: rgba(154,91,38,0.05);
 }
 .outer-wrap[data-theme="dark"] {
   --bg-page: #1D1006;
@@ -133,6 +150,17 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
   --tint-amber-border-soft: rgba(214,184,118,0.28);
   --tint-blue-bg: rgba(61,91,196,0.22);
   --tint-blue-text: #8FA3E8;
+
+  --glass-card: rgba(255,255,255,0.06);
+  --glass-card-solid: #2A170D;
+  --glass-card-border: rgba(245,233,216,0.14);
+  --glass-chip-border: rgba(245,233,216,0.18);
+  --glass-divider: rgba(245,233,216,0.12);
+  --glass-input: rgba(255,255,255,0.08);
+  --glass-sidebar: rgba(0,0,0,0.2);
+  --glass-header: rgba(32,16,7,0.75);
+  --donut-hole: #241209;
+  --row-hover-bg: rgba(245,233,216,0.06);
 }
 .outer-wrap, .app-shell { transition: background-color .25s ease; }
 
@@ -225,6 +253,25 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
   }
 }
 
+/* Row-hover highlight — table/list rows across every admin & vendor tab get
+   a faint tinted background on hover, matching the Dashboard's Recent
+   Applications table from the 2026-07 design refresh. Pointer devices only,
+   so it doesn't leave a stuck highlight on touch. */
+@media (hover: hover) {
+  .dc-row-hover { transition: background-color 0.15s ease; border-radius: 14px; }
+  .dc-row-hover:hover { background: var(--row-hover-bg); }
+}
+
+/* Ambient gradient blobs behind the sidebar+main content — one shared layer
+   at the app-shell level (see App.jsx) instead of a copy per panel. Same
+   three soft radial blobs in both themes; the glass cards floating on top
+   are what read differently in light vs dark. */
+.ambient-blobs { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.ambient-blobs span { position: absolute; border-radius: 50%; filter: blur(55px); }
+.ambient-blobs span:nth-child(1) { top: -160px; left: 200px; width: 480px; height: 480px; background: radial-gradient(circle at 40% 40%, rgba(233,160,92,0.5), transparent 70%); }
+.ambient-blobs span:nth-child(2) { bottom: -220px; right: -120px; width: 540px; height: 540px; background: radial-gradient(circle at 40% 40%, rgba(154,91,38,0.35), transparent 70%); }
+.ambient-blobs span:nth-child(3) { top: 38%; right: 12%; width: 300px; height: 300px; background: radial-gradient(circle at 40% 40%, rgba(95,175,151,0.2), transparent 70%); }
+
 /* Mobile portal menu trigger floats as translucent chrome; content scrolls under it */
 .vendor-tabs-bar, .admin-tabs-bar {
   position: sticky !important;
@@ -283,6 +330,8 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
   width: 240px;
   flex-shrink: 0;
   overflow-y: auto;
+  position: relative;
+  z-index: 5;
 }
 .main-area {
   flex: 1;
@@ -291,7 +340,15 @@ button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.05
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  z-index: 1;
 }
+/* PortalHeader's name+role text — hidden on narrow screens (avatar alone is
+   enough there), shown once there's room next to the search/bell/settings. */
+.header-profile-text { display: none; }
+@media (min-width: 900px) {
+  .header-profile-text { display: block; }
+}
+
 .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .form-grid { display: flex; flex-direction: column; gap: 15px; }
 .admin-cards { display: flex; flex-direction: column; gap: 11px; }

@@ -4,6 +4,8 @@ import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import VendorAvatar from '../components/VendorAvatar';
 import MobileNavDrawer from '../components/MobileNavDrawer';
+import PortalHeader from '../components/PortalHeader';
+import PortalFooter from '../components/PortalFooter';
 import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
@@ -549,19 +551,7 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ background:'#3A2210', padding:'15px 20px 16px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div>
-          <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#FAF8F5' }}>Admin Console</div>
-          <div style={{ fontSize:11, color:'#DCA265', marginTop:1 }}>Sulap Artisan{acting ? ` · ${acting.name}${isSuperActing ? ' (Super admin)' : ''}` : ''}</div>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <button onClick={()=>set({darkMode:!darkMode})} title={darkMode ? 'Switch to day mode' : 'Switch to night mode'} style={{ background:'#4A2A0F', border:'none', width:34, height:34, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
-            <Icon name={darkMode ? 'sun' : 'moon'} size={16} color="#FFF3E2"/>
-          </button>
-          <button onClick={logout} style={{ background:'#4A2A0F', border:'none', color:'#FFF3E2', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
-        </div>
-      </div>
+      <PortalHeader title={activeTabLabel} eyebrow={aTab === 'overview' ? 'At a glance' : undefined} />
 
       {/* Mobile nav trigger — opens the tab drawer instead of a wrapping pill row */}
       <button className="admin-tabs-bar" onClick={() => setDrawerOpen(true)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'13px 16px', background:'var(--bg-card)', border:'none', borderBottom:'1px solid var(--border-faint)', cursor:'pointer', textAlign:'left' }}>
@@ -578,6 +568,10 @@ export default function AdminDashboard() {
         activeId={aTab}
         onSelect={id => { closeModals(); set({ aTab:id, page:1 }); }}
         dark
+        showThemeToggle
+        darkMode={darkMode}
+        onToggleDark={() => set({ darkMode: !darkMode })}
+        onLogout={logout}
       />
 
       {/* View-only notice for restricted admins */}
@@ -2843,6 +2837,7 @@ export default function AdminDashboard() {
       )}
 
       </div>{/* /.tab-panel */}
+      <PortalFooter/>
     </div>
   );
 }

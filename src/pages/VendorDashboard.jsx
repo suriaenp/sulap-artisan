@@ -2,8 +2,9 @@ import { useState } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
-import VendorAvatar from '../components/VendorAvatar';
 import MobileNavDrawer from '../components/MobileNavDrawer';
+import PortalHeader from '../components/PortalHeader';
+import PortalFooter from '../components/PortalFooter';
 import DigitalPassCard from '../components/DigitalPassCard';
 import ParkingPassCard from '../components/ParkingPassCard';
 import { useStore } from '../lib/store';
@@ -179,23 +180,13 @@ export default function VendorDashboard() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ background:'linear-gradient(160deg,#F3E4CC,#F2EDE6)', padding:'16px 20px 20px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:11 }}>
-          <VendorAvatar v={me} size={42}/>
-          <div>
-            <div style={{ fontSize:12, color:'#6B6560' }}>Welcome back,</div>
-            <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'#1C1A17', lineHeight:1.1 }}>{me.business}</div>
-          </div>
-        </div>
-        <button onClick={logout} style={{ background:'#FAF8F5', border:'1px solid #e3d3c1', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:10, padding:'8px 12px', cursor:'pointer' }}>Sign out</button>
-      </div>
+      <PortalHeader title={activeTabLabel} />
 
       {/* Mobile nav trigger — opens the tab drawer instead of a wrapping pill row */}
-      <button className="vendor-tabs-bar" onClick={() => setDrawerOpen(true)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'13px 16px', background:'#fff', border:'none', borderBottom:'1px solid #efe7dc', cursor:'pointer', textAlign:'left' }}>
+      <button className="vendor-tabs-bar" onClick={() => setDrawerOpen(true)} style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'13px 16px', background:'var(--bg-card)', border:'none', borderBottom:'1px solid var(--border-faint)', cursor:'pointer', textAlign:'left' }}>
         <Icon name="menu" size={18} color="#9A5B26" />
-        <span style={{ fontFamily:"'Karla'", fontSize:14, fontWeight:700, color:'#1C1A17', flex:1 }}>{activeTabLabel}</span>
-        <Icon name="arrowLeft" size={15} color="#A09890" style={{ transform:'rotate(180deg)' }} />
+        <span style={{ fontFamily:"'Karla'", fontSize:14, fontWeight:700, color:'var(--text-primary)', flex:1 }}>{activeTabLabel}</span>
+        <Icon name="arrowLeft" size={15} color="var(--text-muted)" style={{ transform:'rotate(180deg)' }} />
       </button>
       <MobileNavDrawer
         open={drawerOpen}
@@ -205,6 +196,7 @@ export default function VendorDashboard() {
         tabs={orderedTabs}
         activeId={vTab}
         onSelect={id => { closeModals(); set({ vTab:id, page:1 }); }}
+        onLogout={logout}
       />
 
       {/* Keyed per tab so switching remounts the wrapper and replays the tabIn animation */}
@@ -1017,6 +1009,7 @@ export default function VendorDashboard() {
       )}
 
       </div>{/* /.tab-panel */}
+      <PortalFooter/>
     </div>
   );
 }

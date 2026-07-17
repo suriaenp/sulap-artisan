@@ -5,8 +5,8 @@ import { ADMIN_TABS } from '../pages/AdminDashboard';
 import { VENDOR_TABS } from '../pages/VendorDashboard';
 
 export default function Sidebar() {
-  const { state, set, closeModals, acting, canViewTab } = useStore();
-  const { view, vScreen, aScreen, vTab, aTab, vTabOrder, aTabOrder } = state;
+  const { state, set, closeModals, acting, canViewTab, showToast } = useStore();
+  const { view, vScreen, aScreen, vTab, aTab, vTabOrder, aTabOrder, darkMode } = state;
   const isVendor = view === 'vendor' && vScreen === 'dashboard';
   const isAdmin  = view === 'admin'  && aScreen === 'dashboard';
   const isSuperActing = !acting || acting.role === 'super';
@@ -15,69 +15,89 @@ export default function Sidebar() {
   const vendorTabs = orderTabs(VENDOR_TABS, vTabOrder);
   const adminTabs  = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), aTabOrder);
 
-  const bg    = isAdmin ? '#2A1708' : '#FAF8F5';
-  const borderC = isAdmin ? '#4A2A0F' : 'var(--border-light)';
-  const headC   = isAdmin ? '#FAF8F5' : 'var(--text-primary)';
-  const subC    = isAdmin ? 'rgba(250,248,245,0.45)' : 'var(--text-muted)';
+  const logout = () => {
+    if (isAdmin) set({ aScreen: 'login', currentAdminId: null });
+    else if (isVendor) set({ vScreen: 'login' });
+    showToast('Signed out', 'leaf');
+  };
 
   const sideNavStyle = (active) => ({
-    width: '100%', display: 'flex', alignItems: 'center', gap: 9,
-    padding: '9px 12px', borderRadius: 11,
-    fontFamily: "'Karla'", fontSize: 13.5, cursor: 'pointer',
+    width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+    padding: '11px 14px', borderRadius: 12,
+    fontFamily: "'Karla'", fontSize: 14, cursor: 'pointer',
     border: 'none', textAlign: 'left',
-    background: active
-      ? (isAdmin ? 'rgba(250,248,245,0.13)' : 'var(--tint-pink-bg)')
-      : 'transparent',
-    color: active
-      ? (isAdmin ? '#FAF8F5' : '#9A5B26')
-      : (isAdmin ? 'rgba(250,248,245,0.55)' : 'var(--text-secondary)'),
-    fontWeight: active ? 600 : 500,
+    background: active ? 'var(--accent-gradient)' : 'transparent',
+    boxShadow: active ? '0 6px 16px rgba(122,67,26,0.3)' : 'none',
+    color: active ? '#FFF8EE' : 'var(--text-muted)',
+    fontWeight: active ? 700 : 600,
   });
 
   return (
-    <div className="app-sidebar" style={{ background: bg, borderRight: `1px solid ${borderC}` }}>
+    <div className="app-sidebar themed-scroll" style={{
+      background: 'var(--glass-sidebar)',
+      backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
+      borderRight: '1px solid var(--glass-card-border)',
+      padding: '22px 16px', boxSizing: 'border-box',
+    }}>
       {/* Logo */}
-      <div style={{ padding: '20px 18px 16px', borderBottom: `1px solid ${borderC}`, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/assets/sulap-mark.png" alt="Sulap" style={{ height: 32, width: 'auto' }} />
-          <div>
-            <div style={{ fontFamily: "'Marcellus',serif", fontSize: 15, fontWeight: 400, color: headC, lineHeight: 1.1 }}>Sulap Artisan</div>
-            <div style={{ fontSize: 10, letterSpacing: '0.04em', color: subC, marginTop: 2 }}>
-              {isAdmin ? 'Admin Console' : 'Vendor Registration'}
-            </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px 22px', flexShrink: 0 }}>
+        <img src="/assets/sulap-mark.png" alt="Sulap" style={{ width: 32, height: 'auto' }} />
+        <div>
+          <div style={{ fontFamily: "'Marcellus',serif", fontSize: 15, fontWeight: 400, color: 'var(--text-primary)', lineHeight: 1.15 }}>Sulap Artisan</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.08em', fontWeight: 700, color: '#9A5B26', marginTop: 2 }}>
+            {isAdmin ? 'ORGANIZER PORTAL' : 'VENDOR PORTAL'}
           </div>
         </div>
       </div>
 
       {/* Nav items — the Sidebar only renders inside a signed-in portal now (sign-in and
-          register screens use AuthLayout), so only the contextual tab list is needed;
-          Sign out (in the header) is how you leave. */}
-      <div className="themed-scroll" style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 16px' }}>
-        {/* Vendor portal tabs */}
-        {isVendor && (
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-muted)', padding: '4px 12px 6px' }}>MY PORTAL</div>
-            {vendorTabs.map(t => (
-              <button key={t.id} style={sideNavStyle(vTab===t.id)} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }}>
-                <Icon name={t.icon} size={16} color={vTab===t.id ? '#9A5B26' : 'var(--text-muted)'} />
-                <span>{t.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
+          register screens use AuthLayout), so only the contextual tab list is needed. */}
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 12 }}>
+        {isVendor && vendorTabs.map(t => (
+          <button key={t.id} style={sideNavStyle(vTab===t.id)} onClick={() => { closeModals(); set({ vTab:t.id, page:1 }); }}>
+            <Icon name={t.icon} size={17} color={vTab===t.id ? '#FFF8EE' : 'var(--text-muted)'} />
+            <span>{t.label}</span>
+          </button>
+        ))}
+        {isAdmin && adminTabs.map(t => (
+          <button key={t.id} style={sideNavStyle(aTab===t.id)} onClick={() => { closeModals(); set({ aTab:t.id, page:1 }); }}>
+            <Icon name={t.icon} size={17} color={aTab===t.id ? '#FFF8EE' : 'var(--text-muted)'} />
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </div>
 
-        {/* Admin tabs */}
+      {/* Theme toggle (admin only — the vendor portal has no dark mode) + sign out */}
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 14, flexShrink: 0 }}>
         {isAdmin && (
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(250,248,245,0.45)', padding: '4px 12px 6px' }}>CONSOLE</div>
-            {adminTabs.map(t => (
-              <button key={t.id} style={sideNavStyle(aTab===t.id)} onClick={() => { closeModals(); set({ aTab:t.id, page:1 }); }}>
-                <Icon name={t.icon} size={16} color={aTab===t.id ? '#FAF8F5' : 'rgba(250,248,245,0.55)'} />
-                <span>{t.label}</span>
-              </button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '4px 14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name={darkMode ? 'moon' : 'sun'} size={16} color="var(--text-secondary)" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+            </div>
+            <button
+              onClick={() => set({ darkMode: !darkMode })}
+              aria-label="Toggle dark mode"
+              style={{
+                width: 44, height: 24, borderRadius: 999, border: 'none', padding: 2, cursor: 'pointer',
+                flexShrink: 0, boxSizing: 'border-box',
+                background: darkMode ? 'var(--accent-gradient)' : 'rgba(154,91,38,0.2)',
+              }}
+            >
+              <span style={{
+                display: 'block', width: 20, height: 20, borderRadius: '50%', background: '#FFF8EE',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                transform: darkMode ? 'translateX(20px)' : 'translateX(0)',
+                transition: 'transform 0.2s ease',
+              }}/>
+            </button>
           </div>
         )}
+        <div style={{ height: 1, background: 'var(--glass-divider)' }}/>
+        <button onClick={logout} style={sideNavStyle(false)}>
+          <Icon name="logout" size={17} color="var(--text-muted)" />
+          <span>Sign out</span>
+        </button>
       </div>
     </div>
   );

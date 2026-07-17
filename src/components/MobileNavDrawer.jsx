@@ -24,7 +24,7 @@ const prefersReducedMotion = () =>
 const rubberband = (overshoot, dimension, constant = 0.55) =>
   (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
 
-export default function MobileNavDrawer({ open, onClose, title, subtitle, tabs, activeId, onSelect, dark }) {
+export default function MobileNavDrawer({ open, onClose, title, subtitle, tabs, activeId, onSelect, dark, showThemeToggle, darkMode, onToggleDark, onLogout }) {
   const panelRef = useRef(null);
   const scrimRef = useRef(null);
   const drag = useRef(null); // { startX, active, history: [{x,t}] }
@@ -137,6 +137,30 @@ export default function MobileNavDrawer({ open, onClose, title, subtitle, tabs, 
             );
           })}
         </div>
+
+        {/* Theme toggle (admin only) + sign out — mirrors the desktop Sidebar's
+            footer since this drawer replaces that sidebar below 768px. */}
+        {(showThemeToggle || onLogout) && (
+          <div style={{ padding:'10px 9px 14px', borderTop:`1px solid ${borderC}`, flexShrink:0 }}>
+            {showThemeToggle && (
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'9px 12px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <Icon name={darkMode ? 'moon' : 'sun'} size={15} color={subC} />
+                  <span style={{ fontSize:13, fontWeight:600, color:subC }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                </div>
+                <button onClick={onToggleDark} aria-label="Toggle dark mode" style={{ width:40, height:22, borderRadius:999, border:'none', padding:2, cursor:'pointer', flexShrink:0, boxSizing:'border-box', background: darkMode ? 'var(--accent-gradient)' : 'rgba(154,91,38,0.2)' }}>
+                  <span style={{ display:'block', width:18, height:18, borderRadius:'50%', background:'#FFF8EE', boxShadow:'0 2px 6px rgba(0,0,0,0.25)', transform: darkMode ? 'translateX(18px)' : 'translateX(0)', transition:'transform 0.2s ease' }}/>
+                </button>
+              </div>
+            )}
+            {onLogout && (
+              <button onClick={() => { onLogout(); requestClose(); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, textAlign:'left', padding:'11px 12px', borderRadius:11, border:'none', cursor:'pointer', fontFamily:"'Karla'", fontSize:14, fontWeight:600, background:'transparent', color:subC }}>
+                <Icon name="logout" size={16} color={subC} />
+                <span>Sign out</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

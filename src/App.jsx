@@ -90,6 +90,7 @@ function AppShell() {
   return (
     <div className="outer-wrap" data-theme={view === 'admin' && darkMode ? 'dark' : 'light'}>
       <div className="app-shell">
+        <div className="ambient-blobs"><span/><span/><span/></div>
         <Sidebar />
         <div className="main-area">
           <div style={{ flexShrink:0, height:'env(safe-area-inset-top, 0px)' }}/>

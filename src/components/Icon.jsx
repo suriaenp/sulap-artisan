@@ -51,6 +51,8 @@ const paths = {
   plus:       <><path d="M5 12h14"/><path d="M12 5v14"/></>,
   sliders:    <><path d="M4 6h16"/><path d="M7 12h10"/><path d="M10 18h4"/></>,
   kebab:      <><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></>,
+  grid:       <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
+  logout:     <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></>,
 };
 
 export default function Icon({ name, size = 16, color = 'currentColor', style }) {
