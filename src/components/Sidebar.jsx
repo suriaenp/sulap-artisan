@@ -13,7 +13,7 @@ export default function Sidebar() {
   // Tab order is set globally by a super admin (Settings → Portal tab order) —
   // vendors and staff admins just see the arranged order, no reorder controls here.
   const vendorTabs = orderTabs(VENDOR_TABS, vTabOrder);
-  const adminTabs  = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), aTabOrder);
+  const adminTabs  = orderTabs(ADMIN_TABS.filter(t => !t.hidden && (t.superOnly ? isSuperActing : canViewTab(t.id))), aTabOrder);
 
   const logout = () => {
     if (isAdmin) set({ aScreen: 'login', currentAdminId: null });

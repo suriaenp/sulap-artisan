@@ -430,8 +430,8 @@ export const CURRENT_VENDOR_ID = 'v1';
 // replaces this with Supabase Auth (hashed, server-side).
 export const DEFAULT_ADMIN_PASSWORD = '00000';
 export const INITIAL_ADMINS = [
-  { id:'admin',   name:'Siti Aminah', role:'super', password:'sulap123', mustReset:false, perms:{} },
-  { id:'staff01', name:'Ahmad Fauzi', role:'staff', password:DEFAULT_ADMIN_PASSWORD, mustReset:true, perms:{ overview:'view', payments:'edit', parking:'view', photos:'view' } },
+  { id:'admin',   name:'Siti Aminah', role:'super', password:'sulap123', mustReset:false, perms:{}, avatar:null },
+  { id:'staff01', name:'Ahmad Fauzi', role:'staff', password:DEFAULT_ADMIN_PASSWORD, mustReset:true, perms:{ overview:'view', payments:'edit', parking:'view', photos:'view' }, avatar:null },
 ];
 
 export const INITIAL_ACTIVITY = [

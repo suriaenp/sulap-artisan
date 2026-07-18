@@ -10,13 +10,17 @@ import VendorAvatar from './VendorAvatar';
 // shortcut this header used to also show were decorative — never wired to
 // anything — and were removed 2026-07-18.)
 export default function PortalHeader({ title, eyebrow }) {
-  const { state, acting } = useStore();
+  const { state, set, acting } = useStore();
   const { view, aScreen, vendors } = state;
   const isAdmin = view === 'admin' && aScreen === 'dashboard';
   const me = view === 'vendor' ? (vendors.find(v => v.id === CURRENT_VENDOR_ID) || {}) : null;
 
   const profileName = isAdmin ? (acting?.name || 'Admin') : (me?.business || 'Vendor');
-  const profileRole = isAdmin ? (acting ? (acting.role === 'super' ? 'Super admin' : 'Staff admin') : 'Super admin') : (me?.owner || '');
+  // Admins see their Staff ID here instead of their role — the role still shows
+  // in Admin Roles for anyone managing accounts, but on their own header this ID
+  // is what they'd actually need day to day (and doubles as their sign-in ID).
+  const profileRole = isAdmin ? `Staff ID: ${acting?.id || 'admin'}` : (me?.owner || '');
+  const goToAccount = () => { if (isAdmin) set({ aTab: 'account', aScreen: 'dashboard' }); };
 
   return (
     <div style={{
@@ -32,15 +36,25 @@ export default function PortalHeader({ title, eyebrow }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '0 0 auto', minWidth: 0, justifyContent: 'flex-end' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <button
+          onClick={goToAccount}
+          title={isAdmin ? 'Go to My Account' : undefined}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0,
+            background: 'none', border: 'none', padding: 0, margin: 0,
+            cursor: isAdmin ? 'pointer' : 'default', textAlign: 'left', font: 'inherit',
+          }}
+        >
           {isAdmin
-            ? <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Marcellus',serif", fontSize: 14, color: '#FFF8EE', flexShrink: 0 }}>{profileName.charAt(0)}</div>
+            ? (acting?.avatar
+                ? <img src={acting.avatar.url} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}/>
+                : <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Marcellus',serif", fontSize: 14, color: '#FFF8EE', flexShrink: 0 }}>{profileName.charAt(0)}</div>)
             : <VendorAvatar v={me} size={36}/>}
           <div className="header-profile-text" style={{ minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{profileName}</div>
             <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{profileRole}</div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );

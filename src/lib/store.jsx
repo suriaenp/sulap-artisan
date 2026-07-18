@@ -90,9 +90,6 @@ const INIT = {
   appsTab: 'apps', // 'apps' | 'shortlist' — sub-tab under Event Applications
   // compliance
   compTab: 'log',
-  compSel: {},
-  // chart
-  chartPeriod: 'all',
   // activity
   actTab: 'all',
   // parking override (unlock entry outside event dates for testing)
@@ -150,7 +147,9 @@ export function StoreProvider({ children }) {
   const isSuper = !acting || acting.role === 'super';
   const canViewTab = (tab) => isSuper || acting.perms?.[tab] === 'view' || acting.perms?.[tab] === 'edit';
   const canEditTab = (tab) => isSuper || acting.perms?.[tab] === 'edit';
-  const adminLocked = state.view === 'admin' && state.aScreen === 'dashboard' && !canEditTab(state.aTab);
+  // The personal Account tab (own name/password/photo) is never gated by the
+  // view/edit permission system — every admin can always edit their own profile.
+  const adminLocked = state.view === 'admin' && state.aScreen === 'dashboard' && state.aTab !== 'account' && !canEditTab(state.aTab);
 
   const blockedToast = () => {
     clearTimeout(toastTimer.current);

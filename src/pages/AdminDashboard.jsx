@@ -34,11 +34,15 @@ export const ADMIN_TABS = [
   { id:'pass',       label:'Vendor Pass',         icon:'badge' },
   { id:'categories', label:'Categories',          icon:'folder' },
   { id:'activity',   label:'Activity',            icon:'activity' },
-  { id:'chart',      label:'Vendor Chart',        icon:'trophy' },
   { id:'compliance', label:'Compliance',          icon:'shield' },
   { id:'content',    label:'Content',             icon:'pen' },
-  { id:'settings',   label:'Settings',            icon:'settings' },
+  { id:'settings',   label:'Settings',            icon:'settings', superOnly:true },
   { id:'roles',      label:'Admin Roles',         icon:'lock', superOnly:true },
+  // Reached only via the header profile card click, not the sidebar/mobile nav
+  // or Admin Roles' permission matrix — every admin can always view/edit their
+  // own account regardless of role or granted tab perms (see store.jsx's
+  // adminLocked bypass for aTab === 'account').
+  { id:'account',    label:'My Account',          icon:'user', hidden:true },
 ];
 
 // Settings → "Portal tab order" (super admin only): one reorderable list per portal.
@@ -144,18 +148,26 @@ function NoSearchMatch({ query }) {
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, compSel, chartPeriod, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, catFilter, profileRequests } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, catFilter, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
-  const visibleTabs = orderTabs(ADMIN_TABS.filter(t => t.superOnly ? isSuperActing : canViewTab(t.id)), state.aTabOrder);
+  const visibleTabs = orderTabs(ADMIN_TABS.filter(t => !t.hidden && (t.superOnly ? isSuperActing : canViewTab(t.id))), state.aTabOrder);
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
   const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix (or transfer panel) is open
   const [transferTo, setTransferTo] = useState('');
   const [transferConfirm, setTransferConfirm] = useState('');
+  const [acctName, setAcctName] = useState(acting?.name || '');
+  const [acctPw, setAcctPw] = useState({ current:'', next:'', confirm:'' });
+  const [acctPwMsg, setAcctPwMsg] = useState(null);
+  const [compVendorOpen, setCompVendorOpen] = useState(null); // vendor id whose offence checklist is expanded in Log Offences
+  const [compTypeSel, setCompTypeSel] = useState([]); // offence types checked in that open checklist
+
+  // Keep the Account tab's name draft in sync when a different admin signs in
+  useEffect(() => { setAcctName(acting?.name || ''); }, [acting?.id]);
 
   // If the signed-in admin can't view the current tab, land on their first visible tab
   useEffect(() => {
     const cur = ADMIN_TABS.find(t => t.id === aTab);
-    const allowed = cur && (cur.superOnly ? isSuperActing : canViewTab(aTab));
+    const allowed = cur && (cur.hidden || (cur.superOnly ? isSuperActing : canViewTab(aTab)));
     if (!allowed && visibleTabs.length) set({ aTab: visibleTabs[0].id, page:1 });
   }, [aTab, currentAdminId]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showRejected, setShowRejected] = useState(false);
@@ -2290,64 +2302,6 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* ── Vendor Chart ── */}
-      {aTab === 'chart' && (
-        <div style={{ padding:'14px 16px 20px' }}>
-          {(() => {
-            const participation = {};
-            apps.forEach(a => { participation[a.vendorId]=(participation[a.vendorId]||0)+1; });
-            const sorted = Object.entries(participation).sort((a,b)=>b[1]-a[1]);
-            const top = sorted[0] ? vById(sorted[0][0]) : {};
-            const maxCount = sorted[0]?.[1]||1;
-            const shownSorted = searchQ ? sorted.filter(([vid])=>vendorMatches(vById(vid))) : sorted;
-            return (
-              <>
-                <div style={{ background:'linear-gradient(135deg,#9A5B26,#7A2438)', borderRadius:18, padding:18, color:'#FAF8F5' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, fontWeight:600, opacity:0.85 }}><Icon name="trophy" size={15} color="#FAF8F5"/>Most active vendor</div>
-                  <div style={{ fontFamily:"'Marcellus',serif", fontSize:24, fontWeight:400, marginTop:7, lineHeight:1.1 }}>{top.business||'—'}</div>
-                  <div style={{ fontSize:12.5, opacity:0.85, marginTop:3 }}>{sorted[0]?.[1]||0} markets joined</div>
-                </div>
-                <div style={{ display:'flex', gap:8, margin:'15px 0 13px', flexWrap:'wrap' }}>
-                  {['all','2026','last3'].map(p => (
-                    <button key={p} onClick={()=>set({chartPeriod:p})} style={{ background:chartPeriod===p?'#9A5B26':'var(--bg-card)', border:`1px solid ${chartPeriod===p?'#9A5B26':'var(--border-medium)'}`, color:chartPeriod===p?'#FAF8F5':'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:999, padding:'8px 14px', cursor:'pointer' }}>
-                      {p==='all'?'All time':p==='2026'?'2026':'Last 3 events'}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', margin:'2px 2px 11px' }}>Participation ranking</div>
-                <SearchBox value={vendorSearch} onChange={setVendorSearch}/>
-                {shownSorted.length === 0 ? (
-                  <NoSearchMatch query={vendorSearch}/>
-                ) : (
-                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:14, display:'flex', flexDirection:'column', gap:13 }}>
-                    {shownSorted.map(([vid,count]) => {
-                      const v = vById(vid);
-                      const pct = Math.round(count/maxCount*100);
-                      const rankColors = ['#E8A04B','var(--text-muted)','#B87333'];
-                      const rank = sorted.findIndex(([id])=>id===vid);
-                      return (
-                        <div key={vid} style={{ display:'flex', alignItems:'center', gap:11 }}>
-                          <div style={{ width:32, height:32, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, flexShrink:0, background:rank<3?rankColors[rank]:'var(--bg-subtle)', color:rank<3?'#fff':'var(--text-secondary)' }}>{rank+1}</div>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:5 }}>
-                              <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{v.business}</span>
-                              <span style={{ fontSize:11.5, fontWeight:600, color:'#9A5B26' }}>{count} market{count!==1?'s':''}</span>
-                            </div>
-                            <div style={{ height:6, borderRadius:3, background:'var(--bg-subtle)', overflow:'hidden' }}>
-                              <div style={{ height:'100%', borderRadius:3, background:'linear-gradient(90deg,#B97434,#9A5B26)', width:`${pct}%` }}/>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-        </div>
-      )}
-
       {/* ── Compliance ── */}
       {aTab === 'compliance' && (() => {
         const policyAndTabs = (
@@ -2461,10 +2415,14 @@ export default function AdminDashboard() {
           );
         }
 
-        // Log offences: each row is an offence *type* with a vendor multi-select,
-        // not a vendor listing — doesn't fit the vendor-row table pattern, so it
-        // keeps its own glass-card layout (restyled to match) rather than being
-        // forced into TableShell.
+        // Log offences: search-first vendor picker. Instead of one card per
+        // offence *type* each listing every approved vendor (which meant hunting
+        // through up to 6 long pill lists to tag one vendor), this is a single
+        // searchable vendor list — type a name to narrow ~50 vendors instantly,
+        // open just that vendor's row, and tick every offence that applies.
+        const eventVendorIds = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
+        const eventVendorList = searchVendors(eventVendorIds.map(vById)).sort((a,b)=>(a.business||'').localeCompare(b.business||''));
+        const offencesFor = (vid) => offenses.filter(o=>o.vendorId===vid && o.eventId===filterEvent);
         return (
           <div style={{ position:'relative', padding:'28px 24px 32px', minHeight:560 }}>
             <div style={{ position:'absolute', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }}>
@@ -2474,11 +2432,11 @@ export default function AdminDashboard() {
             <div style={{ position:'relative', zIndex:1 }}>
               <div style={{ marginBottom:20 }}>
                 <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'var(--text-primary)' }}>Compliance</div>
-                <div style={{ fontSize:14, color:'var(--text-muted)' }}>Tag vendors with an offence type for the selected market.</div>
+                <div style={{ fontSize:14, color:'var(--text-muted)' }}>Search a vendor for the selected market, then tick the offence(s) that apply.</div>
               </div>
               {policyAndTabs}
               <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:'22px 24px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
-                <div style={{ display:'flex', gap:9, marginBottom:16 }}>
+                <div style={{ display:'flex', gap:9, marginBottom:12 }}>
                   <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
                   <button onClick={()=>{
                     const n = newOffType.trim();
@@ -2491,56 +2449,101 @@ export default function AdminDashboard() {
                     showToast('Offence type added','shield');
                   }} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', border:'none', fontSize:14, fontWeight:700, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Add</button>
                 </div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:18 }}>
+                  {Object.entries(offenseTypes).map(([type,ot]) => (
+                    <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 6px 5px 11px', background:ot.bg, color:ot.color }}>
+                      <span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}
+                      {offenses.every(o=>o.type!==type) && (
+                        <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'rgba(0,0,0,0.08)', border:'none', width:16, height:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                          <Icon name="x" size={9} color={ot.color}/>
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
                 <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:6, textTransform:'uppercase', letterSpacing:'0.05em' }}>Event</div>
-                <select value={filterEvent} onChange={e=>set({filterEvent:e.target.value,compSel:{}})} style={{ width:'100%', maxWidth:360, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:16, fontFamily:"'Karla',sans-serif" }}>
+                <select value={filterEvent} onChange={e=>{ set({filterEvent:e.target.value}); setCompVendorOpen(null); setCompTypeSel([]); }} style={{ width:'100%', maxWidth:360, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:12, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', marginBottom:16, fontFamily:"'Karla',sans-serif" }}>
                   {events.map(e=><option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
-                <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
-                  {Object.entries(offenseTypes).map(([type,ot]) => {
-                    const sel = compSel[type]||[];
-                    const eventVendors = [...new Set(apps.filter(a=>a.eventId===filterEvent&&a.status==='approved').map(a=>a.vendorId))];
-                    return (
-                      <div key={type} style={{ background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-divider)', borderRadius:14, padding:'13px 14px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                          <span style={{ width:10, height:10, borderRadius:'50%', background:ot.color, flexShrink:0 }}/>
-                          <div style={{ flex:1 }}>
-                            <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{ot.label}</div>
-                          </div>
-                          {offenses.every(o=>o.type!==type) && (
-                            <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'var(--glass-input)', border:'none', width:26, height:26, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
-                              <Icon name="x" size={13} color="#8A6A4A"/>
+
+                <SearchBox value={vendorSearch} onChange={v=>{ setVendorSearch(v); setCompVendorOpen(null); }} placeholder="Search this event's vendors by business or owner name"/>
+
+                {eventVendorList.length === 0 ? (
+                  <div style={{ background:'var(--glass-input)', borderRadius:14, padding:'20px 14px', textAlign:'center', fontSize:13, color:'var(--text-muted)' }}>
+                    {searchQ ? `No approved vendors for ${curEv.name} match "${vendorSearch}".` : `No approved vendors for ${curEv.name} yet.`}
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, maxHeight:520, overflowY:'auto' }}>
+                    {eventVendorList.map(v => {
+                      const already = offencesFor(v.id);
+                      const alreadyTypes = new Set(already.map(o=>o.type));
+                      const isOpen = compVendorOpen === v.id;
+                      return (
+                        <div key={v.id} style={{ background:'rgba(154,91,38,0.06)', border:'1px solid var(--glass-divider)', borderRadius:14, padding:'11px 13px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                            <VendorAvatar v={v} size={32}/>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{v.business}</div>
+                              {already.length > 0 ? (
+                                <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:4 }}>
+                                  {already.map(o => {
+                                    const ot = offenseTypes[o.type]||{};
+                                    return <span key={o.id} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10.5, fontWeight:700, borderRadius:999, padding:'2px 8px', background:ot.bg, color:ot.color }}><span style={{ width:5, height:5, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>;
+                                  })}
+                                </div>
+                              ) : (
+                                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>No offences logged for this market</div>
+                              )}
+                            </div>
+                            <button onClick={()=>{
+                              if (isOpen) { setCompVendorOpen(null); setCompTypeSel([]); }
+                              else { setCompVendorOpen(v.id); setCompTypeSel([]); }
+                            }} style={{ flexShrink:0, background:isOpen?'var(--glass-divider)':'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'#9A5B26', fontSize:12, fontWeight:700, borderRadius:10, padding:'8px 13px', cursor:'pointer' }}>
+                              {isOpen ? 'Close' : 'Log offence'}
                             </button>
+                          </div>
+                          {isOpen && (
+                            <div style={{ marginTop:11, paddingTop:11, borderTop:'1px solid var(--glass-divider)' }}>
+                              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.05em' }}>Tick every offence that applies</div>
+                              <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                                {Object.entries(offenseTypes).map(([type,ot]) => {
+                                  const logged = alreadyTypes.has(type);
+                                  const checked = compTypeSel.includes(type);
+                                  return (
+                                    <button key={type} disabled={logged} onClick={()=>{
+                                      setCompTypeSel(s => checked ? s.filter(t=>t!==type) : [...s, type]);
+                                    }} title={logged ? 'Already logged for this market' : ot.label} style={{
+                                      display:'inline-flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, borderRadius:999,
+                                      padding:'7px 12px', cursor: logged ? 'default' : 'pointer',
+                                      background: logged ? 'var(--glass-divider)' : (checked ? ot.bg : 'var(--glass-input)'),
+                                      border: `1px solid ${checked && !logged ? ot.color : 'var(--glass-chip-border)'}`,
+                                      color: logged ? 'var(--text-muted)' : (checked ? ot.color : 'var(--text-secondary)'),
+                                      opacity: logged ? 0.6 : 1,
+                                    }}>
+                                      <span style={{ width:7, height:7, borderRadius:'50%', background: logged ? 'var(--text-muted)' : ot.color }}/>
+                                      {ot.label}{logged ? ' · logged' : ''}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <button disabled={!compTypeSel.length} onClick={()=>{
+                                if (!compTypeSel.length) return;
+                                let id = Date.now();
+                                const added = compTypeSel.map(type => ({ id:'o'+(id++), vendorId:v.id, eventId:filterEvent, type, photos:[] }));
+                                dispatch({type:'MERGE_OFFENSES', payload:[...offenses, ...added]});
+                                logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${v.business} — ${curEv.name}.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
+                                showToast(`${added.length} offence${added.length>1?'s':''} logged for ${v.business}`,'shield');
+                                setCompVendorOpen(null); setCompTypeSel([]);
+                              }} style={{ marginTop:12, width:'100%', background: compTypeSel.length ? 'linear-gradient(135deg, #B97434, #7A431A)' : 'var(--glass-divider)', color: compTypeSel.length ? '#FFF8EE' : 'var(--text-muted)', border:'none', fontSize:13, fontWeight:700, borderRadius:11, padding:11, cursor: compTypeSel.length ? 'pointer' : 'not-allowed' }}>
+                                Log offence{compTypeSel.length===1?'':'s'} for {v.business}
+                              </button>
+                            </div>
                           )}
                         </div>
-                        {sel.length > 0 && (
-                          <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
-                            {sel.map(vid => (
-                              <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=(s[type]||[]).filter(x=>x!==vid); set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-divider)', border:'1px solid var(--glass-chip-border)', color:'#9A5B26', fontSize:11.5, fontWeight:700, borderRadius:999, padding:'5px 7px 5px 11px', cursor:'pointer' }}>
-                                {vById(vid).business}<Icon name="x" size={13} color="#9A5B26"/>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:9 }}>
-                          {eventVendors.filter(vid=>!sel.includes(vid)).map(vid => (
-                            <button key={vid} onClick={()=>{ const s={...compSel}; s[type]=[...(s[type]||[]),vid]; set({compSel:s}); }} style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--glass-input)', border:'1px dashed rgba(154,91,38,0.3)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 11px', cursor:'pointer' }}>+ {vById(vid).business}</button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button onClick={()=>{
-                  const sel=compSel; const ev=filterEvent; const added=[]; let id=Date.now();
-                  Object.entries(sel).forEach(([type,vids])=>(vids||[]).forEach(vid=>added.push({id:'o'+(id++),vendorId:vid,eventId:ev,type})));
-                  if(!added.length){ showToast('Select at least one vendor first','info'); return; }
-                  dispatch({type:'MERGE_OFFENSES',payload:[...offenses,...added]});
-                  set({compSel:{}});
-                  logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${curEv.name}.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
-                  showToast(`${added.length} offence${added.length>1?'s':''} logged`,'shield');
-                }} style={{ marginTop:16, width:'100%', background:'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', border:'none', fontSize:14, fontWeight:700, borderRadius:12, padding:13, cursor:'pointer' }}>
-                  Log selected offences for {curEv.name}
-                </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2798,7 +2801,7 @@ export default function AdminDashboard() {
                 <TabOrderCard
                   title="Admin console tabs"
                   desc="The sidebar/menu order every admin sees, including staff admins (their hidden tabs keep this position too)."
-                  tabs={orderTabs(ADMIN_TABS, state.aTabOrder)}
+                  tabs={orderTabs(ADMIN_TABS.filter(t=>!t.hidden), state.aTabOrder)}
                   isCustom={!!state.aTabOrder}
                   onOrder={ids => set({ aTabOrder: ids })}
                   onReset={() => { set({ aTabOrder: null }); showToast('Admin tab order reset to default', 'check'); }}
@@ -2819,7 +2822,7 @@ export default function AdminDashboard() {
 
       {/* ── Admin Roles (super admin only) ── */}
       {aTab === 'roles' && isSuperActing && (() => {
-        const grantableTabs = ADMIN_TABS.filter(t => !t.superOnly);
+        const grantableTabs = ADMIN_TABS.filter(t => !t.superOnly && !t.hidden);
         const permOf = (a, tab) => a.perms?.[tab] || 'none';
         const setPerm = (adminId, tab, level) => {
           dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => {
@@ -2999,29 +3002,97 @@ export default function AdminDashboard() {
         );
       })()}
 
-      {/* ── Admin Profile ── */}
-      {aTab === 'profile' && (
-        <div style={{ padding:'16px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:18, display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ width:54, height:54, borderRadius:'50%', background:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:18, flexShrink:0 }}>SA</div>
-            <div>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Siti Aminah</div>
-              <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>Portal Administrator</div>
-            </div>
-          </div>
-          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'4px 16px' }}>
-            {[['Email','admin@sulapartisan.com'],['Role','Super admin'],['Last sign-in','Today, 9:12 AM']].map(([k,v],i,arr) => (
-              <div key={k} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'13px 0', borderBottom:i<arr.length-1?'1px solid var(--border-faint)':'none' }}>
-                <span style={{ fontSize:12.5, color:'var(--text-muted)' }}>{k}</span>
-                <span style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)' }}>{v}</span>
+      {/* ── My Account (reached via the header profile card, not the sidebar) ── */}
+      {aTab === 'account' && acting && (() => {
+        const me = acting;
+        const initials = me.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+        const nameChanged = acctName.trim() && acctName.trim() !== me.name;
+        const saveName = () => {
+          if (!acctName.trim()) { showToast("Full name can't be empty", 'info'); return; }
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === me.id ? { ...x, name: acctName.trim() } : x) });
+          logActivity('Admin', `updated their profile name to "${acctName.trim()}".`, { icon:'pencil', tint:'var(--tint-pink-bg)' });
+          showToast('Name updated', 'check');
+        };
+        const savePw = () => {
+          if (!acctPw.current || !acctPw.next || !acctPw.confirm) { setAcctPwMsg({ type:'error', text:'Fill in every password field.' }); return; }
+          if (acctPw.current !== me.password) { setAcctPwMsg({ type:'error', text:'Current password is incorrect.' }); return; }
+          if (acctPw.next.length < 4) { setAcctPwMsg({ type:'error', text:'New password must be at least 4 characters.' }); return; }
+          if (acctPw.next !== acctPw.confirm) { setAcctPwMsg({ type:'error', text:"New password and confirmation don't match." }); return; }
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === me.id ? { ...x, password: acctPw.next, mustReset:false } : x) });
+          setAcctPw({ current:'', next:'', confirm:'' });
+          setAcctPwMsg({ type:'success', text:'Password updated.' });
+          logActivity('Admin', 'updated their own password.', { icon:'lock', tint:'var(--tint-green-bg)' });
+          showToast('Password updated', 'check');
+        };
+        return (
+          <div style={{ padding:'16px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
+            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:18, display:'flex', alignItems:'center', gap:14 }}>
+              <label title="Upload a profile picture" style={{ position:'relative', width:64, height:64, borderRadius:'50%', flexShrink:0, cursor:'pointer' }}>
+                {me.avatar ? (
+                  <img src={me.avatar.url} alt="" style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', display:'block' }}/>
+                ) : (
+                  <div style={{ width:64, height:64, borderRadius:'50%', background:'var(--text-primary)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FAF8F5', fontWeight:700, fontSize:20 }}>{initials}</div>
+                )}
+                <div style={{ position:'absolute', bottom:-2, right:-2, width:24, height:24, borderRadius:'50%', background:'#9A5B26', border:'2px solid var(--bg-card)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Icon name="camera" size={12} color="#FFF8EE"/>
+                </div>
+                <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
+                  const f = e.target.files[0]; e.target.value = '';
+                  if (!f) return;
+                  const photo = await fileToPhoto(f);
+                  dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === me.id ? { ...x, avatar: photo } : x) });
+                  showToast('Profile picture updated', 'camera');
+                }}/>
+              </label>
+              <div>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>{me.name}</div>
+                <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>{me.role === 'super' ? 'Super admin' : 'Staff admin'} · Staff ID {me.id}</div>
               </div>
-            ))}
+            </div>
+
+            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Your details</div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Full name</div>
+                <input value={acctName} onChange={e=>setAcctName(e.target.value)} style={inp}/>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Staff ID</div>
+                <input value={me.id} disabled style={{ ...inp, background:'var(--bg-subtle)', color:'var(--text-muted)', cursor:'not-allowed' }}/>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4, lineHeight:1.4 }}>Your Staff ID is your sign-in ID and can't be changed here.</div>
+              </div>
+              <button onClick={saveName} disabled={!nameChanged} style={{ marginTop:14, background: nameChanged ? '#9A5B26' : 'var(--bg-subtle)', color: nameChanged ? '#FAF8F5' : 'var(--text-muted)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor: nameChanged ? 'pointer' : 'not-allowed' }}>Save name</button>
+            </div>
+
+            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:16 }}>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Update password</div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Current password</div>
+                <input type="password" value={acctPw.current} onChange={e=>{ setAcctPw(s=>({...s,current:e.target.value})); setAcctPwMsg(null); }} style={inp}/>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>New password</div>
+                <input type="password" value={acctPw.next} onChange={e=>{ setAcctPw(s=>({...s,next:e.target.value})); setAcctPwMsg(null); }} style={inp}/>
+              </div>
+              <div style={{ marginTop:12 }}>
+                <div style={lbl}>Confirm new password</div>
+                <input type="password" value={acctPw.confirm} onChange={e=>{ setAcctPw(s=>({...s,confirm:e.target.value})); setAcctPwMsg(null); }} onKeyDown={e=>e.key==='Enter'&&savePw()} style={inp}/>
+              </div>
+              {acctPwMsg && (
+                <div style={{ marginTop:10, fontSize:12, fontWeight:600, color: acctPwMsg.type==='error' ? 'var(--tint-red-text)' : 'var(--tint-green-text)' }}>{acctPwMsg.text}</div>
+              )}
+              <button onClick={savePw} style={{ marginTop:14, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Update password</button>
+              <div style={{ marginTop:12, fontSize:11.5, color:'var(--text-muted)', lineHeight:1.5 }}>
+                Forgot your current password? {isSuperActing ? 'As super admin, only another super admin can reset it for you from Admin Roles.' : "Ask a super admin to reset it for you from Admin Roles — you'll set a new one on your next sign-in."}
+              </div>
+            </div>
+
+            <button onClick={logout} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'var(--tint-red-bg)', border:'1px solid var(--tint-red-border)', color:'var(--tint-red-text)', fontSize:14, fontWeight:600, borderRadius:14, padding:14, cursor:'pointer', marginTop:4 }}>
+              <Icon name="x" size={16} color="var(--tint-red-text)"/>Sign out
+            </button>
           </div>
-          <button onClick={logout} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:'var(--tint-red-bg)', border:'1px solid var(--tint-red-border)', color:'var(--tint-red-text)', fontSize:14, fontWeight:600, borderRadius:14, padding:14, cursor:'pointer', marginTop:4 }}>
-            <Icon name="x" size={16} color="var(--tint-red-text)"/>Sign out
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       </div>{/* /.tab-panel */}
       <PortalFooter/>
