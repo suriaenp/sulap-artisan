@@ -473,6 +473,20 @@ export default function AdminDashboard() {
         const popularCats = Object.entries(catCounts).sort((a,b) => b[1]-a[1]).slice(0,4)
           .map(([name,count], i) => ({ name, count, pct: approvedVendors.length ? Math.round((count/approvedVendors.length)*100) : 0, color: catGradients[i % catGradients.length] }));
 
+        // ── Events snapshot: recently concluded, ongoing (or nearest upcoming),
+        // and the next upcoming after that — a dashboard highlight, not a full
+        // listing (that's what "View All Events" is for). Events with no
+        // startDate/endDate ("Dates TBC") have nothing to rank by, so they're
+        // left out of this snapshot entirely.
+        const withStatus = events.map(ev => ({ ...ev, _status: eventStatus(ev).key }));
+        const concludedEvents = withStatus.filter(ev => ev._status === 'concluded').sort((a,b) => parseDateOnly(b.endDate) - parseDateOnly(a.endDate));
+        const ongoingEvents = withStatus.filter(ev => ev._status === 'ongoing').sort((a,b) => parseDateOnly(a.endDate) - parseDateOnly(b.endDate));
+        const upcomingEvents = withStatus.filter(ev => ev._status === 'upcoming').sort((a,b) => parseDateOnly(a.startDate) - parseDateOnly(b.startDate));
+        const recentlyConcluded = concludedEvents[0] || null;
+        const currentOrNearest = ongoingEvents[0] || upcomingEvents[0] || null;
+        const anotherUpcoming = upcomingEvents.find(ev => ev.id !== currentOrNearest?.id) || null;
+        const snapshotEvents = [recentlyConcluded, currentOrNearest, anotherUpcoming].filter(Boolean);
+
         // ── Recent Applications (event applications, most recent first) ──
         const periodCutoff = dashAppPeriod === 'week' ? Date.now() - 7*86400000 : dashAppPeriod === 'month' ? Date.now() - 30*86400000 : null;
         const q = dashAppSearch.trim().toLowerCase();
@@ -624,18 +638,23 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* All Events */}
+            {/* Events snapshot — recently concluded / ongoing (or nearest) / next upcoming.
+                A highlight, not the full list — "View All Events" opens that. */}
             <div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, color:'var(--text-primary)' }}>All Events</div>
+                <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, color:'var(--text-primary)' }}>Recent &amp; Upcoming Events</div>
                 <button onClick={()=>set({aTab:'events',page:1})} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:700, color:'#7A431A' }}>
                   View All Events<Icon name="arrowLeft" size={12} color="#7A431A" style={{ transform:'rotate(180deg)' }}/>
                 </button>
               </div>
               <div style={{ display:'flex', gap:16, flexWrap:'wrap' }}>
-                {events.map(ev => (
+                {snapshotEvents.map(ev => {
+                  const st = eventStatus(ev);
+                  return (
                   <div key={ev.id} className="dc-row-hover" style={{ flex:'1 1 200px', minWidth:180, maxWidth:240, background:'var(--glass-card-solid, var(--bg-card))', border:'1px solid var(--glass-divider)', borderRadius:20, overflow:'hidden', boxShadow:'0 12px 30px rgba(122,67,26,0.1)' }}>
-                    <div style={{ width:'100%', aspectRatio:'4/5', background: ev.img || 'var(--accent-gradient)' }}/>
+                    <div style={{ position:'relative', width:'100%', aspectRatio:'4/5', background: ev.img || 'var(--accent-gradient)' }}>
+                      <div style={{ position:'absolute', top:10, left:10, padding:'4px 11px', borderRadius:999, fontSize:11, fontWeight:700, background:st.bg, color:st.color }}>{st.label}</div>
+                    </div>
                     <div style={{ padding:14 }}>
                       <div style={{ fontFamily:"'Marcellus',serif", fontSize:15, color:'var(--text-primary)', marginBottom:5, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.name}</div>
                       <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:10, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.location}</div>
@@ -647,7 +666,8 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
