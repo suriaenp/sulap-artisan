@@ -26,6 +26,10 @@ const INIT = {
   selectedCat: null,
   tcAccepted: false,
   tcScrolled: false,
+  // the vendor account currently signed in to the vendor portal (null =
+  // signed out) — set by VendorLogin from a real email+password match against
+  // the vendor records, replacing the old hardcoded CURRENT_VENDOR_ID.
+  currentVendorId: null,
   // data
   events: INITIAL_EVENTS,
   vendors: INITIAL_VENDORS,
@@ -76,7 +80,7 @@ const INIT = {
   reff: {},
   depf: {},
   rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[], logo:null },
-  ef: { name:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
+  ef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   eef: { name:'', location:'', start:'', end:'', startTime:'', endTime:'', lastApp:'', fnb:'', nonfnb:'', img:EVENT_IMG_PALETTE[0] },
   cf: null,
   catEditId: null,

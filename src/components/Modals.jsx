@@ -4,7 +4,7 @@ import Badge from './Badge';
 import PhotoTile from './PhotoTile';
 import VendorAvatar from './VendorAvatar';
 import { useStore } from '../lib/store';
-import { CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } from '../data/mockData';
+import { EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } from '../data/mockData';
 import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
@@ -81,9 +81,11 @@ export function VendorDetailModal() {
   const [eiForm, setEiForm] = useState(null);
   if (!vendorDetailId) return null;
   const v = vendors.find(x=>x.id===vendorDetailId)||{};
-  const close = () => { setEditingDetails(false); setEditingSocials(false); setEditingEI(false); vendorDetailReturnAppId
-    ? set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId})
-    : set({vendorDetailId:null}); };
+  const close = () => {
+    setEditingDetails(false); setEditingSocials(false); setEditingEI(false);
+    if (vendorDetailReturnAppId) set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId});
+    else set({vendorDetailId:null});
+  };
 
   const startEditDetails = () => { setDetailsForm({ business:v.business||'', owner:v.owner||'', category:v.category||'', email:v.email||'', phone:v.phone||'', plate:v.plate||'', desc:v.desc||'' }); setEditingDetails(true); };
   const saveDetails = () => {
@@ -314,7 +316,7 @@ export function VendorDetailModal() {
 
 // ── Event Application Detail ──────────────────────────────────────────────────
 export function AppDetailModal() {
-  const { state, dispatch, set, showToast } = useStore();
+  const { state, set } = useStore();
   const { appDetailId, apps, vendors, events } = state;
   if (!appDetailId) return null;
   const a = apps.find(x=>x.id===appDetailId)||{};
@@ -387,6 +389,8 @@ export function EventDetailModal() {
   const nfTotal  = Number(eef.nonfnb||0)*d*1.06;
   const save = () => {
     if (!eef.name) { showToast('Event name is required','info'); return; }
+    if (eef.start && eef.end && eef.end < eef.start) { showToast('End date is before the start date','info'); return; }
+    if (!(Number(eef.fnb) > 0) || !(Number(eef.nonfnb) > 0)) { showToast('Set both daily rates (F&B and Non-F&B) first','info'); return; }
     const dateRange = eef.start && eef.end ? `${fmtShort(eef.start)} – ${fmtShort(eef.end)} ${new Date(eef.end).getFullYear()}` : 'Dates TBC';
     dispatch({type:'MERGE_EVENTS',payload:events.map(x=>x.id===eventDetailId ? {
       ...x,
@@ -487,22 +491,25 @@ export function EventDetailModal() {
 // ── Vendor Apply Modal ────────────────────────────────────────────────────────
 export function ApplyModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { showApplyModal, applyEventId, applyShare, applyPartners, applyPartnerSearch, apps, events, vendors } = state;
+  const { showApplyModal, applyEventId, applyShare, applyPartners, applyPartnerSearch, apps, events, vendors, currentVendorId } = state;
   if (!showApplyModal || !applyEventId) return null;
   const ev = events.find(e=>e.id===applyEventId)||{};
-  const me = vendors.find(v=>v.id===CURRENT_VENDOR_ID)||{};
+  const me = vendors.find(v=>v.id===currentVendorId)||{};
   const isFnb = me.category === 'Food & Beverage';
   const partnerObjs = applyPartners.map(pid=>vendors.find(v=>v.id===pid)).filter(Boolean);
   const close = () => set({showApplyModal:false,applyEventId:null});
 
   const results = applyPartnerSearch.trim()
-    ? vendors.filter(v => v.id !== CURRENT_VENDOR_ID && v.status === 'approved' && !applyPartners.includes(v.id) && v.business.toLowerCase().includes(applyPartnerSearch.toLowerCase()) && (v.category==='Food & Beverage')===isFnb).slice(0,5)
+    ? vendors.filter(v => v.id !== currentVendorId && v.status === 'approved' && !applyPartners.includes(v.id) && v.business.toLowerCase().includes(applyPartnerSearch.toLowerCase()) && (v.category==='Food & Beverage')===isFnb).slice(0,5)
     : [];
 
   const submit = () => {
     if (applyShare === null) { showToast("Tell us if you'll share a booth",'info'); return; }
     if (applyShare && applyPartners.length === 0) { showToast('Add at least one booth partner','info'); return; }
-    const newApp = { id:'a'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners], appliedAt:new Date().toISOString() };
+    // `tier` snapshots the fee tier at apply time — payCalc prefers it over
+    // the vendor's live category, so a later admin category edit can't
+    // silently reprice this application (see helpers.js payCalc).
+    const newApp = { id:'a'+Date.now(), vendorId:currentVendorId, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners], appliedAt:new Date().toISOString(), tier: isFnb ? 'F&B' : 'Non-F&B' };
     dispatch({type:'MERGE_APPS',payload:[...apps,newApp]});
     set({showApplyModal:false,applyEventId:null});
     logActivity(me.business, `applied for ${ev.name}.`, {icon:'clipboard', tint:'#F3E4CC', type:'vendor'});
@@ -643,7 +650,7 @@ const DOC_LABELS = { advice:'Payment advice', advice2:'Second payment advice', i
 
 export function DocPreviewModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { docPreview, payments, vendors, events, deposits } = state;
+  const { docPreview, payments, vendors, events, deposits, apps } = state;
   if (!docPreview) return null;
   const { payKey, field, editable } = docPreview;
   const [vid, eid] = payKey.split('-');
@@ -663,7 +670,7 @@ export function DocPreviewModal() {
     const doc = await fileToPhoto(f);
     if (field.startsWith('advice')) {
       showToast('Scanning for the paid amount…','search');
-      await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, dispatch, showToast, logActivity, who:v.business });
+      await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who:v.business });
     } else {
       dispatch({ type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: doc } } });
       logActivity('Admin', `replaced the ${label.toLowerCase()} for ${v.business} — ${ev.name}.`, { icon:'file', tint:'#E8F5F0' });

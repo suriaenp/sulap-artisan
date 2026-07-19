@@ -1,5 +1,4 @@
 import { useStore } from '../lib/store';
-import { CURRENT_VENDOR_ID } from '../data/mockData';
 import VendorAvatar from './VendorAvatar';
 
 // Shared sticky glass header for both portals — replaces the old solid-color
@@ -11,9 +10,9 @@ import VendorAvatar from './VendorAvatar';
 // anything — and were removed 2026-07-18.)
 export default function PortalHeader({ title, eyebrow }) {
   const { state, set, acting } = useStore();
-  const { view, aScreen, vendors } = state;
+  const { view, aScreen, vendors, currentVendorId } = state;
   const isAdmin = view === 'admin' && aScreen === 'dashboard';
-  const me = view === 'vendor' ? (vendors.find(v => v.id === CURRENT_VENDOR_ID) || {}) : null;
+  const me = view === 'vendor' ? (vendors.find(v => v.id === currentVendorId) || {}) : null;
 
   const profileName = isAdmin ? (acting?.name || 'Admin') : (me?.business || 'Vendor');
   // Admins see their Staff ID here instead of their role — the role still shows

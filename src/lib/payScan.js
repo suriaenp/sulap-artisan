@@ -69,12 +69,13 @@ export async function scanPaymentDoc(doc) {
 // manual Record Payment. advice2 adds on top of the existing paid amount.
 
 export async function scanAndRecord(doc, payKey, field, ctx) {
-  const { payments, vendors, events, deposits, dispatch, showToast, logActivity, who } = ctx;
+  const { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who } = ctx;
   const [vid, eid] = payKey.split('-');
   const v = vendors.find(x => x.id === vid) || {};
   const ev = events.find(x => x.id === eid) || {};
+  const app = (apps || []).find(a => a.vendorId === vid && a.eventId === eid);
   const dep = deposits[vid] || { status: 'unpaid' };
-  const calc = payCalc(v, ev, dep.status);
+  const calc = payCalc(v, ev, dep.status, app?.tier);
   const prev = payments[payKey] || { status: 'unpaid', paid: 0 };
   const res = await scanPaymentDoc(doc);
   const at = fmtShort(new Date());
@@ -84,6 +85,14 @@ export async function scanAndRecord(doc, payKey, field, ctx) {
     const paid = +(base + res.amount).toFixed(2);
     const status = paid <= 0 ? 'unpaid' : paid < calc.total ? 'partial' : 'paid';
     payload = { ...prev, [field]: doc, paid, status, scans: { ...(prev.scans || {}), [field]: { amount: res.amount, at } } };
+    // The total being settled included the one-time RM100 deposit (it's only
+    // added while the deposit record isn't 'paid') — so a full payment also
+    // settles the deposit. Mark the Deposit Record tab's entry paid in the
+    // same action, otherwise the next event's total would charge RM100 again.
+    if (status === 'paid' && calc.needsDeposit) {
+      dispatch({ type: 'MERGE_DEPOSITS', payload: { [vid]: { ...dep, status: 'paid', payDate: new Date().toISOString().slice(0, 10) } } });
+      logActivity('System', `marked ${v.business}'s RM100 security deposit as paid — settled within their ${ev.name} payment.`, { icon: 'wallet', tint: '#EEF1FB' });
+    }
     logActivity(who || v.business, `uploaded a payment advice for ${ev.name} — auto-scan read RM ${money(res.amount)} and recorded the payment.`, { icon: 'receipt', tint: '#E8F5F0', type: 'vendor' });
     showToast(`Scanned RM ${money(res.amount)} — payment recorded`, 'check');
   } else {

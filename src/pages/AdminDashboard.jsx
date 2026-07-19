@@ -11,8 +11,9 @@ import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, parseDateOnly, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
 import { VENDOR_TABS } from './VendorDashboard';
-import { OFFENSE_PALETTE, CURRENT_VENDOR_ID, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
+import { OFFENSE_PALETTE, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
+import { downloadCsv } from '../lib/csv';
 import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
@@ -106,22 +107,6 @@ function TabOrderCard({ title, desc, tabs, onOrder, onReset, isCustom }) {
   );
 }
 
-function Pager({ total, perPage, page, onPage }) {
-  const pages = Math.ceil(total / perPage);
-  if (pages <= 1) return null;
-  const start = (page-1)*perPage+1, end = Math.min(page*perPage, total);
-  const btnStyle = (dis) => ({ background:dis?'var(--bg-subtle)':'var(--bg-card)', border:'1px solid var(--border-medium)', color:dis?'var(--text-muted)':'#9A5B26', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 14px', cursor:dis?'not-allowed':'pointer' });
-  return (
-    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:14 }}>
-      <div style={{ fontSize:12, color:'var(--text-muted)' }}>{start}–{end} of {total}</div>
-      <div style={{ display:'flex', gap:8 }}>
-        <button disabled={page<=1} onClick={()=>onPage(page-1)} style={btnStyle(page<=1)}>Prev</button>
-        <button disabled={page>=pages} onClick={()=>onPage(page+1)} style={btnStyle(page>=pages)}>Next</button>
-      </div>
-    </div>
-  );
-}
-
 function SearchBox({ value, onChange, placeholder = 'Search by business or owner name' }) {
   return (
     <div style={{ position:'relative', marginBottom:14, maxWidth:360 }}>
@@ -138,17 +123,9 @@ function SearchBox({ value, onChange, placeholder = 'Search by business or owner
   );
 }
 
-function NoSearchMatch({ query }) {
-  return (
-    <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:'24px 16px', textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>
-      No vendors match "{query}".
-    </div>
-  );
-}
-
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catEditId, catFilter, profileRequests } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catFilter, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = orderTabs(ADMIN_TABS.filter(t => !t.hidden && (t.superOnly ? isSuperActing : canViewTab(t.id))), state.aTabOrder);
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
@@ -834,7 +811,13 @@ export default function AdminDashboard() {
         <TableShell
           title="Vendor Applications" subtitle="New sign-ups awaiting a decision."
           headerAction={
-            <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+            <button onClick={()=>{
+              downloadCsv('vendor-applications.csv',
+                ['Business','Owner','Category','Email','Phone','Registered','Status'],
+                searchedPending.map(v=>[v.business,v.owner,v.category,v.email,v.phone,v.regDate,v.status]));
+              logActivity('Admin', `exported ${searchedPending.length} pending vendor application(s) as CSV.`, {icon:'download', tint:'var(--tint-blue-bg)'});
+              showToast(`Exported ${searchedPending.length} application(s) to vendor-applications.csv`,'download');
+            }} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="download" size={14} color="#6B4E33"/>Export CSV
             </button>
           }
@@ -921,7 +904,13 @@ export default function AdminDashboard() {
                 style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 18px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <Icon name="file" size={14} color="#6B4E33"/>Download all forms
               </button>
-              <button onClick={()=>showToast('Exporting vendors.csv…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+              <button onClick={()=>{
+                downloadCsv('vendor-listing.csv',
+                  ['Business','Owner','Category','Email','Phone','Registered','Status','Offences'],
+                  searchedApprovedList.map(v=>[v.business,v.owner,v.category,v.email,v.phone,v.regDate,v.status,offenses.filter(o=>o.vendorId===v.id).length]));
+                logActivity('Admin', `exported ${searchedApprovedList.length} vendor(s) from the Vendor Listing as CSV.`, {icon:'download', tint:'var(--tint-blue-bg)'});
+                showToast(`Exported ${searchedApprovedList.length} vendor(s) to vendor-listing.csv`,'download');
+              }} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
                 <Icon name="download" size={14} color="#6B4E33"/>Export CSV
               </button>
             </div>
@@ -1092,10 +1081,12 @@ export default function AdminDashboard() {
         const railEvents = eventSearchQ ? events.filter(ev => (ev.name||'').toLowerCase().includes(eventSearchQ)) : events;
         const createEvent = () => {
           if (!state.ef.name) { showToast('Add an event name first','info'); return; }
+          if (state.ef.start && state.ef.end && state.ef.end < state.ef.start) { showToast('End date is before the start date','info'); return; }
+          if (!(Number(state.ef.fnb) > 0) || !(Number(state.ef.nonfnb) > 0)) { showToast('Set both daily rates (F&B and Non-F&B) first','info'); return; }
           const dd = dayCount(state.ef.start,state.ef.end)||1;
-          const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:'Suria Sabah Mall', days:dd, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
+          const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:state.ef.location.trim()||'Suria Sabah Mall', days:dd, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
           dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
-          set({ef:{name:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
+          set({ef:{name:'',location:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
           setEventStep(0);
           logActivity('Admin', `created the ${ev.name} event.`, {icon:'tent', tint:'var(--tint-green-bg)'});
           showToast('Event created','tent');
@@ -1159,9 +1150,15 @@ export default function AdminDashboard() {
                 )}
 
                 {eventStep === 1 && (
-                  <div>
-                    <div style={lbl}>Event name</div>
-                    <input value={state.ef.name} onChange={e=>set({ef:{...state.ef,name:e.target.value}})} placeholder="e.g. Harvest Night Market" style={inp}/>
+                  <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
+                    <div>
+                      <div style={lbl}>Event name</div>
+                      <input value={state.ef.name} onChange={e=>set({ef:{...state.ef,name:e.target.value}})} placeholder="e.g. Harvest Night Market" style={inp}/>
+                    </div>
+                    <div>
+                      <div style={lbl}>Location</div>
+                      <input value={state.ef.location} onChange={e=>set({ef:{...state.ef,location:e.target.value}})} placeholder="Blank = Suria Sabah Mall" style={inp}/>
+                    </div>
                   </div>
                 )}
 
@@ -1305,7 +1302,14 @@ export default function AdminDashboard() {
                 <button key={id} onClick={()=>set({appsTab:id,page:1})} style={{ border:'none', fontSize:13, fontWeight:700, borderRadius:9, padding:'10px 14px', cursor:'pointer', background:appsTab===id?'var(--glass-card-solid)':'transparent', color:appsTab===id?'var(--text-primary)':'var(--text-muted)', boxShadow:appsTab===id?'0 1px 4px rgba(58,34,16,0.1)':'none', fontFamily:"'Karla',sans-serif" }}>{label}</button>
               ))}
             </div>
-            <button onClick={()=>showToast('Exporting…','download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 18px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+            <button onClick={()=>{
+              const evApps = apps.filter(a=>a.eventId===filterEvent);
+              downloadCsv(`${safeName(curEv.name)} - applications.csv`,
+                ['Business','Owner','Category','Status','Booth','Applied'],
+                evApps.map(a=>{ const v=vById(a.vendorId); return [v.business,v.owner,v.category,a.status,a.shared?`Shared (${(a.partners||[]).length+1} vendors)`:'Solo',a.appliedAt?fmtShort(a.appliedAt):'']; }));
+              logActivity('Admin', `exported ${evApps.length} event application(s) for ${curEv.name} as CSV.`, {icon:'download', tint:'var(--tint-blue-bg)'});
+              showToast(`Exported ${evApps.length} application(s) to CSV`,'download');
+            }} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'11px 18px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="download" size={14} color="#6B4E33"/>Export
             </button>
           </div>
@@ -1501,7 +1505,17 @@ export default function AdminDashboard() {
               <div style={{ fontFamily:"'Marcellus',serif", fontWeight:400, fontSize:26, margin:'0 0 6px', color:'var(--text-primary)' }}>Payments</div>
               <div style={{ margin:0, fontSize:14, color:'var(--text-muted)' }}>Rental payment status for every approved event application.</div>
             </div>
-            <button onClick={()=>showToast(`Exporting payments for ${curEv.name}…`,'download')} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
+            <button onClick={()=>{
+              const rows = approvedApps.map(a=>{
+                const v=vById(a.vendorId); const dep=depRec(a.vendorId);
+                const calc=payCalc(v,curEv,dep.status,a.tier); const rec=payRec(`${a.vendorId}-${a.eventId}`);
+                return [v.business,v.owner,calc.tier,money(calc.total),money(rec.paid||0),badge(rec.status).label,badge(dep.status).label];
+              });
+              downloadCsv(`${safeName(curEv.name)} - payments.csv`,
+                ['Business','Owner','Tier','Total due (RM)','Paid (RM)','Payment status','Deposit status'], rows);
+              logActivity('Admin', `exported ${rows.length} payment record(s) for ${curEv.name} as CSV.`, {icon:'download', tint:'var(--tint-blue-bg)'});
+              showToast(`Exported ${rows.length} payment record(s) to CSV`,'download');
+            }} style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'12px 20px', border:'1px solid var(--glass-chip-border)', borderRadius:999, fontSize:13.5, fontWeight:700, color:'var(--text-secondary)', background:'var(--glass-input)', cursor:'pointer', fontFamily:"'Karla',sans-serif" }}>
               <Icon name="download" size={14} color="#6B4E33"/>Export
             </button>
           </div>
@@ -1584,7 +1598,7 @@ export default function AdminDashboard() {
             ) : pagedPayments.map((a,idx) => {
               const v = vById(a.vendorId);
               const dep = deposits[a.vendorId]||{status:'unpaid'};
-              const calc = payCalc(v, curEv, dep.status);
+              const calc = payCalc(v, curEv, dep.status, a.tier);
               const payKey = `${a.vendorId}-${curEv.id}`;
               const rec = payRec(payKey);
               const ref = refundRec(payKey);
@@ -1654,8 +1668,13 @@ export default function AdminDashboard() {
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:5, flexWrap:'wrap' }}>
                       <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', border:'none', color:'#FFF8EE', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 10px', cursor:'pointer', fontFamily:"'Karla',sans-serif", whiteSpace:'nowrap' }}>Record payment</button>
                       <button title="Reset to unpaid" onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
-                      <button title="Send payment reminder" onClick={()=>showToast(`Payment reminder emailed to ${v.business}`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
-                      <button title="Remove from event" onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)}); showToast(`${v.business} removed — slot released`,'info'); }} style={{ width:26, height:26, borderRadius:9, border:'1px solid rgba(196,74,74,0.3)', background:'rgba(196,74,74,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}><Icon name="trash" size={12} color="#B03A2E"/></button>
+                      <button title="Send payment reminder" onClick={()=>showToast(`Reminder noted for ${v.business} (demo — real email arrives with Phase 2)`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
+                      <button title="Remove from event" onClick={()=>{
+                        if (!window.confirm(`Remove ${v.business} from ${curEv.name}? Their approved slot is released and any recorded payment for this event stops being shown.`)) return;
+                        dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)});
+                        logActivity('Admin', `removed ${v.business} from ${curEv.name} — slot released.`, {icon:'x', tint:'var(--tint-red-bg)'});
+                        showToast(`${v.business} removed — slot released`,'info');
+                      }} style={{ width:26, height:26, borderRadius:9, border:'1px solid rgba(196,74,74,0.3)', background:'rgba(196,74,74,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}><Icon name="trash" size={12} color="#B03A2E"/></button>
                     </div>
                   </div>
 
@@ -2258,7 +2277,10 @@ export default function AdminDashboard() {
                         <div style={{ fontSize:11.5, color:'var(--text-muted)', lineHeight:1.4 }}>{c.desc}</div>
                       </div>
                       <div style={{ width:26, height:26, borderRadius:'50%', background:'var(--glass-card-border)', color:'var(--text-secondary)', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{count}</div>
-                      <button onClick={()=>{ if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); showToast('Category removed','x'); } }} style={{ width:26, height:26, borderRadius:'50%', border:'none', background:'rgba(196,74,74,0.14)', color:'#B23A3A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                      <button onClick={()=>{
+                        if (count > 0) { showToast(`${count} vendor(s) are still in "${c.name}" — reassign them to another category first`,'info'); return; }
+                        if(window.confirm(`Delete "${c.name}" category?`)) { dispatch({type:'MERGE_CATS',payload:cats.filter(x=>x.id!==c.id)}); logActivity('Admin', `deleted the "${c.name}" category.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Category removed','x'); }
+                      }} style={{ width:26, height:26, borderRadius:'50%', border:'none', background:'rgba(196,74,74,0.14)', color:'#B23A3A', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
                         <Icon name="x" size={12} color="#B23A3A"/>
                       </button>
                     </div>

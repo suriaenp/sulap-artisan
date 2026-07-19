@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import Icon from './Icon';
 
 // Slide-in mobile nav drawer — replaces the old wrapping pill tab bar (which grew to

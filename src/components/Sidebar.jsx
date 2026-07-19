@@ -17,7 +17,7 @@ export default function Sidebar() {
 
   const logout = () => {
     if (isAdmin) set({ aScreen: 'login', currentAdminId: null });
-    else if (isVendor) set({ vScreen: 'login' });
+    else if (isVendor) set({ vScreen: 'login', currentVendorId: null });
     showToast('Signed out', 'leaf');
   };
 

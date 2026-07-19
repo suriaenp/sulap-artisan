@@ -47,6 +47,11 @@ export default function VendorRegister() {
       logo: rf.logo,
       productPhotos: rf.photos,
       desc: rf.desc.trim(),
+      // The account password the vendor signs in with once approved (plain
+      // text in the Phase 1 prototype — Supabase Auth hashes this in Phase 2).
+      // Was previously collected by the form and then silently dropped.
+      password: rf.password,
+      docs: { ssm:null, halal:null, extra:[] },
       einvoice: { ...EMPTY_EINVOICE },
     };
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });

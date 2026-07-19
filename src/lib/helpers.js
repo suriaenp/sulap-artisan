@@ -37,8 +37,12 @@ export function badge(status) {
   return { bg, color, label };
 }
 
-export function payCalc(vendor, ev, depositStatus) {
-  const tier = vendor?.category === 'Food & Beverage' ? 'F&B' : 'Non-F&B';
+// `tierOverride` is the tier snapshotted on the application record at apply
+// time (see ApplyModal) — it wins over the vendor's *current* category so an
+// admin category edit can't retroactively reprice an existing application.
+// Seeded/legacy apps without a snapshot fall back to the live category.
+export function payCalc(vendor, ev, depositStatus, tierOverride) {
+  const tier = tierOverride || (vendor?.category === 'Food & Beverage' ? 'F&B' : 'Non-F&B');
   const rate = tier === 'F&B' ? (ev?.fnb || 0) : (ev?.nonfnb || 0);
   const days = ev?.days || 1;
   const base = rate * days;

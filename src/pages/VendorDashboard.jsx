@@ -9,7 +9,7 @@ import DigitalPassCard from '../components/DigitalPassCard';
 import ParkingPassCard from '../components/ParkingPassCard';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, orderTabs, eventDayDate, monthDayLabel, fmtTime12, isoLocal, parseDateOnly } from '../lib/helpers';
-import { CURRENT_VENDOR_ID, EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
+import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 
@@ -64,12 +64,15 @@ export const VENDOR_TABS = [
 export default function VendorDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
   const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passApps, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
-  const me = vendors.find(v => v.id === CURRENT_VENDOR_ID) || {};
+  // The signed-in vendor comes from the store (set by VendorLogin's real
+  // email+password match) — no more hardcoded myId.
+  const myId = state.currentVendorId;
+  const me = vendors.find(v => v.id === myId) || {};
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
-  const pendingReq = (section) => profileRequests.find(r => r.vendorId === CURRENT_VENDOR_ID && r.section === section && r.status === 'pending');
+  const pendingReq = (section) => profileRequests.find(r => r.vendorId === myId && r.section === section && r.status === 'pending');
   const submitRequest = (section, changes) => {
-    dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: [...profileRequests, { id:`pr-${Date.now()}`, vendorId:CURRENT_VENDOR_ID, section, changes, submittedAt: fmtShort(new Date()), status:'pending' }] });
+    dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: [...profileRequests, { id:`pr-${Date.now()}`, vendorId:myId, section, changes, submittedAt: fmtShort(new Date()), status:'pending' }] });
     logActivity(me.business, section === 'einvoice' ? 'submitted E-Invoice & bank details for admin review.' : 'requested changes to their vendor profile.', { icon:'pencil', tint:'#F2EDE6', type:'vendor' });
     showToast('Change request sent to admin', 'check');
   };
@@ -90,7 +93,7 @@ export default function VendorDashboard() {
   const [socialForm, setSocialForm] = useState(null);
   const startEditSocial = () => { setSocialForm({ ig:me.ig||'', fb:me.fb||'', tiktok:me.tiktok||'', power:me.power||'' }); setEditingSocial(true); };
   const saveSocial = () => {
-    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===CURRENT_VENDOR_ID ? { ...v, ...socialForm } : v) });
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, ...socialForm } : v) });
     logActivity(me.business, 'updated their social media & power supply info.', { icon:'pencil', tint:'#F2EDE6', type:'vendor' });
     showToast('Updated', 'check');
     setEditingSocial(false);
@@ -111,7 +114,7 @@ export default function VendorDashboard() {
   const payRec = (key) => payments[key] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
   const refundRec = (key) => refunds[key] || { status:'none' };
 
-  const logout = () => { set({ vScreen:'login' }); showToast('Signed out','leaf'); };
+  const logout = () => { set({ vScreen:'login', currentVendorId:null }); showToast('Signed out','leaf'); };
   const [drawerOpen, setDrawerOpen] = useState(false);
   const orderedTabs = orderTabs(VENDOR_TABS, state.vTabOrder);
   const activeTabLabel = VENDOR_TABS.find(t => t.id === vTab)?.label || 'Menu';
@@ -140,7 +143,7 @@ export default function VendorDashboard() {
     const filled = getInitialForm(eventId).filter(p => p.name.trim() && p.photo);
     if (!filled.length) { showToast('Add at least one pass holder — name + photo required', 'info'); return; }
     const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo, status:'pending', rejectReason:null, decidedAt:null }));
-    const rec = { id:'vp'+Date.now(), vendorId:CURRENT_VENDOR_ID, eventId, extraApproved:0, boothNumber:'', people, submittedAt: fmtShort(new Date()) };
+    const rec = { id:'vp'+Date.now(), vendorId:myId, eventId, extraApproved:0, boothNumber:'', people, submittedAt: fmtShort(new Date()) };
     dispatch({ type:'MERGE_PASS_APPS', payload:[...passApps, rec] });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
     logActivity(me.business, `applied for a Vendor Pass — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
@@ -172,7 +175,7 @@ export default function VendorDashboard() {
   // scratch. Not a real business action; for trying out the flow only.
   const resetMyPassForTesting = (eventId, ev) => {
     if (!window.confirm(`Reset your Vendor Pass for ${ev.name}? This clears your application so you can apply again from scratch (testing only).`)) return;
-    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === CURRENT_VENDOR_ID && p.eventId === eventId)) });
+    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === myId && p.eventId === eventId)) });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
     cancelEditPerson();
     showToast('Vendor Pass reset — try the flow again', 'badge');
@@ -206,7 +209,7 @@ export default function VendorDashboard() {
       {vTab === 'compliance' && (
         <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           {(() => {
-            const myOff = offenses.filter(o => o.vendorId === CURRENT_VENDOR_ID);
+            const myOff = offenses.filter(o => o.vendorId === myId);
             const skipN = settings.skipMarkets ?? 1;
             if (!myOff.length) return (
               <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
@@ -430,7 +433,7 @@ export default function VendorDashboard() {
       {vTab === 'events' && (
         <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           {events.map(ev => {
-            const myApp = apps.find(a => a.vendorId === CURRENT_VENDOR_ID && a.eventId === ev.id);
+            const myApp = apps.find(a => a.vendorId === myId && a.eventId === ev.id);
             const open = !ev.lastApp || new Date(ev.lastApp) >= today;
             const applied = !!myApp;
             const st = myApp?.status;
@@ -477,7 +480,7 @@ export default function VendorDashboard() {
       {vTab === 'apps' && (
         <div style={{ padding:'12px 16px 20px' }}>
           {(() => {
-            const myApps = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID);
+            const myApps = apps.filter(a => a.vendorId === myId);
             if (!myApps.length) return (
               <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="folder" size={34} color="#bcae9c" />
@@ -558,7 +561,7 @@ export default function VendorDashboard() {
       {vTab === 'eventPics' && (
         <div style={{ padding:'12px 16px 20px' }}>
           {(() => {
-            const myApproved = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved');
+            const myApproved = apps.filter(a => a.vendorId === myId && a.status === 'approved');
             if (!myApproved.length) return (
               <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="camera" size={34} color="#bcae9c"/>
@@ -570,7 +573,7 @@ export default function VendorDashboard() {
               <div style={{ display:'flex', flexDirection:'column', gap:13 }}>
                 {myApproved.map(a => {
                   const ev = events.find(e => e.id === a.eventId) || {};
-                  const photos = eventPhotos[`${CURRENT_VENDOR_ID}-${ev.id}`] || [];
+                  const photos = eventPhotos[`${myId}-${ev.id}`] || [];
                   return (
                     <div key={a.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, padding:16 }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
@@ -612,37 +615,69 @@ export default function VendorDashboard() {
       )}
 
       {/* ── Documents ── */}
-      {vTab === 'docs' && (
-        <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:11 }}>
-          {[
-            { icon:'file', tint:'#E8F5F0', iconColor:'#2D6A4F', title:'SSM Registration', sub:'Uploaded · ssm_cert.pdf', subColor:'#2D6A4F', action:'Replace' },
-            { icon:'badge', tint:'#FEF8EC', iconColor:'#B7770D', title:'Halal / Food Cert', sub:'Optional · not uploaded', subColor:'#B7770D', action:'Upload' },
-          ].map(d => (
-            <div key={d.title} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:15, display:'flex', alignItems:'center', gap:13 }}>
-              <div style={{ width:42, height:42, borderRadius:11, background:d.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Icon name={d.icon} size={20} color={d.iconColor}/>
-              </div>
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{d.title}</div>
-                <div style={{ fontSize:12, color:d.subColor, marginTop:2 }}>{d.sub}</div>
-              </div>
-              <span style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>{d.action}</span>
+      {/* Real uploads (2026-07-19) — used to be hardcoded placeholder rows with
+          dead "Replace"/"Upload" labels. Files live on the vendor record
+          (`me.docs`: { ssm, halal, extra[] }) as data URLs, same mechanism as
+          product photos; admin sees them via the vendor record too. */}
+      {vTab === 'docs' && (() => {
+        const docs = me.docs || { ssm:null, halal:null, extra:[] };
+        const setDocs = (patch) => dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, docs:{ ...docs, ...patch } } : v) });
+        const MAX_DOC_MB = 10;
+        const pickDoc = (label, onFile) => async (e) => {
+          const f = e.target.files[0]; e.target.value = '';
+          if (!f) return;
+          if (f.size > MAX_DOC_MB * 1024 * 1024) { showToast(`File is over ${MAX_DOC_MB}MB — please upload a smaller copy`, 'info'); return; }
+          const doc = await fileToPhoto(f);
+          onFile(doc);
+          logActivity(me.business, `uploaded a document — ${label}.`, { icon:'file', tint:'#E8F5F0', type:'vendor' });
+          showToast(`${label} uploaded`, 'file');
+        };
+        const docRow = ({ key, icon, title, optional, file, onSet, onRemove }) => (
+          <div key={key} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:15, display:'flex', alignItems:'center', gap:13, flexWrap:'wrap' }}>
+            <div style={{ width:42, height:42, borderRadius:11, background: file ? '#E8F5F0' : '#FEF8EC', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Icon name={icon} size={20} color={file ? '#2D6A4F' : '#B7770D'}/>
             </div>
-          ))}
-          <div style={{ border:'2px dashed #d8c6b2', borderRadius:16, background:'#FBF7F1', padding:24, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
-            <Icon name="folder" size={26} color="#9A5B26"/>
-            <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)', marginTop:9 }}>Add another document</div>
-            <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:3 }}>PDF, JPG or PNG up to 10MB</div>
+            <div style={{ flex:1, minWidth:140 }}>
+              <div style={{ fontSize:14, fontWeight:600, color:'var(--text-primary)' }}>{title}</div>
+              <div style={{ fontSize:12, color: file ? '#2D6A4F' : '#B7770D', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:220 }}>
+                {file ? `Uploaded · ${file.name}` : `${optional ? 'Optional' : 'Required'} · not uploaded`}
+              </div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
+              {file && <span onClick={()=>downloadPhoto(file, file.name)} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>}
+              <label style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>
+                {file ? 'Replace' : 'Upload'}
+                <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={pickDoc(title, onSet)}/>
+              </label>
+              {file && onRemove && <span onClick={onRemove} style={{ fontSize:13, color:'#B03A2E', fontWeight:600, cursor:'pointer' }}>Remove</span>}
+            </div>
           </div>
-        </div>
-      )}
+        );
+        return (
+          <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:11 }}>
+            {docRow({ key:'ssm', icon:'file', title:'SSM Registration', optional:false, file:docs.ssm, onSet:(doc)=>setDocs({ ssm:doc }) })}
+            {docRow({ key:'halal', icon:'badge', title:'Halal / Food Cert', optional:true, file:docs.halal, onSet:(doc)=>setDocs({ halal:doc }), onRemove:()=>{ setDocs({ halal:null }); showToast('Document removed','x'); } })}
+            {(docs.extra||[]).map((d,i) => docRow({
+              key:d.id, icon:'folder', title:d.name || `Document ${i+1}`, optional:true, file:d,
+              onSet:(doc)=>setDocs({ extra: docs.extra.map(x=>x.id===d.id?doc:x) }),
+              onRemove:()=>{ setDocs({ extra: docs.extra.filter(x=>x.id!==d.id) }); showToast('Document removed','x'); },
+            }))}
+            <label style={{ border:'2px dashed #d8c6b2', borderRadius:16, background:'#FBF7F1', padding:24, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
+              <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={pickDoc('Additional document', (doc)=>setDocs({ extra:[...(docs.extra||[]), doc] }))}/>
+              <Icon name="folder" size={26} color="#9A5B26"/>
+              <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)', marginTop:9 }}>Add another document</div>
+              <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:3 }}>PDF, JPG or PNG up to 10MB</div>
+            </label>
+          </div>
+        );
+      })()}
 
       {/* ── Payments ── */}
       {vTab === 'payments' && (
         <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:13 }}>
           {/* Deposit card */}
           {(() => {
-            const dep = depRec(CURRENT_VENDOR_ID);
+            const dep = depRec(myId);
             return (
               <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:16, padding:'14px 15px' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -662,11 +697,11 @@ export default function VendorDashboard() {
             );
           })()}
           {/* Event payments */}
-          {apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved').map(a => {
+          {apps.filter(a => a.vendorId === myId && a.status === 'approved').map(a => {
             const ev = events.find(e => e.id === a.eventId) || {};
-            const dep = depRec(CURRENT_VENDOR_ID);
-            const calc = payCalc(me, ev, dep.status);
-            const payKey = `${CURRENT_VENDOR_ID}-${ev.id}`;
+            const dep = depRec(myId);
+            const calc = payCalc(me, ev, dep.status, a.tier);
+            const payKey = `${myId}-${ev.id}`;
             const rec = payRec(payKey);
             const ref = refundRec(payKey);
             const isPartial = rec.status === 'partial';
@@ -677,7 +712,7 @@ export default function VendorDashboard() {
               if (!f) return;
               const doc = await fileToPhoto(f);
               showToast('Scanning your payment advice for the amount…','search');
-              await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, dispatch, showToast, logActivity, who: me.business });
+              await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who: me.business });
             };
             return (
               <div key={a.id} className="dc-row-hover" style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:18, overflow:'hidden', boxShadow:'0 3px 12px rgba(120,80,40,0.05)' }}>
@@ -773,12 +808,12 @@ export default function VendorDashboard() {
       {vTab === 'parking' && (
         <div style={{ padding:'6px 16px 20px' }}>
           {(() => {
-            const myParkApps = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved');
+            const myParkApps = apps.filter(a => a.vendorId === myId && a.status === 'approved');
             if (!myParkApps.length) return (
               <div style={{ textAlign:'center', padding:'60px 30px', color:'var(--text-muted)', display:'flex', flexDirection:'column', alignItems:'center' }}>
                 <Icon name="car" size={34} color="#bcae9c"/>
                 <div style={{ fontSize:14, fontWeight:600, color:'var(--text-secondary)', marginTop:13 }}>No parking assigned yet</div>
-                <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Parking serials appear here once admin allocates them before market day.</div>
+                <div style={{ fontSize:12.5, marginTop:5, lineHeight:1.5 }}>Parking serials appear here on market day, once the Sulap team allocates them at vendor check-in.</div>
               </div>
             );
             return (
@@ -789,7 +824,7 @@ export default function VendorDashboard() {
                     const dayIndex = i+1;
                     const dDate = eventDayDate(ev.startDate, dayIndex);
                     const dayStatus = dDate.getTime() < today.getTime() ? 'expired' : dDate.getTime() > today.getTime() ? 'locked' : 'active';
-                    return { dayIndex, dDate, dayStatus, serial: parking[`${CURRENT_VENDOR_ID}-${ev.id}-${dayIndex}`] || '' };
+                    return { dayIndex, dDate, dayStatus, serial: parking[`${myId}-${ev.id}-${dayIndex}`] || '' };
                   });
                   const hasTicket = dayInfo.some(d => d.serial);
                   // Today's pass leads the row; the rest keep their day order behind it.
@@ -839,7 +874,7 @@ export default function VendorDashboard() {
       {vTab === 'pass' && (
         <div style={{ padding:'6px 16px 20px', display:'flex', flexDirection:'column', gap:16 }}>
           {(() => {
-            const chain = apps.filter(a => a.vendorId === CURRENT_VENDOR_ID && a.status === 'approved')
+            const chain = apps.filter(a => a.vendorId === myId && a.status === 'approved')
               .map(a => ({ a, ev: events.find(e => e.id === a.eventId) }))
               .filter(x => x.ev)
               .sort((x,y) => new Date(x.ev.startDate) - new Date(y.ev.startDate));
@@ -854,7 +889,7 @@ export default function VendorDashboard() {
             let anyApproved = false;
             const cards = chain.map((item, idx) => {
               const { ev } = item;
-              const passApp = passApps.find(p => p.vendorId === CURRENT_VENDOR_ID && p.eventId === ev.id);
+              const passApp = passApps.find(p => p.vendorId === myId && p.eventId === ev.id);
               const prevEnded = idx === 0 || new Date(chain[idx-1].ev.endDate) < today;
               const canStart = !!passApp || prevEnded;
               const showInitialForm = !passApp && canStart;

@@ -14,13 +14,14 @@ import './index.css';
 
 function PayModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { payModalKey, payf, payments, vendors, events, deposits } = state;
+  const { payModalKey, payf, payments, vendors, events, deposits, apps } = state;
   if (!payModalKey) return null;
   const [vid, eid] = payModalKey.split('-');
   const v = vendors.find(x => x.id === vid) || {};
   const ev = events.find(x => x.id === eid) || {};
+  const app = apps.find(a => a.vendorId === vid && a.eventId === eid);
   const dep = deposits[vid] || { status: 'unpaid' };
-  const calc = payCalc(v, ev, dep.status);
+  const calc = payCalc(v, ev, dep.status, app?.tier);
   const close = () => set({ payModalKey: null });
   const save = () => {
     const amt = parseFloat(payf.amount) || 0;
@@ -28,6 +29,13 @@ function PayModal() {
     const p = { ...payments };
     p[payModalKey] = { ...(p[payModalKey] || {}), status, paid: amt };
     dispatch({ type: 'MERGE_PAYMENTS', payload: p });
+    // A fully-paid total that included the one-time RM100 deposit settles the
+    // deposit too — keep the Deposit Record tab in sync so the next event's
+    // total doesn't charge the deposit a second time.
+    if (status === 'paid' && calc.needsDeposit) {
+      dispatch({ type: 'MERGE_DEPOSITS', payload: { [vid]: { ...dep, status: 'paid', payDate: new Date().toISOString().slice(0, 10) } } });
+      logActivity('Admin', `marked ${v.business}'s RM100 security deposit as paid — settled within their ${ev.name} payment.`, { icon:'wallet', tint:'var(--tint-blue-bg)' });
+    }
     set({ payModalKey: null });
     logActivity('Admin', `recorded a payment of RM ${money(amt)} for ${v.business}'s ${ev.name} application.`, { icon:'receipt', tint:'var(--tint-green-bg)' });
     showToast(amt > calc.total ? 'Payment recorded — overpaid, refund flagged' : `Marked ${status}`, 'check');
