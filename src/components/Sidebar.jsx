@@ -17,8 +17,10 @@ export default function Sidebar() {
   const adminTabs  = orderTabs(ADMIN_TABS.filter(t => !t.hidden && (t.superOnly ? isSuperActing : canViewTab(t.id))), aTabOrder);
 
   const logout = () => {
-    if (isAdmin) set({ aScreen: 'login', currentAdminId: null });
-    else if (isVendor) {
+    if (isAdmin) {
+      if (isSupabaseConfigured) supabase.auth.signOut();
+      set({ aScreen: 'login', currentAdminId: null });
+    } else if (isVendor) {
       if (isSupabaseConfigured) supabase.auth.signOut();
       set({ vScreen: 'login', currentVendorId: null });
     }

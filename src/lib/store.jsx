@@ -7,6 +7,7 @@ import {
 } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendors';
+import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 
 function readTabOrder(key) {
   try {
@@ -55,8 +56,12 @@ const INIT = {
   // approve before the change lands on the vendor record. See rule 17.
   profileRequests: INITIAL_PROFILE_REQUESTS,
   settings: { autoApprove:false, publicEvents:true, emailAlerts:true, skipMarkets:1 },
-  // admin accounts & the admin currently signed in
-  admins: INITIAL_ADMINS,
+  // admin accounts & the admin currently signed in — the mock roster only
+  // applies in mock mode; once Supabase is connected, real admins populate
+  // this via UPSERT_ADMIN/MERGE_ADMINS_FROM_SERVER as they're encountered
+  // (own login, or the Admin Roles tab's full-list fetch), so leftover mock
+  // entries ('admin'/'staff01') never sit in the list looking real.
+  admins: isSupabaseConfigured ? [] : INITIAL_ADMINS,
   currentAdminId: null,
   darkMode: typeof window !== 'undefined' && window.localStorage.getItem('sulap_admin_dark') === '1',
   // user-rearranged portal tab order (array of tab ids, null = code-defined order)
@@ -132,6 +137,22 @@ function reducer(state, action) {
     case 'MERGE_CATS': return { ...state, cats: action.payload };
     case 'MERGE_PROFILE_REQUESTS': return { ...state, profileRequests: action.payload };
     case 'MERGE_ADMINS': return { ...state, admins: action.payload };
+    // Insert-or-replace-by-id, same pattern as UPSERT_VENDOR — used when the
+    // signed-in admin's own profile arrives from the session listener.
+    case 'UPSERT_ADMIN': {
+      const a = action.payload;
+      const exists = state.admins.some(x => x.id === a.id);
+      return { ...state, admins: exists ? state.admins.map(x => x.id === a.id ? a : x) : [...state.admins, a] };
+    }
+    // Merges a full fetched admin list in — keeps any entry already present
+    // (e.g. the acting admin's own row from UPSERT_ADMIN) while adding/
+    // updating everyone else, so the Admin Roles tab shows every real admin,
+    // not just whoever has logged in during this session.
+    case 'MERGE_ADMINS_FROM_SERVER': {
+      const byId = new Map(state.admins.map(a => [a.id, a]));
+      action.payload.forEach(a => byId.set(a.id, a));
+      return { ...state, admins: [...byId.values()] };
+    }
     case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
     default: return state;
   }
@@ -156,15 +177,27 @@ export function StoreProvider({ children }) {
   // ── Supabase session sync ──
   // Single place that reacts to "there's an authenticated Supabase session" —
   // covers page-load session restore, the email-confirmation redirect landing,
-  // and interactive sign-in (VendorLogin just calls signInWithPassword and
-  // lets this listener finish the job, so the vendor-lookup + status-gate
-  // logic isn't duplicated in two places). TOKEN_REFRESHED/USER_UPDATED are
-  // explicitly ignored so a silently-refreshing token never re-triggers
-  // navigation or a repeated status toast for someone just browsing.
+  // and interactive sign-in for BOTH portals (VendorLogin/AdminLogin just call
+  // signInWithPassword and let this listener finish the job, so the lookup +
+  // routing logic isn't duplicated per screen). The profile's `role` decides
+  // which portal a session belongs to — so signing in via the "wrong" screen
+  // still routes correctly (a vendor's credentials typed into the admin form
+  // land them on their own vendor dashboard, never inside the admin console).
+  // TOKEN_REFRESHED/USER_UPDATED are explicitly ignored so a silently-
+  // refreshing token never re-triggers navigation for someone just browsing.
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const routeVendorSession = async (session) => {
+    const routeSession = async (session) => {
       try {
+        const profile = await fetchProfileByUserId(session.user.id);
+        if (!profile) return; // the signup trigger always creates one — defensive only
+
+        if (profile.role === 'staff' || profile.role === 'super') {
+          dispatch({ type: 'UPSERT_ADMIN', payload: rowToAdmin(profile) });
+          dispatch({ type: 'SET', payload: { currentAdminId: profile.id, view: 'admin', aScreen: 'dashboard', aTab: 'overview', page: 1 } });
+          return;
+        }
+
         let vendor = await fetchVendorByUserId(session.user.id);
         if (!vendor) vendor = await completeRegistrationFromDraft(session);
         if (!vendor) return; // confirmed session, but no vendor row/draft for it — leave the UI as-is
@@ -180,12 +213,12 @@ export function StoreProvider({ children }) {
           showToast(msg, 'lock');
           dispatch({ type: 'SET', payload: { view: 'vendor', vScreen: 'login' } });
         }
-      } catch (e) { console.error('Vendor session sync failed:', e); }
+      } catch (e) { console.error('Session sync failed:', e); }
     };
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') { dispatch({ type: 'SET', payload: { currentVendorId: null } }); return; }
+      if (event === 'SIGNED_OUT') { dispatch({ type: 'SET', payload: { currentVendorId: null, currentAdminId: null } }); return; }
       if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
-      if (session) routeVendorSession(session);
+      if (session) routeSession(session);
     });
     return () => sub.subscription.unsubscribe();
   }, [showToast]);

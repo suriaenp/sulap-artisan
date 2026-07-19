@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '../components/Icon';
 import { useStore } from '../lib/store';
 import { DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:13, padding:'14px 15px', fontSize:15, color:'var(--text-primary)', outline:'none' };
 const lbl = { fontSize:12.5, fontWeight:600, color:'var(--text-primary)', marginBottom:7 };
@@ -9,15 +10,25 @@ const lbl = { fontSize:12.5, fontWeight:600, color:'var(--text-primary)', margin
 export default function AdminLogin() {
   const { state, set, dispatch, showToast } = useStore();
   const { aScreen, admins, currentAdminId } = state;
-  // Dev-only convenience prefill — a production build ships empty fields so no
-  // working credentials are ever presented in the UI (import.meta.env.DEV is
-  // statically replaced with false at build time, so this branch is stripped).
-  const [adminId, setAdminId] = useState(import.meta.env.DEV ? 'admin' : '');
-  const [password, setPassword] = useState(import.meta.env.DEV ? 'sulap123' : '');
+  const [adminId, setAdminId] = useState('');
+  const [password, setPassword] = useState('');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
 
-  const login = () => {
+  // Wrong ID and wrong password always share one generic message once
+  // Supabase is connected — no account enumeration.
+  const login = async () => {
+    if (isSupabaseConfigured) {
+      if (!adminId.trim() || !password) { showToast('Enter your email and password', 'info'); return; }
+      showToast('Signing you in…', 'clock');
+      const { error } = await supabase.auth.signInWithPassword({ email: adminId.trim(), password });
+      if (error) showToast("Email or password doesn't match our records", 'lock');
+      // On success the store's global session listener (store.jsx) takes over:
+      // it checks profiles.role is staff/super, upserts the admin, and routes
+      // to the dashboard — same centralized pattern as vendor login.
+      return;
+    }
+    // Mock mode (no Supabase configured) — unchanged Phase 1 behavior.
     const a = admins.find(x => x.id.toLowerCase() === adminId.trim().toLowerCase());
     if (!a) { showToast('Admin ID not found', 'info'); return; }
     if (a.password !== password) { showToast('Incorrect password', 'lock'); return; }
@@ -81,8 +92,8 @@ export default function AdminLogin() {
       <div style={{ fontSize:13.5, color:'var(--text-secondary)', marginTop:6 }}>Sulap Artisan Vendor Registration</div>
       <div style={{ marginTop:22, display:'flex', flexDirection:'column', gap:16 }}>
         <div>
-          <div style={lbl}>Admin ID</div>
-          <input value={adminId} onChange={e=>setAdminId(e.target.value)} placeholder="e.g. admin" style={inp}/>
+          <div style={lbl}>{isSupabaseConfigured ? 'Email address' : 'Admin ID'}</div>
+          <input type={isSupabaseConfigured ? 'email' : 'text'} value={adminId} onChange={e=>setAdminId(e.target.value)} placeholder={isSupabaseConfigured ? 'you@suriasabah.com.my' : 'e.g. admin'} style={inp}/>
         </div>
         <div>
           <div style={lbl}>Password</div>
@@ -90,8 +101,10 @@ export default function AdminLogin() {
         </div>
       </div>
       <button onClick={login} className="cta" style={{ marginTop:20, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Sign in</button>
-      {/* Demo-credential hint — dev builds only; never shipped to production. */}
-      {import.meta.env.DEV && (
+      {/* Demo-credential hint — only makes sense in pure mock mode, same as
+          VendorLogin's — once Supabase is connected there's no 'admin'/
+          'sulap123' account, so showing it would be actively misleading. */}
+      {!isSupabaseConfigured && (
         <div style={{ marginTop:18, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.55 }}>
           Demo accounts — super admin: <b style={{ color:'var(--text-secondary)' }}>admin / sulap123</b> · staff (first sign-in flow): <b style={{ color:'var(--text-secondary)' }}>staff01 / 00000</b>. Forgot passwords are reset to the default by a super admin in Admin Roles.
         </div>
