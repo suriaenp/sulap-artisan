@@ -23,6 +23,7 @@ import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminNa
 import { fetchAllVendors, updateVendorStatus } from '../lib/supaVendors';
 import { insertEvent } from '../lib/supaEvents';
 import { fetchAllApps, updateAppStatus, deleteApp } from '../lib/supaApps';
+import { fetchAllPayments, fetchAllDeposits, savePaymentRecord } from '../lib/supaPayments';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -216,6 +217,15 @@ export default function AdminDashboard() {
     fetchAllApps()
       .then(list => { if (list.length) dispatch({ type: 'MERGE_APPS_FROM_SERVER', payload: list }); })
       .catch(e => console.error('Failed to load applications:', e));
+    // Real payment + deposit records. These arrive as keyed objects, so the
+    // existing MERGE_PAYMENTS/MERGE_DEPOSITS (object-spread merges) suffice —
+    // real keys (UUID-based) can never collide with the seeded demo keys.
+    fetchAllPayments()
+      .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PAYMENTS', payload: map }); })
+      .catch(e => console.error('Failed to load payments:', e));
+    fetchAllDeposits()
+      .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_DEPOSITS', payload: map }); })
+      .catch(e => console.error('Failed to load deposits:', e));
   }, [acting?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -438,7 +448,7 @@ export default function AdminDashboard() {
     if (!files.length) { showToast('No images or PDFs found in that folder','info'); return; }
     const nameMap = {};
     approvedApps.forEach(a => { const v = vById(a.vendorId); nameMap[(v.business||'').toLowerCase().trim()] = a.vendorId; });
-    const payload = {}; const unmatched = new Set(); const matched = new Set();
+    const unmatched = new Set(); const matched = new Set();
     for (const f of files) {
       const parts = (f.webkitRelativePath || f.name).split('/');
       const folder = parts.length >= 2 ? parts[parts.length-2] : '';
@@ -447,11 +457,12 @@ export default function AdminDashboard() {
       if (matched.has(vid)) continue; // one document per vendor — first file wins
       const doc = await fileToPhoto(f);
       const key = `${vid}-${filterEvent}`;
-      payload[key] = { ...payRec(key), [field]: doc };
-      matched.add(vid);
+      // Persisted (and counted) one vendor at a time — a real pair that the
+      // server rejects shows its toast and simply isn't counted as matched.
+      const ok = await savePaymentRecord(key, { ...payRec(key), [field]: doc }, { vendors, events, dispatch, showToast });
+      if (ok) matched.add(vid);
     }
     if (matched.size) {
-      dispatch({ type:'MERGE_PAYMENTS', payload });
       logActivity('Admin', `bulk uploaded ${label.toLowerCase()}s for ${matched.size} vendor(s) — ${curEv.name}.`, {icon:'file', tint:'var(--tint-green-bg)'});
     }
     setPayUpMsg({ label, count:matched.size, unmatched:[...unmatched] });
@@ -1732,7 +1743,7 @@ export default function AdminDashboard() {
                               const file = e.target.files[0]; e.target.value='';
                               if (!file) return;
                               const uploaded = await fileToPhoto(file);
-                              dispatch({type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [doc.key]: uploaded } }});
+                              if (!await savePaymentRecord(payKey, { ...rec, [doc.key]: uploaded }, { vendors, events, dispatch, showToast })) return;
                               logActivity('Admin', `uploaded the ${doc.label.toLowerCase()} for ${v.business} — ${curEv.name}.`, {icon:'file', tint:'var(--tint-green-bg)'});
                               showToast(`${doc.label} uploaded`,'file');
                             }}/>
@@ -1748,7 +1759,7 @@ export default function AdminDashboard() {
                     </div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:5, flexWrap:'wrap' }}>
                       <button onClick={()=>set({payModalKey:payKey,payf:{amount:String(rec.paid||calc.total)}})} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', border:'none', color:'#FFF8EE', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 10px', cursor:'pointer', fontFamily:"'Karla',sans-serif", whiteSpace:'nowrap' }}>Record payment</button>
-                      <button title="Reset to unpaid" onClick={()=>{ const p={...payments}; p[payKey]={...(p[payKey]||{}),status:'unpaid',paid:0}; dispatch({type:'MERGE_PAYMENTS',payload:p}); showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
+                      <button title="Reset to unpaid" onClick={async ()=>{ if (!await savePaymentRecord(payKey, {...(payments[payKey]||{}),status:'unpaid',paid:0}, { vendors, events, dispatch, showToast })) return; showToast('Reset to unpaid','check'); }} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="x" size={12} color="#6B4E33"/></button>
                       <button title="Send payment reminder" onClick={()=>showToast(`Reminder noted for ${v.business} (demo — real email arrives with Phase 2)`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
                       <button title="Remove from event" onClick={()=>{
                         if (!window.confirm(`Remove ${v.business} from ${curEv.name}? Their approved slot is released and any recorded payment for this event stops being shown.`)) return;

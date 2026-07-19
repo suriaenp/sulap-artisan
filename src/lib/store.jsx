@@ -10,6 +10,7 @@ import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendor
 import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
 import { fetchAppsByVendorId } from './supaApps';
+import { fetchPaymentsByVendorId, fetchDepositByVendorId } from './supaPayments';
 
 function readTabOrder(key) {
   try {
@@ -247,6 +248,15 @@ export function StoreProvider({ children }) {
           fetchAppsByVendorId(vendor.id)
             .then(list => { if (list.length) dispatch({ type: 'MERGE_APPS_FROM_SERVER', payload: list }); })
             .catch(e => console.error('Applications fetch failed:', e));
+          // Their payment records + deposit status too — the Payments tab's
+          // amounts (and whether the RM100 deposit is folded into the next
+          // total, see payCalc) must survive a refresh as well.
+          fetchPaymentsByVendorId(vendor.id)
+            .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PAYMENTS', payload: map }); })
+            .catch(e => console.error('Payments fetch failed:', e));
+          fetchDepositByVendorId(vendor.id)
+            .then(map => { if (map) dispatch({ type: 'MERGE_DEPOSITS', payload: map }); })
+            .catch(e => console.error('Deposit fetch failed:', e));
         } else {
           const msg = vendor.status === 'pending'
             ? "Your application is still under review — we'll email you once you're approved"

@@ -5,6 +5,7 @@ import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, DepositModal, RefundModal, DocPreviewModal, PassPhotoPreviewModal } from './components/Modals';
 import { payCalc, money, splitPayKey } from './lib/helpers';
+import { savePaymentRecord, saveDepositRecord } from './lib/supaPayments';
 import PublicHome from './pages/PublicHome';
 import VendorLogin from './pages/VendorLogin';
 import VendorRegister from './pages/VendorRegister';
@@ -24,18 +25,19 @@ function PayModal() {
   const dep = deposits[vid] || { status: 'unpaid' };
   const calc = payCalc(v, ev, dep.status, app?.tier);
   const close = () => set({ payModalKey: null });
-  const save = () => {
+  const save = async () => {
     const amt = parseFloat(payf.amount) || 0;
     const status = amt <= 0 ? 'unpaid' : amt < calc.total ? 'partial' : 'paid';
-    const p = { ...payments };
-    p[payModalKey] = { ...(p[payModalKey] || {}), status, paid: amt };
-    dispatch({ type: 'MERGE_PAYMENTS', payload: p });
+    const ctx = { vendors, events, dispatch, showToast };
+    // Write-then-reflect: for a real vendor+event pair this persists to
+    // Supabase first and leaves local state untouched on failure.
+    if (!await savePaymentRecord(payModalKey, { ...(payments[payModalKey] || {}), status, paid: amt }, ctx)) return;
     // A fully-paid total that included the one-time RM100 deposit settles the
     // deposit too — keep the Deposit Record tab in sync so the next event's
     // total doesn't charge the deposit a second time.
     if (status === 'paid' && calc.needsDeposit) {
-      dispatch({ type: 'MERGE_DEPOSITS', payload: { [vid]: { ...dep, status: 'paid', payDate: new Date().toISOString().slice(0, 10) } } });
-      logActivity('Admin', `marked ${v.business}'s RM100 security deposit as paid — settled within their ${ev.name} payment.`, { icon:'wallet', tint:'var(--tint-blue-bg)' });
+      const ok = await saveDepositRecord(vid, { ...dep, status: 'paid', payDate: new Date().toISOString().slice(0, 10) }, ctx);
+      if (ok) logActivity('Admin', `marked ${v.business}'s RM100 security deposit as paid — settled within their ${ev.name} payment.`, { icon:'wallet', tint:'var(--tint-blue-bg)' });
     }
     set({ payModalKey: null });
     logActivity('Admin', `recorded a payment of RM ${money(amt)} for ${v.business}'s ${ev.name} application.`, { icon:'receipt', tint:'var(--tint-green-bg)' });

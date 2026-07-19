@@ -1,4 +1,5 @@
 import { payCalc, money, fmtShort, splitPayKey } from './helpers';
+import { savePaymentRecord, saveDepositRecord } from './supaPayments';
 
 // ── text extraction ───────────────────────────────────────────────────────────
 // pdfjs and tesseract are loaded lazily so they don't bloat the initial bundle.
@@ -79,28 +80,34 @@ export async function scanAndRecord(doc, payKey, field, ctx) {
   const prev = payments[payKey] || { status: 'unpaid', paid: 0 };
   const res = await scanPaymentDoc(doc);
   const at = fmtShort(new Date());
-  let payload;
+  const persistCtx = { vendors, events, dispatch, showToast };
   if (res.amount != null) {
     const base = field === 'advice2' ? (prev.paid || 0) : 0;
     const paid = +(base + res.amount).toFixed(2);
     const status = paid <= 0 ? 'unpaid' : paid < calc.total ? 'partial' : 'paid';
-    payload = { ...prev, [field]: doc, paid, status, scans: { ...(prev.scans || {}), [field]: { amount: res.amount, at } } };
+    const payload = { ...prev, [field]: doc, paid, status, scans: { ...(prev.scans || {}), [field]: { amount: res.amount, at } } };
+    // Write-then-reflect: a real vendor+event pair persists to Supabase first
+    // (RLS payments_self_write lets the vendor's own session do this); a
+    // failed write shows its toast and leaves everything untouched.
+    if (!await savePaymentRecord(payKey, payload, persistCtx)) return res;
     // The total being settled included the one-time RM100 deposit (it's only
     // added while the deposit record isn't 'paid') — so a full payment also
     // settles the deposit. Mark the Deposit Record tab's entry paid in the
     // same action, otherwise the next event's total would charge RM100 again.
+    // (Vendor-side sessions need migration 0004's deposits_self_settle
+    // policies for this write to pass RLS.)
     if (status === 'paid' && calc.needsDeposit) {
-      dispatch({ type: 'MERGE_DEPOSITS', payload: { [vid]: { ...dep, status: 'paid', payDate: new Date().toISOString().slice(0, 10) } } });
-      logActivity('System', `marked ${v.business}'s RM100 security deposit as paid — settled within their ${ev.name} payment.`, { icon: 'wallet', tint: '#EEF1FB' });
+      const ok = await saveDepositRecord(vid, { ...dep, status: 'paid', payDate: new Date().toISOString().slice(0, 10) }, persistCtx);
+      if (ok) logActivity('System', `marked ${v.business}'s RM100 security deposit as paid — settled within their ${ev.name} payment.`, { icon: 'wallet', tint: '#EEF1FB' });
     }
     logActivity(who || v.business, `uploaded a payment advice for ${ev.name} — auto-scan read RM ${money(res.amount)} and recorded the payment.`, { icon: 'receipt', tint: '#E8F5F0', type: 'vendor' });
     showToast(`Scanned RM ${money(res.amount)} — payment recorded`, 'check');
   } else {
-    payload = { ...prev, [field]: doc, scans: { ...(prev.scans || {}), [field]: { amount: null, at } } };
+    const payload = { ...prev, [field]: doc, scans: { ...(prev.scans || {}), [field]: { amount: null, at } } };
+    if (!await savePaymentRecord(payKey, payload, persistCtx)) return res;
     logActivity(who || v.business, `uploaded a payment advice for ${ev.name} — auto-scan couldn't read an amount.`, { icon: 'file', tint: '#FEF8EC', type: 'vendor' });
     showToast("Uploaded — couldn't read an amount, to be verified manually", 'info');
   }
-  dispatch({ type: 'MERGE_PAYMENTS', payload: { [payKey]: payload } });
   return res;
 }
 

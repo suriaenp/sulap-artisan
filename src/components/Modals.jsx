@@ -12,6 +12,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorStatus } from '../lib/supaVendors';
 import { isRealEvent, updateEvent } from '../lib/supaEvents';
 import { insertApp } from '../lib/supaApps';
+import { savePaymentRecord, saveDepositRecord } from '../lib/supaPayments';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -620,8 +621,10 @@ export function DepositModal() {
   const v = vendors.find(x=>x.id===depModalVendor)||{};
   const close = () => set({depModalVendor:null});
   const upd = (k,val) => set({depf:{...depf,[k]:val}});
-  const save = () => {
-    dispatch({type:'MERGE_DEPOSITS',payload:{[depModalVendor]:{...depf}}});
+  const save = async () => {
+    // Real vendors' deposit records persist write-first (see supaPayments);
+    // demo vendors stay local-only.
+    if (!await saveDepositRecord(depModalVendor, {...depf}, { vendors, dispatch, showToast })) return;
     set({depModalVendor:null});
     logActivity('Admin', `updated deposit record for ${v.business}.`, {icon:'wallet', tint:'#EEF1FB'});
     showToast('Deposit record saved','check');
@@ -707,16 +710,16 @@ export function DocPreviewModal() {
       showToast('Scanning for the paid amount…','search');
       await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who:v.business });
     } else {
-      dispatch({ type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: doc } } });
+      if (!await savePaymentRecord(payKey, { ...rec, [field]: doc }, { vendors, events, dispatch, showToast })) return;
       logActivity('Admin', `replaced the ${label.toLowerCase()} for ${v.business} — ${ev.name}.`, { icon:'file', tint:'#E8F5F0' });
       showToast(`${label} replaced`,'file');
     }
   };
 
-  const onRemove = () => {
+  const onRemove = async () => {
     if (!window.confirm(`Remove this ${label.toLowerCase()}?`)) return;
     const scans = { ...(rec.scans||{}) }; delete scans[field];
-    dispatch({ type:'MERGE_PAYMENTS', payload:{ [payKey]: { ...rec, [field]: null, scans } } });
+    if (!await savePaymentRecord(payKey, { ...rec, [field]: null, scans }, { vendors, events, dispatch, showToast })) return;
     showToast(`${label} removed`,'x');
     close();
   };
