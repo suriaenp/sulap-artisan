@@ -123,6 +123,15 @@ function reducer(state, action) {
       const exists = state.vendors.some(x => x.id === v.id);
       return { ...state, vendors: exists ? state.vendors.map(x => x.id === v.id ? v : x) : [...state.vendors, v] };
     }
+    // Merges the real, complete vendor roster in alongside the seeded demo
+    // vendors (not a replacement — dozens of still-mock tabs join against
+    // the demo vendors by id, so dropping them would leave those tabs
+    // looking broken until the rest of the data layer is wired too).
+    case 'MERGE_VENDORS_FROM_SERVER': {
+      const byId = new Map(state.vendors.map(v => [v.id, v]));
+      action.payload.forEach(v => byId.set(v.id, v));
+      return { ...state, vendors: [...byId.values()] };
+    }
     case 'MERGE_APPS': return { ...state, apps: action.payload };
     case 'MERGE_PAYMENTS': return { ...state, payments: { ...state.payments, ...action.payload } };
     case 'MERGE_REFUNDS': return { ...state, refunds: { ...state.refunds, ...action.payload } };

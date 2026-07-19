@@ -35,6 +35,21 @@ export async function fetchVendorByUserId(userId) {
   return rowToVendor(data);
 }
 
+// Every real vendor — lets the admin console show the actual pending/
+// approved/rejected/suspended roster instead of only whichever vendor has
+// happened to log in during this session. Only readable by an admin session
+// (RLS: vendors_admin_read requires is_admin()).
+export async function fetchAllVendors() {
+  const { data, error } = await supabase.from('vendors').select('*');
+  if (error) throw error;
+  return (data || []).map(rowToVendor);
+}
+
+export async function updateVendorStatus(id, status) {
+  const { error } = await supabase.from('vendors').update({ status }).eq('id', id);
+  if (error) throw error;
+}
+
 // `v` is any subset of the app-shape vendor fields (business, owner, category,
 // email, phone, ig/fb/tiktok, plate, power, desc, regDate, tcAcceptedAt, and
 // optionally logo/productPhotos/docs/einvoice). Always inserts as 'pending' —

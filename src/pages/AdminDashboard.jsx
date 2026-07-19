@@ -19,6 +19,7 @@ import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId } from '../lib/supaAdmins';
+import { fetchAllVendors, updateVendorStatus } from '../lib/supaVendors';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -198,8 +199,35 @@ export default function AdminDashboard() {
       .catch(e => console.error('Failed to load admin list:', e));
   }, [isSuperActing, acting?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The real vendor roster (Vendor Applications/Listing tabs need to see
+  // actual registrations, not just the seeded demo vendors). Any confirmed
+  // admin session can read every vendor row (RLS: is_admin()), not just super
+  // — vendor visibility isn't a super-only concern the way admin management is.
+  useEffect(() => {
+    if (!isSupabaseConfigured || !acting) return;
+    fetchAllVendors()
+      .then(list => dispatch({ type: 'MERGE_VENDORS_FROM_SERVER', payload: list }))
+      .catch(e => console.error('Failed to load vendor list:', e));
+  }, [acting?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
+
+  // Shared by every status-changing vendor action (approve/reject/reconsider/
+  // suspend/reinstate). Real vendors (identified by userId — only present on
+  // rows that came from Supabase, never on the seeded demo vendors) write
+  // to the database FIRST and only update local state on success; demo
+  // vendors keep the old local-only behavior unchanged. `then` runs after
+  // either path succeeds (the activity-log + toast call, which differs
+  // slightly per call site).
+  const setVendorStatus = async (v, status, then) => {
+    if (isSupabaseConfigured && v.userId) {
+      try { await updateVendorStatus(v.id, status); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===v.id?{...x,status}:x) });
+    then?.();
+  };
   const depRec = id => deposits[id]||{status:'unpaid',inv:'',payDate:'',refundDate:''};
   const payRec = key => payments[key]||{status:'unpaid',paid:0,advice:false,invoice:false,receipt:false};
   const refundRec = key => refunds[key]||{status:'none'};
@@ -866,8 +894,8 @@ export default function AdminDashboard() {
               <div style={{ fontSize:12.5, color:'var(--text-secondary)' }}>{v.regDate}</div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6, flexWrap:'wrap' }}>
                 <IconBtn title="View details" onClick={()=>set({vendorDetailId:v.id, vendorDetailReturnAppId:null})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
-                <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
-                <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); }} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                <button onClick={()=>setVendorStatus(v,'approved',()=>{ logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); })} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                <button onClick={()=>setVendorStatus(v,'rejected',()=>{ logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); })} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
               </div>
             </div>
           ))}
@@ -892,7 +920,7 @@ export default function AdminDashboard() {
                       <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'4px 10px', borderRadius:999, fontSize:11, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                       <div style={{ fontSize:12, color:'var(--text-secondary)' }}>{v.regDate}</div>
                       <div style={{ display:'flex', justifyContent:'flex-end' }}>
-                        <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===v.id?{...x,status:'pending'}:x)}); logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); }} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
+                        <button onClick={()=>setVendorStatus(v,'pending',()=>{ logActivity('Admin', `moved ${v.business}'s application back to pending review.`, {icon:'info', tint:'var(--tint-amber-bg)'}); showToast(`${v.business} moved back to pending review`,'info'); })} style={{ display:'inline-flex', alignItems:'center', gap:6, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', color:'var(--text-secondary)', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>
                           <Icon name="pencil" size={12} color="#6B4E33"/>Reconsider
                         </button>
                       </div>

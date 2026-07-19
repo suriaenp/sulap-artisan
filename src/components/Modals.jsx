@@ -8,6 +8,8 @@ import { EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } fro
 import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { updateVendorStatus } from '../lib/supaVendors';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -85,6 +87,18 @@ export function VendorDetailModal() {
     setEditingDetails(false); setEditingSocials(false); setEditingEI(false);
     if (vendorDetailReturnAppId) set({vendorDetailId:null, vendorDetailReturnAppId:null, appDetailId:vendorDetailReturnAppId});
     else set({vendorDetailId:null});
+  };
+
+  // Same pattern as AdminDashboard.jsx's Vendor Applications tab — a real
+  // vendor (has userId) writes to Supabase first, local state only updates
+  // on success; a demo vendor keeps the old local-only behavior.
+  const setVendorStatus = async (status, then) => {
+    if (isSupabaseConfigured && v.userId) {
+      try { await updateVendorStatus(v.id, status); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,status}:x) });
+    then?.();
   };
 
   const startEditDetails = () => { setDetailsForm({ business:v.business||'', owner:v.owner||'', category:v.category||'', email:v.email||'', phone:v.phone||'', plate:v.plate||'', desc:v.desc||'' }); setEditingDetails(true); };
@@ -285,8 +299,8 @@ export function VendorDetailModal() {
       )}
       {v.status === 'pending' && (
         <div style={{ display:'flex', gap:10, marginTop:20 }}>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F3E4CC'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'rejected'}:x)}); logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); close(); }} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
+          <button onClick={()=>setVendorStatus('approved',()=>{ logActivity('Admin', `approved ${v.business} as a vendor.`, {icon:'check', tint:'#F3E4CC'}); showToast('Vendor approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); })} style={{ flex:1, background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Approve vendor</button>
+          <button onClick={()=>setVendorStatus('rejected',()=>{ logActivity('Admin', `rejected ${v.business}'s vendor application.`, {icon:'x', tint:'#FDEEEC'}); showToast('Vendor rejected'+(settings.emailAlerts?' · vendor emailed':''),'x'); close(); })} style={{ flex:1, background:'#FDEEEC', color:'#B03A2E', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reject</button>
         </div>
       )}
       {v.status === 'approved' && (
@@ -294,10 +308,11 @@ export function VendorDetailModal() {
           <button
             onClick={()=>{
               if (!window.confirm(`Suspend ${v.business}? They will lose access to apply for markets until reinstated.`)) return;
-              dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'suspended'}:x)});
-              logActivity('Admin', `suspended ${v.business}.`, {icon:'shield', tint:'#F2EDE6'});
-              showToast('Vendor suspended'+(settings.emailAlerts?' · vendor emailed':''),'shield');
-              close();
+              setVendorStatus('suspended',()=>{
+                logActivity('Admin', `suspended ${v.business}.`, {icon:'shield', tint:'#F2EDE6'});
+                showToast('Vendor suspended'+(settings.emailAlerts?' · vendor emailed':''),'shield');
+                close();
+              });
             }}
             style={{ background:'none', border:'none', color:'#A09890', fontSize:11.5, fontWeight:600, padding:'4px 8px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}
           >
@@ -307,7 +322,7 @@ export function VendorDetailModal() {
       )}
       {v.status === 'suspended' && (
         <div style={{ marginTop:20 }}>
-          <button onClick={()=>{ dispatch({type:'MERGE_VENDORS',payload:vendors.map(x=>x.id===vendorDetailId?{...x,status:'approved'}:x)}); logActivity('Admin', `reinstated ${v.business}.`, {icon:'check', tint:'#E8F5F0'}); showToast('Vendor reinstated'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); }} style={{ width:'100%', background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reinstate vendor</button>
+          <button onClick={()=>setVendorStatus('approved',()=>{ logActivity('Admin', `reinstated ${v.business}.`, {icon:'check', tint:'#E8F5F0'}); showToast('Vendor reinstated'+(settings.emailAlerts?' · vendor emailed':''),'check'); close(); })} style={{ width:'100%', background:'#2D6A4F', color:'#fff', border:'none', fontSize:14, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' }}>Reinstate vendor</button>
         </div>
       )}
     </Sheet>
