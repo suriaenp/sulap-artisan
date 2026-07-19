@@ -95,7 +95,8 @@ export default function VendorLogin() {
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:11, padding:'11px 13px', fontSize:12, color:'#B7770D', lineHeight:1.4 }}>
           <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1, flexShrink:0 }} />
-          <span>Use the email and password you registered with. Demo vendor: <b>aisyah@nutmegclay.my</b> / <b>{DEMO_VENDOR_PASSWORD}</b></span>
+          {/* Demo-credential hint — dev builds only; production shows just the instruction. */}
+          <span>Use the email and password you registered with.{import.meta.env.DEV && <> Demo vendor: <b>aisyah@nutmegclay.my</b> / <b>{DEMO_VENDOR_PASSWORD}</b></>}</span>
         </div>
       </div>
       <button onClick={login} className="cta" style={{ marginTop:22, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(154,91,38,0.22)', width:'100%' }}>Sign in</button>

@@ -1,0 +1,34 @@
+# Netlify security headers (served on every path). Netlify reads this file
+# from the publish root; Vite copies public/_headers -> dist/_headers on build.
+# NOTE: headers can only be verified once the site is actually deployed — see
+# the post-deployment re-audit checklist. Test on a Netlify deploy preview.
+/*
+  # Force HTTPS for a year, including subdomains (only enable preload once you're
+  # certain every subdomain is HTTPS-only).
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  # Clickjacking: this app is never meant to be framed.
+  X-Frame-Options: DENY
+  # Stop browsers MIME-sniffing responses into a different content type.
+  X-Content-Type-Options: nosniff
+  # Don't leak full URLs (which encode app state) to third parties.
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Lock down powerful features. `camera=(self)` is kept because the Vendor Pass
+  # flow uses a capture-enabled file input; nothing here needs mic or geo.
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), interest-cohort=()
+  # Cross-origin isolation hardening.
+  X-Permitted-Cross-Domain-Policies: none
+
+  # ── Content-Security-Policy — STAGED AS REPORT-ONLY ──────────────────────────
+  # Report-Only means violations are logged to the browser console but nothing is
+  # blocked, so it can never break the app. It MUST be verified and promoted to
+  # enforcing before launch. Promotion steps:
+  #   1. Deploy to a Netlify preview.
+  #   2. Exercise every external/dynamic path with devtools open, watching for
+  #      CSP violation reports: Google Fonts loading, the tesseract.js OCR scan
+  #      on a payment advice (it fetches its worker + wasm + traineddata — note
+  #      which origin, add it to script-src/connect-src/worker-src as needed),
+  #      html2pdf export, and any data:/blob: image/preview.
+  #   3. Add any missing origins below, re-verify with zero violations.
+  #   4. Rename this header from Content-Security-Policy-Report-Only to
+  #      Content-Security-Policy to enforce it.
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com data: blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests

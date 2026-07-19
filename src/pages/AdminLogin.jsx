@@ -9,8 +9,11 @@ const lbl = { fontSize:12.5, fontWeight:600, color:'var(--text-primary)', margin
 export default function AdminLogin() {
   const { state, set, dispatch, showToast } = useStore();
   const { aScreen, admins, currentAdminId } = state;
-  const [adminId, setAdminId] = useState('admin');
-  const [password, setPassword] = useState('sulap123');
+  // Dev-only convenience prefill — a production build ships empty fields so no
+  // working credentials are ever presented in the UI (import.meta.env.DEV is
+  // statically replaced with false at build time, so this branch is stripped).
+  const [adminId, setAdminId] = useState(import.meta.env.DEV ? 'admin' : '');
+  const [password, setPassword] = useState(import.meta.env.DEV ? 'sulap123' : '');
   const [newPass, setNewPass] = useState('');
   const [confirmPass, setConfirmPass] = useState('');
 
@@ -87,9 +90,12 @@ export default function AdminLogin() {
         </div>
       </div>
       <button onClick={login} className="cta" style={{ marginTop:20, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Sign in</button>
-      <div style={{ marginTop:18, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.55 }}>
-        Demo accounts — super admin: <b style={{ color:'var(--text-secondary)' }}>admin / sulap123</b> · staff (first sign-in flow): <b style={{ color:'var(--text-secondary)' }}>staff01 / 00000</b>. Forgot passwords are reset to the default by a super admin in Admin Roles.
-      </div>
+      {/* Demo-credential hint — dev builds only; never shipped to production. */}
+      {import.meta.env.DEV && (
+        <div style={{ marginTop:18, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:12, padding:'11px 13px', fontSize:11.5, color:'var(--text-muted)', lineHeight:1.55 }}>
+          Demo accounts — super admin: <b style={{ color:'var(--text-secondary)' }}>admin / sulap123</b> · staff (first sign-in flow): <b style={{ color:'var(--text-secondary)' }}>staff01 / 00000</b>. Forgot passwords are reset to the default by a super admin in Admin Roles.
+        </div>
+      )}
     </div>
   );
 }
