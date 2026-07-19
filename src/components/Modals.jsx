@@ -10,6 +10,7 @@ import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFile
 import { scanAndRecord } from '../lib/payScan';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorStatus } from '../lib/supaVendors';
+import { isRealEvent, updateEvent } from '../lib/supaEvents';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -402,13 +403,13 @@ export function EventDetailModal() {
   const d = dayCount(eef.start,eef.end)||1;
   const fnbTotal = Number(eef.fnb||0)*d*1.06;
   const nfTotal  = Number(eef.nonfnb||0)*d*1.06;
-  const save = () => {
+  const save = async () => {
     if (!eef.name) { showToast('Event name is required','info'); return; }
     if (eef.start && eef.end && eef.end < eef.start) { showToast('End date is before the start date','info'); return; }
     if (!(Number(eef.fnb) > 0) || !(Number(eef.nonfnb) > 0)) { showToast('Set both daily rates (F&B and Non-F&B) first','info'); return; }
     const dateRange = eef.start && eef.end ? `${fmtShort(eef.start)} – ${fmtShort(eef.end)} ${new Date(eef.end).getFullYear()}` : 'Dates TBC';
-    dispatch({type:'MERGE_EVENTS',payload:events.map(x=>x.id===eventDetailId ? {
-      ...x,
+    const updated = {
+      ...ev,
       name:eef.name,
       location:eef.location,
       dateRange,
@@ -421,7 +422,14 @@ export function EventDetailModal() {
       fnb:Number(eef.fnb)||0,
       nonfnb:Number(eef.nonfnb)||0,
       img:eef.img||EVENT_IMG_PALETTE[0],
-    } : x)});
+    };
+    // Real (Supabase-backed) events persist write-first — local state only
+    // reflects the edit once the DB accepted it. Demo events stay local-only.
+    if (isSupabaseConfigured && isRealEvent(ev)) {
+      try { await updateEvent(ev.id, updated); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
+    dispatch({type:'MERGE_EVENTS',payload:events.map(x=>x.id===eventDetailId ? updated : x)});
     logActivity('Admin', `updated details for the ${eef.name} event.`, {icon:'tent', tint:'#E8F5F0'});
     showToast('Event updated','check');
     close();

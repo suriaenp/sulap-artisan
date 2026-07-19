@@ -21,6 +21,7 @@ import { downloadPassReport } from '../lib/passReport';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId } from '../lib/supaAdmins';
 import { fetchAllVendors, updateVendorStatus } from '../lib/supaVendors';
+import { insertEvent } from '../lib/supaEvents';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -1128,12 +1129,18 @@ export default function AdminDashboard() {
         const scrollRail = (dir) => { const el = eventRailRef.current; if (el) el.scrollBy({left: dir*208, behavior:'smooth'}); };
         const eventSearchQ = eventSearch.trim().toLowerCase();
         const railEvents = eventSearchQ ? events.filter(ev => (ev.name||'').toLowerCase().includes(eventSearchQ)) : events;
-        const createEvent = () => {
+        const createEvent = async () => {
           if (!state.ef.name) { showToast('Add an event name first','info'); return; }
           if (state.ef.start && state.ef.end && state.ef.end < state.ef.start) { showToast('End date is before the start date','info'); return; }
           if (!(Number(state.ef.fnb) > 0) || !(Number(state.ef.nonfnb) > 0)) { showToast('Set both daily rates (F&B and Non-F&B) first','info'); return; }
           const dd = dayCount(state.ef.start,state.ef.end)||1;
-          const ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:state.ef.location.trim()||'Suria Sabah Mall', days:dd, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
+          let ev = { id:'e'+Date.now(), name:state.ef.name, dateRange:state.ef.start&&state.ef.end ? `${fmtShort(state.ef.start)} – ${fmtShort(state.ef.end)} ${new Date(state.ef.end).getFullYear()}` : 'Dates TBC', location:state.ef.location.trim()||'Suria Sabah Mall', days:dd, applied:0, fnb:Number(state.ef.fnb)||0, nonfnb:Number(state.ef.nonfnb)||0, startTime:state.ef.startTime||'10:00', endTime:state.ef.endTime||'22:00', lastApp:state.ef.lastApp||'', startDate:state.ef.start||'', endDate:state.ef.end||'', img:state.ef.img||EVENT_IMG_PALETTE[0] };
+          if (isSupabaseConfigured) {
+            // Write-then-reflect: the event only lands in local state once the
+            // insert succeeds, carrying the DB's UUID id + `remote` marker.
+            try { ev = await insertEvent(ev); }
+            catch (e) { showToast("Couldn't create the event — " + e.message, 'lock'); return; }
+          }
           dispatch({type:'MERGE_EVENTS',payload:[ev,...events]});
           set({ef:{name:'',location:'',start:'',end:'',startTime:'',endTime:'',lastApp:'',fnb:'',nonfnb:'',img:EVENT_IMG_PALETTE[0]}});
           setEventStep(0);

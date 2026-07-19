@@ -8,6 +8,7 @@ import {
 import { supabase, isSupabaseConfigured } from './supabase';
 import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendors';
 import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
+import { fetchAllEvents } from './supaEvents';
 
 function readTabOrder(key) {
   try {
@@ -132,6 +133,13 @@ function reducer(state, action) {
       action.payload.forEach(v => byId.set(v.id, v));
       return { ...state, vendors: [...byId.values()] };
     }
+    // Merges real events in alongside the seeded demo ones — same
+    // merge-not-replace reasoning as MERGE_VENDORS_FROM_SERVER below.
+    case 'MERGE_EVENTS_FROM_SERVER': {
+      const byId = new Map(state.events.map(e => [e.id, e]));
+      action.payload.forEach(e => byId.set(e.id, e));
+      return { ...state, events: [...byId.values()] };
+    }
     case 'MERGE_APPS': return { ...state, apps: action.payload };
     case 'MERGE_PAYMENTS': return { ...state, payments: { ...state.payments, ...action.payload } };
     case 'MERGE_REFUNDS': return { ...state, refunds: { ...state.refunds, ...action.payload } };
@@ -181,6 +189,18 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SET', payload: { toast: msg, toastIcon: icon } });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => dispatch({ type: 'SET', payload: { toast: null } }), 2400);
+  }, []);
+
+  // ── Supabase events fetch ──
+  // Events are public-read under RLS (anon included), so this runs once on
+  // load for everyone — no session required. Real events merge in alongside
+  // the seeded demo ones and flow to the public "Coming Soon" carousel, the
+  // vendor portal's Available Markets, and the admin Events rail alike.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    fetchAllEvents()
+      .then(evs => { if (evs.length) dispatch({ type: 'MERGE_EVENTS_FROM_SERVER', payload: evs }); })
+      .catch(e => console.error('Events fetch failed:', e));
   }, []);
 
   // ── Supabase session sync ──
