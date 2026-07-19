@@ -2,8 +2,8 @@
 
 Living reference for what's built, what each screen does, and the business rules baked into the code. Update this whenever a tab's behavior changes.
 
-**Stack:** React + Vite, Supabase (installed, not wired), Netlify (deploy target, not set up)
-**Status:** Phase 1 (UI, mock data) complete. Phase 2 (Supabase) and Phase 3 (Netlify) not started.
+**Stack:** React + Vite, Supabase (project provisioned + client connected 2026-07-19; schema/wiring in progress), Netlify (deploy target, not set up)
+**Status:** Phase 1 (UI, mock data) complete. **Phase 2 (Supabase) started 2026-07-19** — client connected, initial schema migration written (see below). Phase 3 (Netlify) not started.
 **Repo:** https://github.com/suriaenp/sulap-artisan
 
 ---
@@ -296,7 +296,14 @@ First batch of the post-audit action plan — the permanent, security-critical w
 - **"Email alerts" is a mock signal, not real email** — the toast note ("· vendor emailed") is cosmetic confirmation that the setting is respected; no actual email is sent anywhere in this prototype.
 - **Uploads are real files client-side, but nothing persists** — payment advices/invoices/receipts, product photos, pass photos, and vendor documents are all genuine file uploads converted to data URLs (`fileToPhoto()`), previewable and downloadable — but they live only in browser memory and vanish on refresh. Real storage (Supabase buckets, Phase 2) is what makes them durable. (This supersedes the old "mock toggles" note — the toggle era ended when `fileToPhoto` landed.)
 
-## Phase 2 / 3 — not started
+## Phase 2 — Supabase (in progress, started 2026-07-19)
 
-- **Supabase:** no tables wired, everything is mock data in `src/data/mockData.js` + in-memory store (`src/lib/store.jsx`). Needs: vendors, events, applications, payments, deposits, offenses, passes, parking, activity tables + real auth, and a real email/notification provider.
-- **Netlify:** not deployed, no env vars configured.
+**Batch 2a — backend connected + initial schema (2026-07-19).**
+- **Project provisioned** (URL `bcokmntwomaeexynujfl.supabase.co`). Credentials live in `.env` (gitignored; `VITE_SUPABASE_URL` + anon key only — the anon key is public-by-design and safe in the client bundle, the service_role key is never used here). `.env.example` documents the vars.
+- **Client:** `src/lib/supabase.js` — a single `createClient` reading env, null-guarded via `isSupabaseConfigured` so importing it never crashes the app and the mock keeps working until each feature is migrated. **Verified live in-browser**: client instantiates and a real `auth.getSession()` round-trips to the project (session null when logged out).
+- **Schema migration `supabase/migrations/0001_init.sql`** (run in the Supabase SQL Editor — see `supabase/README.md`). Covers the security-critical spine: `profiles` (auth-linked, role vendor/staff/super) + a signup trigger that **forces role='vendor'** (privilege-escalation guard — admins are promoted by hand), `is_admin()`/`is_super()`/`owns_vendor()` SECURITY DEFINER helpers (avoid RLS recursion), and `categories`, `events`, `vendors`, `applications`, `payments`, `deposits` — every table with RLS: anon reads only events+categories; a vendor reads/writes only their own rows; admins full access via `is_admin()`. Not yet run against the DB by the user / not yet wired into the app.
+- **Still to do in Phase 2:** run 0001 + seed (categories, first super-admin); migration 0002 (offences, passes, parking, profile-change requests, activity, site content, **Storage buckets** — private for docs/payment files/pass photos); then wire the app store to Supabase feature-by-feature, **auth first** (real signup/login/session replacing the in-memory check), with per-mutation error handling (kills the optimistic-dispatch "silent failure" bug class). A real email/notification provider (approval/payment emails) is also outstanding.
+
+## Phase 3 — Netlify (not started)
+
+- Not deployed; env vars not configured. Security headers file (`public/_headers`) is ready (batch 1) but needs live verification, and the CSP must be promoted from Report-Only to enforcing on a deploy preview.
