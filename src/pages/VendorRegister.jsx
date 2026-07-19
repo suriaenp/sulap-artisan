@@ -20,6 +20,29 @@ const isStrongPassword = (pw) => pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.t
 const STEPS = ['', 'Business details', 'Contact & logistics', 'Product photos', 'Market terms'];
 const PROGRESS = ['', '25%', '50%', '75%', '100%'];
 
+// Live checklist under the password field — updates as the vendor types
+// instead of only surfacing what's wrong via a toast after they hit Continue
+// (a 2.4s toast is too easy to miss for a multi-part requirement like this).
+function PasswordChecklist({ password }) {
+  const checks = [
+    ['8+ characters', password.length >= 8],
+    ['Uppercase letter', /[A-Z]/.test(password)],
+    ['Lowercase letter', /[a-z]/.test(password)],
+    ['Number', /[0-9]/.test(password)],
+    ['Symbol', /[^A-Za-z0-9]/.test(password)],
+  ];
+  return (
+    <div style={{ display:'flex', flexWrap:'wrap', gap:'5px 13px', marginTop:8 }}>
+      {checks.map(([label, ok]) => (
+        <span key={label} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color: ok ? '#2D6A4F' : '#A09890' }}>
+          <Icon name={ok ? 'check' : 'x'} size={11} color={ok ? '#2D6A4F' : '#c9bfb0'} />
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function VendorRegister() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
   const { regStep, selectedCat, tcAccepted, tcScrolled, content, rf, vendors, settings, regResult, cats } = state;
@@ -52,8 +75,13 @@ export default function VendorRegister() {
         options: { data: { name: rf.owner.trim() } },
       });
       if (error) {
-        const msg = /registered/i.test(error.message) ? 'An account with this email already exists — try signing in instead'
+        // Supabase's raw error strings are technical (e.g. "email rate limit
+        // exceeded") — map the ones a vendor could actually hit to plain,
+        // actionable copy instead of showing them verbatim.
+        const msg = /rate limit/i.test(error.message) ? "We're sending a lot of confirmation emails right now — please try again in about an hour"
+          : /registered/i.test(error.message) ? 'An account with this email already exists — try signing in instead'
           : /password/i.test(error.message) ? PASSWORD_HINT
+          : /invalid/i.test(error.message) && /email/i.test(error.message) ? 'Please enter a real, deliverable email address'
           : error.message;
         showToast(msg, 'lock');
         return;
@@ -218,8 +246,12 @@ export default function VendorRegister() {
             <div className="span2"><label style={lbl}>Product description</label><textarea value={rf.desc} onChange={e=>upd('desc',e.target.value)} placeholder="What do you make and sell?" style={{ ...inp, minHeight:74, resize:'none' }} /></div>
             <div className="span2">
               <label style={lbl}>Create a password</label>
-              <input type="password" value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder={isSupabaseConfigured ? 'Min. 8 characters, mixed case + number + symbol' : 'Min. 8 characters'} style={inp} />
-              <div style={{ fontSize:11, color:'#A09890', marginTop:6 }}>{isSupabaseConfigured ? PASSWORD_HINT + ' — ' : ''}You'll use this to sign in to your portal later.</div>
+              <input type="password" value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder="Create a password" style={inp} />
+              {isSupabaseConfigured ? (
+                <PasswordChecklist password={rf.password} />
+              ) : (
+                <div style={{ fontSize:11, color:'#A09890', marginTop:6 }}>You'll use this to sign in to your portal later.</div>
+              )}
             </div>
           </div>
         </div>
