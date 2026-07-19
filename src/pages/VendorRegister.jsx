@@ -43,7 +43,16 @@ export default function VendorRegister() {
       showToast('Creating your account…', 'clock');
       const { data, error } = await supabase.auth.signUp({
         email: rf.email.trim(), password: rf.password,
-        options: { data: { name: rf.owner.trim() } },
+        // Without this, the confirmation email's link redirects to whatever
+        // static "Site URL" is configured in the Supabase dashboard — which
+        // goes stale the moment the dev server lands on a different port (it
+        // did during testing) or once a real domain exists. Using the
+        // current origin means the link always points at wherever the app
+        // is actually being served from right now. Still needs that exact
+        // origin listed in Supabase Dashboard → Authentication → URL
+        // Configuration → Redirect URLs, or Supabase will ignore this and
+        // fall back to the static Site URL anyway.
+        options: { data: { name: rf.owner.trim() }, emailRedirectTo: window.location.origin },
       });
       if (error) {
         showToast(friendlyAuthError(error), 'lock');
