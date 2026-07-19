@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, isSupabaseConfigured } from './supabase';
 
 // Bridges the `profiles` table (role='staff'|'super') and the app's existing
 // admin shape (was a hardcoded mock array — see mockData.js's INITIAL_ADMINS).
@@ -8,7 +8,8 @@ import { supabase } from './supabase';
 export function rowToAdmin(row) {
   if (!row) return null;
   return {
-    id: row.id,
+    id: row.id, // Supabase Auth UUID — internal only, never shown as "Staff ID"
+    staffId: row.staff_id || null, // company-assigned identifier — this is what the UI displays
     name: row.name || '(unnamed admin)',
     role: row.role, // 'staff' | 'super'
     perms: row.perms || {},
@@ -44,4 +45,19 @@ export async function updateAdminRole(id, patch) {
 export async function updateAdminName(id, name) {
   const { error } = await supabase.from('profiles').update({ name }).eq('id', id);
   if (error) throw error;
+}
+
+export async function updateAdminStaffId(id, staffId) {
+  const { error } = await supabase.from('profiles').update({ staff_id: staffId || null }).eq('id', id);
+  if (error) throw error;
+}
+
+// What the UI should show as "Staff ID". Mock-mode admins (mockData.js)
+// don't have a staffId field at all — their short id ('admin'/'staff01') IS
+// the human-facing identifier by design, so it's the fallback there. A real
+// Supabase admin's `id` is a UUID and must NEVER be shown as their Staff ID —
+// falling back to it would reproduce the exact bug this field exists to fix.
+export function displayStaffId(admin) {
+  if (admin.staffId) return admin.staffId;
+  return isSupabaseConfigured ? 'Not assigned yet' : admin.id;
 }

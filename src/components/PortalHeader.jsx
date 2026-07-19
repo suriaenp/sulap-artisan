@@ -1,5 +1,6 @@
 import { useStore } from '../lib/store';
 import VendorAvatar from './VendorAvatar';
+import { displayStaffId } from '../lib/supaAdmins';
 
 // Shared sticky glass header for both portals — replaces the old solid-color
 // header bar that used to be inlined at the top of AdminDashboard/VendorDashboard.
@@ -17,8 +18,10 @@ export default function PortalHeader({ title, eyebrow }) {
   const profileName = isAdmin ? (acting?.name || 'Admin') : (me?.business || 'Vendor');
   // Admins see their Staff ID here instead of their role — the role still shows
   // in Admin Roles for anyone managing accounts, but on their own header this ID
-  // is what they'd actually need day to day (and doubles as their sign-in ID).
-  const profileRole = isAdmin ? `Staff ID: ${acting?.id || 'admin'}` : (me?.owner || '');
+  // is what they'd actually need day to day. This is the org-assigned Staff ID
+  // (displayStaffId), never the Supabase Auth UUID (acting.id) — those are
+  // different things and must stay that way (see PROJECT_NOTES).
+  const profileRole = isAdmin ? `Staff ID: ${acting ? displayStaffId(acting) : 'admin'}` : (me?.owner || '');
   const goToAccount = () => { if (isAdmin) set({ aTab: 'account', aScreen: 'dashboard' }); };
 
   return (

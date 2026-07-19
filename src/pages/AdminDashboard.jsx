@@ -18,7 +18,7 @@ import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName } from '../lib/supaAdmins';
+import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId } from '../lib/supaAdmins';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -136,13 +136,15 @@ export default function AdminDashboard() {
   const [transferTo, setTransferTo] = useState('');
   const [transferConfirm, setTransferConfirm] = useState('');
   const [acctName, setAcctName] = useState(acting?.name || '');
+  const [acctStaffId, setAcctStaffId] = useState(acting?.staffId || '');
   const [acctPw, setAcctPw] = useState({ current:'', next:'', confirm:'' });
   const [acctPwMsg, setAcctPwMsg] = useState(null);
   const [compVendorOpen, setCompVendorOpen] = useState(null); // vendor id whose offence checklist is expanded in Log Offences
   const [compTypeSel, setCompTypeSel] = useState([]); // offence types checked in that open checklist
+  const [staffIdDraft, setStaffIdDraft] = useState({}); // adminId -> draft value, for the Admin Roles panel's Staff ID field
 
-  // Keep the Account tab's name draft in sync when a different admin signs in
-  useEffect(() => { setAcctName(acting?.name || ''); }, [acting?.id]);
+  // Keep the Account tab's name/Staff ID drafts in sync when a different admin signs in
+  useEffect(() => { setAcctName(acting?.name || ''); setAcctStaffId(acting?.staffId || ''); }, [acting?.id]);
 
   // If the signed-in admin can't view the current tab, land on their first visible tab
   useEffect(() => {
@@ -2994,7 +2996,7 @@ export default function AdminDashboard() {
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap' }}>
                           <span style={{ fontSize:13.5, fontWeight:700, color:'var(--text-primary)' }}>{a.name}</span>
-                          <span style={{ fontSize:11, color:'var(--text-muted)' }}>{a.id}</span>
+                          <span style={{ fontSize:11, color:'var(--text-muted)' }}>{displayStaffId(a)}</span>
                           {a.role === 'super' ? (
                             <span style={{ fontSize:10, fontWeight:700, color:'#FAF8F5', background:'var(--text-primary)', borderRadius:999, padding:'2px 8px' }}>Super admin</span>
                           ) : a.mustReset ? (
@@ -3022,7 +3024,7 @@ export default function AdminDashboard() {
                               <div style={{ fontSize:11.5, fontWeight:600, color:'var(--text-primary)', marginBottom:6 }}>Transfer to</div>
                               <select value={transferTo} onChange={e=>{ setTransferTo(e.target.value); setTransferConfirm(''); }} style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:10, padding:'10px 12px', fontSize:13, color:'var(--text-primary)', outline:'none' }}>
                                 <option value="">Select an admin…</option>
-                                {staffAdmins.map(x => <option key={x.id} value={x.id}>{x.name} ({x.id})</option>)}
+                                {staffAdmins.map(x => <option key={x.id} value={x.id}>{x.name} ({displayStaffId(x)})</option>)}
                               </select>
                             </div>
                             {target && (
@@ -3040,6 +3042,25 @@ export default function AdminDashboard() {
                     )}
                     {isOpen && a.role !== 'super' && (
                       <div style={{ padding:'0 14px 16px' }}>
+                        {isSupabaseConfigured && (() => {
+                          const draft = staffIdDraft[a.id] ?? (a.staffId || '');
+                          const changed = draft.trim() !== (a.staffId || '');
+                          const save = async () => {
+                            try { await updateAdminStaffId(a.id, draft.trim() || null); }
+                            catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+                            dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === a.id ? { ...x, staffId: draft.trim() || null } : x) });
+                            showToast('Staff ID updated', 'check');
+                          };
+                          return (
+                            <div style={{ marginBottom:12 }}>
+                              <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--text-primary)', marginBottom:6 }}>Staff ID</label>
+                              <div style={{ display:'flex', gap:8 }}>
+                                <input value={draft} onChange={e=>setStaffIdDraft(s=>({ ...s, [a.id]: e.target.value }))} placeholder="e.g. SA-002" style={{ flex:1, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:9, padding:'8px 10px', fontSize:12.5, color:'var(--text-primary)', outline:'none' }}/>
+                                <button onClick={save} disabled={!changed} style={{ background: changed ? '#9A5B26' : 'var(--bg-subtle)', color: changed ? '#FAF8F5' : 'var(--text-muted)', border:'none', fontSize:12, fontWeight:600, borderRadius:9, padding:'8px 14px', cursor: changed ? 'pointer' : 'not-allowed' }}>Save</button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         <div style={{ display:'flex', alignItems:'center', gap:8, paddingTop:2 }}>
                           <span style={{ fontSize:11, fontWeight:700, color:'var(--text-primary)' }}>Tab access</span>
                           <div style={{ flex:1 }}/>
@@ -3104,6 +3125,17 @@ export default function AdminDashboard() {
           logActivity('Admin', `updated their profile name to "${acctName.trim()}".`, { icon:'pencil', tint:'var(--tint-pink-bg)' });
           showToast('Name updated', 'check');
         };
+        // Only a super admin's own session can actually write staff_id (the
+        // migration 0003 trigger silently reverts anyone else's attempt) — so
+        // this is only reachable/shown for a super admin editing themselves.
+        const staffIdChanged = isSupabaseConfigured && acctStaffId.trim() !== (me.staffId || '');
+        const saveStaffId = async () => {
+          try { await updateAdminStaffId(me.id, acctStaffId.trim() || null); }
+          catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+          dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === me.id ? { ...x, staffId: acctStaffId.trim() || null } : x) });
+          logActivity('Admin', `updated their Staff ID.`, { icon:'pencil', tint:'var(--tint-pink-bg)' });
+          showToast('Staff ID updated', 'check');
+        };
         // Supabase's updateUser() only needs the new password (you're already
         // authenticated) — there's no "current password" to check, unlike the
         // mock flow, so that field only renders in mock mode (see JSX below).
@@ -3152,7 +3184,7 @@ export default function AdminDashboard() {
               </label>
               <div>
                 <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>{me.name}</div>
-                <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>{me.role === 'super' ? 'Super admin' : 'Staff admin'} · Staff ID {me.id}</div>
+                <div style={{ fontSize:12.5, color:'var(--text-secondary)', marginTop:2 }}>{me.role === 'super' ? 'Super admin' : 'Staff admin'} · Staff ID {displayStaffId(me)}</div>
               </div>
             </div>
 
@@ -3164,10 +3196,31 @@ export default function AdminDashboard() {
               </div>
               <div style={{ marginTop:12 }}>
                 <div style={lbl}>Staff ID</div>
-                <input value={me.id} disabled style={{ ...inp, background:'var(--bg-subtle)', color:'var(--text-muted)', cursor:'not-allowed' }}/>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4, lineHeight:1.4 }}>Your Staff ID is your sign-in ID and can't be changed here.</div>
+                {isSupabaseConfigured ? (
+                  isSuperActing ? (
+                    <>
+                      <input value={acctStaffId} onChange={e=>setAcctStaffId(e.target.value)} placeholder="e.g. SA-001" style={inp}/>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4, lineHeight:1.4 }}>Your organization's own identifier — not used for sign-in (that's your email).</div>
+                    </>
+                  ) : (
+                    <>
+                      <input value={displayStaffId(me)} disabled style={{ ...inp, background:'var(--bg-subtle)', color:'var(--text-muted)', cursor:'not-allowed' }}/>
+                      <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4, lineHeight:1.4 }}>Assigned by a super admin — you can't change this yourself.</div>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <input value={me.id} disabled style={{ ...inp, background:'var(--bg-subtle)', color:'var(--text-muted)', cursor:'not-allowed' }}/>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4, lineHeight:1.4 }}>Your Staff ID is your sign-in ID and can't be changed here.</div>
+                  </>
+                )}
               </div>
-              <button onClick={saveName} disabled={!nameChanged} style={{ marginTop:14, background: nameChanged ? '#9A5B26' : 'var(--bg-subtle)', color: nameChanged ? '#FAF8F5' : 'var(--text-muted)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor: nameChanged ? 'pointer' : 'not-allowed' }}>Save name</button>
+              <div style={{ display:'flex', gap:9, marginTop:14 }}>
+                <button onClick={saveName} disabled={!nameChanged} style={{ background: nameChanged ? '#9A5B26' : 'var(--bg-subtle)', color: nameChanged ? '#FAF8F5' : 'var(--text-muted)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor: nameChanged ? 'pointer' : 'not-allowed' }}>Save name</button>
+                {isSupabaseConfigured && isSuperActing && (
+                  <button onClick={saveStaffId} disabled={!staffIdChanged} style={{ background: staffIdChanged ? '#9A5B26' : 'var(--bg-subtle)', color: staffIdChanged ? '#FAF8F5' : 'var(--text-muted)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor: staffIdChanged ? 'pointer' : 'not-allowed' }}>Save Staff ID</button>
+                )}
+              </div>
             </div>
 
             <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:16, padding:16 }}>
