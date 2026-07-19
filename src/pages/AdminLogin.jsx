@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from '../components/Icon';
+import PasswordInput from '../components/PasswordInput';
 import { useStore } from '../lib/store';
 import { DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -66,11 +67,11 @@ export default function AdminLogin() {
         <div style={{ marginTop:22, display:'flex', flexDirection:'column', gap:16 }}>
           <div>
             <div style={lbl}>New password</div>
-            <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="At least 6 characters" style={inp}/>
+            <PasswordInput value={newPass} onChange={e=>setNewPass(e.target.value)} placeholder="At least 6 characters" style={inp}/>
           </div>
           <div>
             <div style={lbl}>Confirm new password</div>
-            <input type="password" value={confirmPass} onChange={e=>setConfirmPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveNewPassword()} placeholder="Type it again" style={inp}/>
+            <PasswordInput value={confirmPass} onChange={e=>setConfirmPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&saveNewPassword()} placeholder="Type it again" style={inp}/>
           </div>
         </div>
         <button onClick={saveNewPassword} className="cta" style={{ marginTop:20, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Save & continue</button>
@@ -97,7 +98,7 @@ export default function AdminLogin() {
         </div>
         <div>
           <div style={lbl}>Password</div>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} placeholder="••••••••" style={inp}/>
+          <PasswordInput value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} placeholder="••••••••" style={inp}/>
         </div>
       </div>
       <button onClick={login} className="cta" style={{ marginTop:20, background:'#3A2210', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', width:'100%' }}>Sign in</button>

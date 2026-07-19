@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import Icon from '../components/Icon';
 import PhotoTile from '../components/PhotoTile';
+import PasswordInput from '../components/PasswordInput';
 import { useStore } from '../lib/store';
 import { fmtShort, tcTimestamp } from '../lib/helpers';
 import { fileToPhoto } from '../lib/photoFiles';
@@ -218,7 +219,7 @@ export default function VendorRegister() {
             <div className="span2"><label style={lbl}>Product description</label><textarea value={rf.desc} onChange={e=>upd('desc',e.target.value)} placeholder="What do you make and sell?" style={{ ...inp, minHeight:74, resize:'none' }} /></div>
             <div className="span2">
               <label style={lbl}>Create a password</label>
-              <input type="password" value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder="Create a password" style={inp} />
+              <PasswordInput value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder="Create a password" style={inp} />
               {isSupabaseConfigured ? (
                 <PasswordChecklist password={rf.password} />
               ) : (

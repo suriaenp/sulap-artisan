@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Icon from '../components/Icon';
+import PasswordInput from '../components/PasswordInput';
 import { useStore } from '../lib/store';
 import { DEMO_VENDOR_PASSWORD } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -101,7 +102,7 @@ export default function VendorLogin() {
             <div style={{ ...lbl, marginBottom:0 }}>Password</div>
             <span onClick={()=>setMode('forgot')} style={{ fontSize:12, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>Forgot password?</span>
           </div>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} placeholder="••••••••" style={inp} />
+          <PasswordInput value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} placeholder="••••••••" style={inp} />
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:11, padding:'11px 13px', fontSize:12, color:'#B7770D', lineHeight:1.4 }}>
           <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1, flexShrink:0 }} />

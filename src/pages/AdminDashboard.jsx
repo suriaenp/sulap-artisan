@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
 import VendorAvatar from '../components/VendorAvatar';
+import PasswordInput from '../components/PasswordInput';
 import MobileNavDrawer from '../components/MobileNavDrawer';
 import PortalHeader from '../components/PortalHeader';
 import PortalFooter from '../components/PortalFooter';
@@ -3256,17 +3257,17 @@ export default function AdminDashboard() {
               {!isSupabaseConfigured && (
                 <div style={{ marginTop:12 }}>
                   <div style={lbl}>Current password</div>
-                  <input type="password" value={acctPw.current} onChange={e=>{ setAcctPw(s=>({...s,current:e.target.value})); setAcctPwMsg(null); }} style={inp}/>
+                  <PasswordInput value={acctPw.current} onChange={e=>{ setAcctPw(s=>({...s,current:e.target.value})); setAcctPwMsg(null); }} style={inp}/>
                 </div>
               )}
               <div style={{ marginTop:12 }}>
                 <div style={lbl}>New password</div>
-                <input type="password" value={acctPw.next} onChange={e=>{ setAcctPw(s=>({...s,next:e.target.value})); setAcctPwMsg(null); }} style={inp}/>
+                <PasswordInput value={acctPw.next} onChange={e=>{ setAcctPw(s=>({...s,next:e.target.value})); setAcctPwMsg(null); }} style={inp}/>
                 {isSupabaseConfigured && <PasswordChecklist password={acctPw.next}/>}
               </div>
               <div style={{ marginTop:12 }}>
                 <div style={lbl}>Confirm new password</div>
-                <input type="password" value={acctPw.confirm} onChange={e=>{ setAcctPw(s=>({...s,confirm:e.target.value})); setAcctPwMsg(null); }} onKeyDown={e=>e.key==='Enter'&&savePw()} style={inp}/>
+                <PasswordInput value={acctPw.confirm} onChange={e=>{ setAcctPw(s=>({...s,confirm:e.target.value})); setAcctPwMsg(null); }} onKeyDown={e=>e.key==='Enter'&&savePw()} style={inp}/>
               </div>
               {acctPwMsg && (
                 <div style={{ marginTop:10, fontSize:12, fontWeight:600, color: acctPwMsg.type==='error' ? 'var(--tint-red-text)' : 'var(--tint-green-text)' }}>{acctPwMsg.text}</div>
