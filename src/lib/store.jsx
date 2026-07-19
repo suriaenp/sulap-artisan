@@ -9,6 +9,7 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendors';
 import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
+import { fetchAppsByVendorId } from './supaApps';
 
 function readTabOrder(key) {
   try {
@@ -141,6 +142,13 @@ function reducer(state, action) {
       return { ...state, events: [...byId.values()] };
     }
     case 'MERGE_APPS': return { ...state, apps: action.payload };
+    // Merges real applications in alongside the seeded demo ones (byId), same
+    // merge-not-replace pattern as events/vendors/admins.
+    case 'MERGE_APPS_FROM_SERVER': {
+      const byId = new Map(state.apps.map(a => [a.id, a]));
+      action.payload.forEach(a => byId.set(a.id, a));
+      return { ...state, apps: [...byId.values()] };
+    }
     case 'MERGE_PAYMENTS': return { ...state, payments: { ...state.payments, ...action.payload } };
     case 'MERGE_REFUNDS': return { ...state, refunds: { ...state.refunds, ...action.payload } };
     case 'MERGE_DEPOSITS': return { ...state, deposits: { ...state.deposits, ...action.payload } };
@@ -233,6 +241,12 @@ export function StoreProvider({ children }) {
         dispatch({ type: 'UPSERT_VENDOR', payload: vendor });
         if (vendor.status === 'approved') {
           dispatch({ type: 'SET', payload: { currentVendorId: vendor.id, view: 'vendor', vScreen: 'dashboard', vTab: 'events', page: 1 } });
+          // This vendor's real event applications (My Applications / Payments /
+          // Available Markets' "already applied" gate survive a refresh).
+          // Non-blocking: routing shouldn't wait on it.
+          fetchAppsByVendorId(vendor.id)
+            .then(list => { if (list.length) dispatch({ type: 'MERGE_APPS_FROM_SERVER', payload: list }); })
+            .catch(e => console.error('Applications fetch failed:', e));
         } else {
           const msg = vendor.status === 'pending'
             ? "Your application is still under review — we'll email you once you're approved"

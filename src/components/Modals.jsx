@@ -5,12 +5,13 @@ import PhotoTile from './PhotoTile';
 import VendorAvatar from './VendorAvatar';
 import { useStore } from '../lib/store';
 import { EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } from '../data/mockData';
-import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS } from '../lib/helpers';
+import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, splitPayKey } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorStatus } from '../lib/supaVendors';
 import { isRealEvent, updateEvent } from '../lib/supaEvents';
+import { insertApp } from '../lib/supaApps';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -526,13 +527,24 @@ export function ApplyModal() {
     ? vendors.filter(v => v.id !== currentVendorId && v.status === 'approved' && !applyPartners.includes(v.id) && v.business.toLowerCase().includes(applyPartnerSearch.toLowerCase()) && (v.category==='Food & Beverage')===isFnb).slice(0,5)
     : [];
 
-  const submit = () => {
+  const submit = async () => {
     if (applyShare === null) { showToast("Tell us if you'll share a booth",'info'); return; }
     if (applyShare && applyPartners.length === 0) { showToast('Add at least one booth partner','info'); return; }
     // `tier` snapshots the fee tier at apply time — payCalc prefers it over
     // the vendor's live category, so a later admin category edit can't
     // silently reprice this application (see helpers.js payCalc).
-    const newApp = { id:'a'+Date.now(), vendorId:currentVendorId, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners], appliedAt:new Date().toISOString(), tier: isFnb ? 'F&B' : 'Non-F&B' };
+    let newApp = { id:'a'+Date.now(), vendorId:currentVendorId, eventId:applyEventId, status:'pending', shared:!!applyShare, partners:[...applyPartners], appliedAt:new Date().toISOString(), tier: isFnb ? 'F&B' : 'Non-F&B' };
+    // A real vendor applying to a real event persists write-first — local
+    // state gets the row Supabase returns (UUID id + `remote` marker), so
+    // what's shown is exactly what saved. Any demo half (seeded vendor OR
+    // seeded event) keeps the old local-only behavior. The DB's partners
+    // column is uuid[], so only real partners' ids are stored — a demo
+    // partner on a real application stays a local-session artifact.
+    if (isSupabaseConfigured && me.userId && isRealEvent(ev)) {
+      const realPartners = applyPartners.filter(pid => vendors.find(v => v.id === pid)?.userId);
+      try { newApp = await insertApp({ vendorId: me.id, eventId: ev.id, shared: !!applyShare, partners: realPartners, tier: newApp.tier }); }
+      catch (e) { showToast("Couldn't submit — " + e.message, 'lock'); return; }
+    }
     dispatch({type:'MERGE_APPS',payload:[...apps,newApp]});
     set({showApplyModal:false,applyEventId:null});
     logActivity(me.business, `applied for ${ev.name}.`, {icon:'clipboard', tint:'#F3E4CC', type:'vendor'});
@@ -637,7 +649,7 @@ export function RefundModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
   const { refundModalKey, reff, vendors, events, payments } = state;
   if (!refundModalKey) return null;
-  const [vid, eid] = refundModalKey.split('-');
+  const [vid, eid] = splitPayKey(refundModalKey);
   const v = vendors.find(x=>x.id===vid)||{};
   const ev = events.find(x=>x.id===eid)||{};
   const rec = payments[refundModalKey]||{paid:0};
@@ -676,7 +688,7 @@ export function DocPreviewModal() {
   const { docPreview, payments, vendors, events, deposits, apps } = state;
   if (!docPreview) return null;
   const { payKey, field, editable } = docPreview;
-  const [vid, eid] = payKey.split('-');
+  const [vid, eid] = splitPayKey(payKey);
   const v = vendors.find(x=>x.id===vid)||{};
   const ev = events.find(x=>x.id===eid)||{};
   const rec = payments[payKey]||{};

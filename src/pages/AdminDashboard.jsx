@@ -22,6 +22,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId } from '../lib/supaAdmins';
 import { fetchAllVendors, updateVendorStatus } from '../lib/supaVendors';
 import { insertEvent } from '../lib/supaEvents';
+import { fetchAllApps, updateAppStatus, deleteApp } from '../lib/supaApps';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -210,6 +211,11 @@ export default function AdminDashboard() {
     fetchAllVendors()
       .then(list => dispatch({ type: 'MERGE_VENDORS_FROM_SERVER', payload: list }))
       .catch(e => console.error('Failed to load vendor list:', e));
+    // Real event applications, same gating: Event Applications/Payments/
+    // Dashboard need actual submissions merged in alongside the demo rows.
+    fetchAllApps()
+      .then(list => { if (list.length) dispatch({ type: 'MERGE_APPS_FROM_SERVER', payload: list }); })
+      .catch(e => console.error('Failed to load applications:', e));
   }, [acting?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -228,6 +234,25 @@ export default function AdminDashboard() {
       catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
     }
     dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===v.id?{...x,status}:x) });
+    then?.();
+  };
+  // Event-application counterparts of setVendorStatus — same write-then-
+  // reflect contract. Real applications carry `remote` (set by rowToApp, only
+  // on rows that round-tripped through Supabase); demo rows stay local-only.
+  const setAppStatus = async (a, status, then) => {
+    if (isSupabaseConfigured && a.remote) {
+      try { await updateAppStatus(a.id, status); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
+    dispatch({ type:'MERGE_APPS', payload: apps.map(x=>x.id===a.id?{...x,status}:x) });
+    then?.();
+  };
+  const removeApp = async (a, then) => {
+    if (isSupabaseConfigured && a.remote) {
+      try { await deleteApp(a.id); }
+      catch (e) { showToast("Couldn't remove — " + e.message, 'lock'); return; }
+    }
+    dispatch({ type:'MERGE_APPS', payload: apps.filter(x=>x.id!==a.id) });
     then?.();
   };
   const depRec = id => deposits[id]||{status:'unpaid',inv:'',payDate:'',refundDate:''};
@@ -1443,15 +1468,15 @@ export default function AdminDashboard() {
                                 <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', justifyContent:'flex-end' }}>
                                   <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
                                   {a.status==='approved' && (
-                                    <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }} style={{ background:'none', border:'none', color:'#B03A2E', fontSize:11, fontWeight:700, padding:'0 4px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Release</button>
+                                    <button onClick={()=>{ if (!window.confirm(`Release ${v.business} from this market? They'll be moved back to Event Applications as pending.`)) return; setAppStatus(a,'pending',()=>{ logActivity('Admin', `released ${v.business} from the approved roster for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor released — moved back to Event Applications','x'); }); }} style={{ background:'none', border:'none', color:'#B03A2E', fontSize:11, fontWeight:700, padding:'0 4px', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Release</button>
                                   )}
                                   {a.status==='shortlisted' && (onHold ? (
                                     <button onClick={()=>{ set({compOverrides:{...compOverrides, [`${a.vendorId}-${a.eventId}`]:true}}); logActivity('Admin', `overrode the compliance hold for ${v.business} — ${eById(a.eventId).name}.`, {icon:'shield', tint:'var(--tint-amber-bg)'}); showToast('Hold overridden — you can now approve this vendor','shield'); }} style={{ background:'var(--glass-input)', border:'1px solid rgba(214,152,66,0.35)', color:'#9A6A1E', fontSize:11.5, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Override hold</button>
                                   ) : (
-                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'approved'}:x)}); logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); }} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
+                                    <button onClick={()=>setAppStatus(a,'approved',()=>{ logActivity('Admin', `approved ${v.business}'s application for ${eById(a.eventId).name}.`, {icon:'check', tint:'var(--tint-pink-bg)'}); showToast('Application approved'+(settings.emailAlerts?' · vendor emailed':''),'check'); })} style={{ background:'rgba(90,145,110,0.16)', border:'none', color:'#3F7A54', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Approve</button>
                                   ))}
                                   {a.status==='shortlisted' && (
-                                    <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'pending'}:x)}); logActivity('Admin', `rejected ${v.business} from the shortlist for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor moved back to Event Applications','x'); }} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
+                                    <button onClick={()=>setAppStatus(a,'pending',()=>{ logActivity('Admin', `rejected ${v.business} from the shortlist for ${eById(a.eventId).name} — moved back to Event Applications.`, {icon:'x', tint:'var(--tint-red-bg)'}); showToast('Vendor moved back to Event Applications','x'); })} style={{ background:'rgba(196,74,74,0.1)', border:'none', color:'#B03A2E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Reject</button>
                                   )}
                                 </div>
                               </div>
@@ -1515,7 +1540,7 @@ export default function AdminDashboard() {
                     <div style={{ minWidth:0, overflow:'hidden' }}><span style={{ display:'inline-block', maxWidth:'100%', overflow:'hidden', textOverflow:'ellipsis', padding:'5px 12px', borderRadius:999, fontSize:11.5, fontWeight:700, background:'var(--glass-divider)', color:'#9A5B26', whiteSpace:'nowrap' }}>{v.category}</span></div>
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', gap:6 }}>
                       <IconBtn title="View & share booth" onClick={()=>set({appDetailId:a.id})}><Icon name="eye" size={14} color="#6B4E33"/></IconBtn>
-                      <button onClick={()=>{ dispatch({type:'MERGE_APPS',payload:apps.map(x=>x.id===a.id?{...x,status:'shortlisted'}:x)}); logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); }} style={{ background:'rgba(214,152,66,0.16)', border:'none', color:'#9A6A1E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Shortlist</button>
+                      <button onClick={()=>setAppStatus(a,'shortlisted',()=>{ logActivity('Admin', `shortlisted ${v.business} for ${eById(a.eventId).name}.`, {icon:'clipboard', tint:'var(--tint-amber-bg)'}); showToast('Vendor shortlisted','clipboard'); })} style={{ background:'rgba(214,152,66,0.16)', border:'none', color:'#9A6A1E', fontSize:12, fontWeight:700, borderRadius:9, padding:'8px 12px', cursor:'pointer' }}>Shortlist</button>
                     </div>
                   </div>
                   {holdOffs.length > 0 && (
@@ -1727,9 +1752,10 @@ export default function AdminDashboard() {
                       <button title="Send payment reminder" onClick={()=>showToast(`Reminder noted for ${v.business} (demo — real email arrives with Phase 2)`,'bell')} style={{ ...iconBtn('outline'), width:26, height:26 }}><Icon name="bell" size={12} color="#6B4E33"/></button>
                       <button title="Remove from event" onClick={()=>{
                         if (!window.confirm(`Remove ${v.business} from ${curEv.name}? Their approved slot is released and any recorded payment for this event stops being shown.`)) return;
-                        dispatch({type:'MERGE_APPS',payload:apps.filter(x=>x.id!==a.id)});
-                        logActivity('Admin', `removed ${v.business} from ${curEv.name} — slot released.`, {icon:'x', tint:'var(--tint-red-bg)'});
-                        showToast(`${v.business} removed — slot released`,'info');
+                        removeApp(a,()=>{
+                          logActivity('Admin', `removed ${v.business} from ${curEv.name} — slot released.`, {icon:'x', tint:'var(--tint-red-bg)'});
+                          showToast(`${v.business} removed — slot released`,'info');
+                        });
                       }} style={{ width:26, height:26, borderRadius:9, border:'1px solid rgba(196,74,74,0.3)', background:'rgba(196,74,74,0.1)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}><Icon name="trash" size={12} color="#B03A2E"/></button>
                     </div>
                   </div>

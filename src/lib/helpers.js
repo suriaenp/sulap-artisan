@@ -37,6 +37,18 @@ export function badge(status) {
   return { bg, color, label };
 }
 
+// Splits a `${vendorId}-${eventId}` payment/refund key back into its two ids.
+// A plain split('-') broke once real Supabase rows arrived — UUIDs contain
+// dashes — so a UUID vendor-id prefix is matched first; demo keys ('v2-e1')
+// keep the old first-dash behavior.
+const UUID_KEY_PREFIX = /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})-(.+)$/;
+export function splitPayKey(key) {
+  const m = UUID_KEY_PREFIX.exec(key || '');
+  if (m) return [m[1], m[2]];
+  const i = (key || '').indexOf('-');
+  return i === -1 ? [key, ''] : [key.slice(0, i), key.slice(i + 1)];
+}
+
 // `tierOverride` is the tier snapshotted on the application record at apply
 // time (see ApplyModal) — it wins over the vendor's *current* category so an
 // admin category edit can't retroactively reprice an existing application.

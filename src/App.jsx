@@ -4,7 +4,7 @@ import AuthLayout from './components/AuthLayout';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, DepositModal, RefundModal, DocPreviewModal, PassPhotoPreviewModal } from './components/Modals';
-import { payCalc, money } from './lib/helpers';
+import { payCalc, money, splitPayKey } from './lib/helpers';
 import PublicHome from './pages/PublicHome';
 import VendorLogin from './pages/VendorLogin';
 import VendorRegister from './pages/VendorRegister';
@@ -17,7 +17,7 @@ function PayModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
   const { payModalKey, payf, payments, vendors, events, deposits, apps } = state;
   if (!payModalKey) return null;
-  const [vid, eid] = payModalKey.split('-');
+  const [vid, eid] = splitPayKey(payModalKey);
   const v = vendors.find(x => x.id === vid) || {};
   const ev = events.find(x => x.id === eid) || {};
   const app = apps.find(a => a.vendorId === vid && a.eventId === eid);

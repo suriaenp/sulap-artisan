@@ -1,4 +1,4 @@
-import { payCalc, money, fmtShort } from './helpers';
+import { payCalc, money, fmtShort, splitPayKey } from './helpers';
 
 // ── text extraction ───────────────────────────────────────────────────────────
 // pdfjs and tesseract are loaded lazily so they don't bloat the initial bundle.
@@ -70,7 +70,7 @@ export async function scanPaymentDoc(doc) {
 
 export async function scanAndRecord(doc, payKey, field, ctx) {
   const { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who } = ctx;
-  const [vid, eid] = payKey.split('-');
+  const [vid, eid] = splitPayKey(payKey);
   const v = vendors.find(x => x.id === vid) || {};
   const ev = events.find(x => x.id === eid) || {};
   const app = (apps || []).find(a => a.vendorId === vid && a.eventId === eid);
