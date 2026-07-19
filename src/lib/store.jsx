@@ -1,10 +1,12 @@
-import { createContext, useContext, useReducer, useCallback, useRef } from 'react';
+import { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react';
 import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASS_APPS, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
   EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS, INITIAL_PROFILE_REQUESTS,
 } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from './supabase';
+import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendors';
 
 function readTabOrder(key) {
   try {
@@ -108,6 +110,14 @@ function reducer(state, action) {
     case 'SET': return { ...state, ...action.payload };
     case 'MERGE_EVENTS': return { ...state, events: action.payload };
     case 'MERGE_VENDORS': return { ...state, vendors: action.payload };
+    // Inserts or replaces a single vendor by id — reads current reducer state
+    // directly (not a stale closure), used by the Supabase session listener
+    // below where "current vendors" can't be captured at effect-mount time.
+    case 'UPSERT_VENDOR': {
+      const v = action.payload;
+      const exists = state.vendors.some(x => x.id === v.id);
+      return { ...state, vendors: exists ? state.vendors.map(x => x.id === v.id ? v : x) : [...state.vendors, v] };
+    }
     case 'MERGE_APPS': return { ...state, apps: action.payload };
     case 'MERGE_PAYMENTS': return { ...state, payments: { ...state.payments, ...action.payload } };
     case 'MERGE_REFUNDS': return { ...state, refunds: { ...state.refunds, ...action.payload } };
@@ -142,6 +152,43 @@ export function StoreProvider({ children }) {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => dispatch({ type: 'SET', payload: { toast: null } }), 2400);
   }, []);
+
+  // ── Supabase session sync ──
+  // Single place that reacts to "there's an authenticated Supabase session" —
+  // covers page-load session restore, the email-confirmation redirect landing,
+  // and interactive sign-in (VendorLogin just calls signInWithPassword and
+  // lets this listener finish the job, so the vendor-lookup + status-gate
+  // logic isn't duplicated in two places). TOKEN_REFRESHED/USER_UPDATED are
+  // explicitly ignored so a silently-refreshing token never re-triggers
+  // navigation or a repeated status toast for someone just browsing.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const routeVendorSession = async (session) => {
+      try {
+        let vendor = await fetchVendorByUserId(session.user.id);
+        if (!vendor) vendor = await completeRegistrationFromDraft(session);
+        if (!vendor) return; // confirmed session, but no vendor row/draft for it — leave the UI as-is
+        dispatch({ type: 'UPSERT_VENDOR', payload: vendor });
+        if (vendor.status === 'approved') {
+          dispatch({ type: 'SET', payload: { currentVendorId: vendor.id, view: 'vendor', vScreen: 'dashboard', vTab: 'events', page: 1 } });
+        } else {
+          const msg = vendor.status === 'pending'
+            ? "Your application is still under review — we'll email you once you're approved"
+            : vendor.status === 'rejected'
+            ? 'Your vendor application was not approved. Contact Sulap Artisan for details.'
+            : 'Your vendor account is suspended. Contact Sulap Artisan for details.';
+          showToast(msg, 'lock');
+          dispatch({ type: 'SET', payload: { view: 'vendor', vScreen: 'login' } });
+        }
+      } catch (e) { console.error('Vendor session sync failed:', e); }
+    };
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') { dispatch({ type: 'SET', payload: { currentVendorId: null } }); return; }
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') return;
+      if (session) routeVendorSession(session);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [showToast]);
 
   // ── Admin permissions (RBAC) ──
   // Super admins bypass everything. Staff perms map tabId → 'view' | 'edit';

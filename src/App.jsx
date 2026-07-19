@@ -2,6 +2,7 @@ import { StoreProvider, useStore } from './lib/store';
 import Sidebar from './components/Sidebar';
 import AuthLayout from './components/AuthLayout';
 import Toast from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, DepositModal, RefundModal, DocPreviewModal, PassPhotoPreviewModal } from './components/Modals';
 import { payCalc, money } from './lib/helpers';
 import PublicHome from './pages/PublicHome';
@@ -124,8 +125,10 @@ function AppShell() {
 
 export default function App() {
   return (
-    <StoreProvider>
-      <AppShell />
-    </StoreProvider>
+    <ErrorBoundary>
+      <StoreProvider>
+        <AppShell />
+      </StoreProvider>
+    </ErrorBoundary>
   );
 }

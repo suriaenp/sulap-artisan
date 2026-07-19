@@ -3,6 +3,7 @@ import { useStore } from '../lib/store';
 import { orderTabs } from '../lib/helpers';
 import { ADMIN_TABS } from '../pages/AdminDashboard';
 import { VENDOR_TABS } from '../pages/VendorDashboard';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export default function Sidebar() {
   const { state, set, closeModals, acting, canViewTab, showToast } = useStore();
@@ -17,7 +18,10 @@ export default function Sidebar() {
 
   const logout = () => {
     if (isAdmin) set({ aScreen: 'login', currentAdminId: null });
-    else if (isVendor) set({ vScreen: 'login', currentVendorId: null });
+    else if (isVendor) {
+      if (isSupabaseConfigured) supabase.auth.signOut();
+      set({ vScreen: 'login', currentVendorId: null });
+    }
     showToast('Signed out', 'leaf');
   };
 

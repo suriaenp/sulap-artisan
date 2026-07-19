@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '../components/Icon';
 import { useStore } from '../lib/store';
 import { DEMO_VENDOR_PASSWORD } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:13, padding:'14px 15px', fontSize:15, color:'#1C1A17', outline:'none' };
 const lbl = { fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:7 };
@@ -13,12 +14,21 @@ export default function VendorLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Real credential check against the vendor records (in-memory for Phase 1;
-  // Supabase Auth replaces this wholesale in Phase 2). Wrong email and wrong
-  // password share one generic message on purpose — no account enumeration.
-  // Status-specific messages only appear *after* credentials match, as the
-  // stand-in for the approval-email flow.
-  const login = () => {
+  // Wrong email and wrong password always share one generic message — no
+  // account enumeration. Status-specific messages only appear after
+  // credentials actually match.
+  const login = async () => {
+    if (isSupabaseConfigured) {
+      if (!email.trim() || !password) { showToast('Enter your email and password', 'info'); return; }
+      showToast('Signing you in…', 'clock');
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) showToast("Email or password doesn't match our records", 'lock');
+      // On success the store's global session listener (store.jsx) takes over:
+      // it fetches this vendor's row, applies the status gate below, and
+      // routes to the dashboard — so that logic lives in exactly one place.
+      return;
+    }
+    // Mock mode (no Supabase configured) — unchanged Phase 1 behavior.
     const me = state.vendors.find(v => (v.email || '').toLowerCase() === email.trim().toLowerCase());
     if (!me || (me.password || DEMO_VENDOR_PASSWORD) !== password) {
       showToast("Email or password doesn't match our records", 'lock');
@@ -95,8 +105,9 @@ export default function VendorLogin() {
         </div>
         <div style={{ display:'flex', gap:9, alignItems:'flex-start', background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:11, padding:'11px 13px', fontSize:12, color:'#B7770D', lineHeight:1.4 }}>
           <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1, flexShrink:0 }} />
-          {/* Demo-credential hint — dev builds only; production shows just the instruction. */}
-          <span>Use the email and password you registered with.{import.meta.env.DEV && <> Demo vendor: <b>aisyah@nutmegclay.my</b> / <b>{DEMO_VENDOR_PASSWORD}</b></>}</span>
+          {/* The demo-credential hint only makes sense in pure mock mode — once
+              Supabase is connected there's no seeded 'aisyah@...' auth user. */}
+          <span>Use the email and password you registered with.{!isSupabaseConfigured && <> Demo vendor: <b>aisyah@nutmegclay.my</b> / <b>{DEMO_VENDOR_PASSWORD}</b></>}</span>
         </div>
       </div>
       <button onClick={login} className="cta" style={{ marginTop:22, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(154,91,38,0.22)', width:'100%' }}>Sign in</button>

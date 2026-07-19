@@ -5,6 +5,17 @@ import { useStore } from '../lib/store';
 import { fmtShort, tcTimestamp } from '../lib/helpers';
 import { fileToPhoto } from '../lib/photoFiles';
 import { EMPTY_EINVOICE } from '../data/mockData';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { insertVendor, stashRegistrationDraft } from '../lib/supaVendors';
+
+const EMPTY_RF = { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[], logo:null };
+
+// Matches this project's live Supabase Auth password policy (confirmed via a
+// real signUp() call during the Phase 2b audit — the project requires all
+// four character classes, not just length). Checked client-side so a vendor
+// gets instant feedback instead of a late, technical error from the server.
+const PASSWORD_HINT = 'At least 8 characters, with uppercase, lowercase, a number, and a symbol';
+const isStrongPassword = (pw) => pw.length >= 8 && /[a-z]/.test(pw) && /[A-Z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
 
 const STEPS = ['', 'Business details', 'Contact & logistics', 'Product photos', 'Market terms'];
 const PROGRESS = ['', '25%', '50%', '75%', '100%'];
@@ -19,17 +30,63 @@ export default function VendorRegister() {
     if (regStep > 1) set({ regStep: regStep - 1 });
     else set({ vScreen: 'login' });
   };
-  const next = () => {
+  const next = async () => {
     if (regStep === 1) {
       if (!rf.business.trim() || !rf.owner.trim() || !rf.email.trim() || !rf.phone.trim()) { showToast('Please fill in all business details', 'info'); return; }
       if (!selectedCat) { showToast('Please select a product category', 'info'); return; }
-      if (!rf.password || rf.password.length < 8) { showToast('Password must be at least 8 characters', 'info'); return; }
+      if (isSupabaseConfigured ? !isStrongPassword(rf.password) : (!rf.password || rf.password.length < 8)) {
+        showToast(isSupabaseConfigured ? PASSWORD_HINT : 'Password must be at least 8 characters', 'info');
+        return;
+      }
     }
     if (regStep === 3 && rf.photos.length === 0) { showToast('Please upload at least one product photo', 'info'); return; }
     if (regStep < 4) { set({ regStep: regStep + 1 }); return; }
     if (!tcAccepted) { showToast('Please accept the market terms first', 'info'); return; }
 
     const cat = cats.find(c => c.id === selectedCat);
+
+    if (isSupabaseConfigured) {
+      showToast('Creating your account…', 'clock');
+      const { data, error } = await supabase.auth.signUp({
+        email: rf.email.trim(), password: rf.password,
+        options: { data: { name: rf.owner.trim() } },
+      });
+      if (error) {
+        const msg = /registered/i.test(error.message) ? 'An account with this email already exists — try signing in instead'
+          : /password/i.test(error.message) ? PASSWORD_HINT
+          : error.message;
+        showToast(msg, 'lock');
+        return;
+      }
+      const fields = {
+        email: rf.email.trim(), business: rf.business.trim(), owner: rf.owner.trim(),
+        category: cat ? cat.name : 'Others', phone: rf.phone.trim(),
+        ig: rf.ig.trim(), fb: rf.fb.trim(), tiktok: rf.tiktok.trim(),
+        plate: rf.plate.trim(), power: rf.power.trim() || 'None', desc: rf.desc.trim(),
+        regDate: fmtShort(new Date()), tcAcceptedAt: tcTimestamp(),
+      };
+      if (data.session) {
+        // Email confirmation is off (or already satisfied) — we have an active
+        // session right away, so the vendor row (with photos) can be created now.
+        try {
+          const created = await insertVendor(data.user.id, { ...fields, logo: rf.logo, productPhotos: rf.photos, docs: { ssm:null, halal:null, extra:[] }, einvoice: { ...EMPTY_EINVOICE } });
+          dispatch({ type: 'UPSERT_VENDOR', payload: created });
+          logActivity(created.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
+          set({ regStep: 5, regResult: 'pending', selectedCat: null, tcAccepted: false, tcScrolled: false, rf: EMPTY_RF });
+        } catch (e) {
+          showToast("Couldn't finish creating your vendor profile — " + e.message, 'lock');
+        }
+      } else {
+        // Confirmation required — the vendor row can't be created until an
+        // authenticated session exists (RLS), so it's created once they confirm
+        // (see store.jsx's session listener, which reads this stashed draft).
+        stashRegistrationDraft(fields);
+        set({ regStep: 5, regResult: 'check-email', selectedCat: null, tcAccepted: false, tcScrolled: false, rf: EMPTY_RF });
+      }
+      return;
+    }
+
+    // Mock mode (no Supabase configured) — unchanged Phase 1 behavior.
     const autoApproved = !!settings.autoApprove;
     const newVendor = {
       id: 'v' + Date.now(),
@@ -47,9 +104,6 @@ export default function VendorRegister() {
       logo: rf.logo,
       productPhotos: rf.photos,
       desc: rf.desc.trim(),
-      // The account password the vendor signs in with once approved (plain
-      // text in the Phase 1 prototype — Supabase Auth hashes this in Phase 2).
-      // Was previously collected by the form and then silently dropped.
       password: rf.password,
       docs: { ssm:null, halal:null, extra:[] },
       einvoice: { ...EMPTY_EINVOICE },
@@ -57,7 +111,7 @@ export default function VendorRegister() {
     dispatch({ type: 'MERGE_VENDORS', payload: [...vendors, newVendor] });
     logActivity(newVendor.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
     if (autoApproved) logActivity('Admin', `auto-approved ${newVendor.business} as a vendor.`, { icon: 'check', tint: '#F3E4CC' });
-    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[], logo:null } });
+    set({ regStep: 5, regResult: newVendor.status, selectedCat: null, tcAccepted: false, tcScrolled: false, rf: EMPTY_RF });
   };
 
   const handleTermsScroll = (e) => {
@@ -73,14 +127,19 @@ export default function VendorRegister() {
   };
 
   if (regStep === 5) {
+    const isCheckEmail = regResult === 'check-email';
     return (
       <div style={{ padding:'60px 26px', textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', minHeight:680, justifyContent:'center' }}>
-        <div style={{ width:84, height:84, borderRadius:'50%', background:'#E8F5F0', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <Icon name="check" size={42} color="#2D6A4F" />
+        <div style={{ width:84, height:84, borderRadius:'50%', background: isCheckEmail ? '#EAF4EE' : '#E8F5F0', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Icon name={isCheckEmail ? 'mail' : 'check'} size={42} color="#2D6A4F" />
         </div>
-        <div style={{ fontFamily:"'Marcellus',serif", fontSize:27, fontWeight:400, color:'#1C1A17', marginTop:24 }}>{regResult === 'approved' ? "You're in!" : "We've received your application"}</div>
+        <div style={{ fontFamily:"'Marcellus',serif", fontSize:27, fontWeight:400, color:'#1C1A17', marginTop:24 }}>
+          {isCheckEmail ? 'Confirm your email' : regResult === 'approved' ? "You're in!" : "We've received your application"}
+        </div>
         <div style={{ fontSize:14, color:'#6B6560', marginTop:10, lineHeight:1.55, maxWidth:290 }}>
-          {regResult === 'approved'
+          {isCheckEmail
+            ? "We've sent a confirmation link to your email. Click it to activate your account — your application goes to our team for review right after."
+            : regResult === 'approved'
             ? "Your vendor account has been auto-approved — you can sign in to the Vendor Portal right away to apply for markets."
             : "Thank you for applying to become a Sulap Artisan vendor. Our team will review your application — if you're selected, you'll receive a confirmation email with next steps."}
         </div>
@@ -159,8 +218,8 @@ export default function VendorRegister() {
             <div className="span2"><label style={lbl}>Product description</label><textarea value={rf.desc} onChange={e=>upd('desc',e.target.value)} placeholder="What do you make and sell?" style={{ ...inp, minHeight:74, resize:'none' }} /></div>
             <div className="span2">
               <label style={lbl}>Create a password</label>
-              <input type="password" value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder="Min. 8 characters" style={inp} />
-              <div style={{ fontSize:11, color:'#A09890', marginTop:6 }}>You'll use this to sign in to your portal later.</div>
+              <input type="password" value={rf.password} onChange={e=>upd('password',e.target.value)} placeholder={isSupabaseConfigured ? 'Min. 8 characters, mixed case + number + symbol' : 'Min. 8 characters'} style={inp} />
+              <div style={{ fontSize:11, color:'#A09890', marginTop:6 }}>{isSupabaseConfigured ? PASSWORD_HINT + ' — ' : ''}You'll use this to sign in to your portal later.</div>
             </div>
           </div>
         </div>

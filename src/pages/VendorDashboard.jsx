@@ -12,6 +12,7 @@ import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComple
 import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -114,7 +115,11 @@ export default function VendorDashboard() {
   const payRec = (key) => payments[key] || { status:'unpaid', paid:0, advice:false, invoice:false, receipt:false };
   const refundRec = (key) => refunds[key] || { status:'none' };
 
-  const logout = () => { set({ vScreen:'login', currentVendorId:null }); showToast('Signed out','leaf'); };
+  const logout = () => {
+    if (isSupabaseConfigured) supabase.auth.signOut();
+    set({ vScreen:'login', currentVendorId:null });
+    showToast('Signed out','leaf');
+  };
   const [drawerOpen, setDrawerOpen] = useState(false);
   const orderedTabs = orderTabs(VENDOR_TABS, state.vTabOrder);
   const activeTabLabel = VENDOR_TABS.find(t => t.id === vTab)?.label || 'Menu';
