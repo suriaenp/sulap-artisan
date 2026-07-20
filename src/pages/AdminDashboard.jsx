@@ -23,8 +23,9 @@ import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminNa
 import { fetchAllVendors, updateVendorStatus, updateVendorDetails, updateVendorEinvoice } from '../lib/supaVendors';
 import { insertEvent } from '../lib/supaEvents';
 import { fetchAllApps, updateAppStatus, deleteApp } from '../lib/supaApps';
-import { fetchAllPayments, fetchAllDeposits, savePaymentRecord } from '../lib/supaPayments';
+import { fetchAllPayments, fetchAllDeposits, savePaymentRecord, fetchAllRefunds, saveRefundRecord } from '../lib/supaPayments';
 import { fetchAllProfileRequests, updateProfileRequestStatus } from '../lib/supaProfileRequests';
+import { fetchAllActivity } from '../lib/supaActivity';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -234,6 +235,12 @@ export default function AdminDashboard() {
     fetchAllProfileRequests()
       .then(list => { if (list.length) dispatch({ type: 'MERGE_PROFILE_REQUESTS_FROM_SERVER', payload: list }); })
       .catch(e => console.error('Failed to load profile requests:', e));
+    fetchAllRefunds()
+      .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_REFUNDS', payload: map }); })
+      .catch(e => console.error('Failed to load refunds:', e));
+    fetchAllActivity()
+      .then(list => { if (list.length) dispatch({ type: 'MERGE_ACTIVITY_FROM_SERVER', payload: list }); })
+      .catch(e => console.error('Failed to load activity:', e));
   }, [acting?.id, aTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -880,7 +887,7 @@ export default function AdminDashboard() {
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
                   {activity.slice(0,6).map((act,i) => (
-                    <div key={i} className="dc-row-hover" style={{ display:'flex', alignItems:'flex-start', gap:11, padding:6 }}>
+                    <div key={act.id ?? i} className="dc-row-hover" style={{ display:'flex', alignItems:'flex-start', gap:11, padding:6 }}>
                       <div style={{ width:30, height:30, borderRadius:'50%', background:act.tint, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                         <Icon name={act.icon} size={13} color="#7A431A"/>
                       </div>
@@ -1800,7 +1807,7 @@ export default function AdminDashboard() {
                       {ref.status === 'completed' ? (
                         <>
                           <div style={{ fontSize:11.5, color:'#8a4a3e', marginTop:6 }}>Refund completed · Ref {ref.refCode} · {ref.date} {fmtTime(ref.time)}</div>
-                          <button onClick={()=>{ dispatch({type:'MERGE_REFUNDS',payload:{[payKey]:{...ref,status:'closed'}}}); logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'var(--tint-blue-bg)'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'var(--glass-input)', border:'1px solid rgba(196,74,74,0.3)', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
+                          <button onClick={async ()=>{ if (!await saveRefundRecord(payKey, {...ref,status:'closed'}, { vendors, events, dispatch, showToast })) return; logActivity('Admin', `closed the refund case for ${v.business}'s ${curEv.name} overpayment.`, {icon:'wallet', tint:'var(--tint-blue-bg)'}); showToast('Refund case closed','check'); }} style={{ marginTop:9, background:'var(--glass-input)', border:'1px solid rgba(196,74,74,0.3)', color:'#B03A2E', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Close case</button>
                         </>
                       ) : (
                         <button onClick={()=>set({refundModalKey:payKey,reff:{refCode:'',date:'',time:''}})} style={{ marginTop:9, background:'#B03A2E', color:'#fff', border:'none', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 11px', cursor:'pointer' }}>Arrange refund</button>
@@ -2421,7 +2428,7 @@ export default function AdminDashboard() {
               <div style={{ fontSize:13, color:'var(--text-muted)', textAlign:'center', padding:'20px 0' }}>No activity yet.</div>
             )}
             {activity.filter(a => actTab==='all' || a.type===actTab).map((a,i,arr) => (
-              <div key={i} style={{ display:'flex', gap:13 }}>
+              <div key={a.id ?? i} style={{ display:'flex', gap:13 }}>
                 <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
                   <div style={{ width:32, height:32, borderRadius:'50%', background:a.tint, display:'flex', alignItems:'center', justifyContent:'center' }}>
                     <Icon name={a.icon} size={15} color="#9A5B26"/>

@@ -12,7 +12,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorStatus, updateVendorDetails, updateVendorSocial, updateVendorEinvoice } from '../lib/supaVendors';
 import { isRealEvent, updateEvent } from '../lib/supaEvents';
 import { insertApp } from '../lib/supaApps';
-import { savePaymentRecord, saveDepositRecord } from '../lib/supaPayments';
+import { savePaymentRecord, saveDepositRecord, saveRefundRecord } from '../lib/supaPayments';
 import { updateProfileRequestStatus } from '../lib/supaProfileRequests';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
@@ -686,9 +686,10 @@ export function RefundModal() {
   const rec = payments[refundModalKey]||{paid:0};
   const close = () => set({refundModalKey:null});
   const upd = (k,val) => set({reff:{...reff,[k]:val}});
-  const save = () => {
+  const save = async () => {
     if (!reff.refCode || !reff.date || !reff.time) { showToast('Fill in reference code, date, and time first','info'); return; }
-    dispatch({type:'MERGE_REFUNDS',payload:{[refundModalKey]:{refCode:reff.refCode,date:reff.date,time:reff.time,status:'completed'}}});
+    const ok = await saveRefundRecord(refundModalKey, {refCode:reff.refCode,date:reff.date,time:reff.time,status:'completed'}, { vendors, events, dispatch, showToast });
+    if (!ok) return;
     logActivity('Admin', `marked ${v.business}'s refund for ${ev.name} as complete.`, {icon:'wallet', tint:'#EEF1FB'});
     showToast('Refund marked complete','check');
     close();

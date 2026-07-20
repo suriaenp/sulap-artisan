@@ -96,6 +96,62 @@ export async function upsertDeposit(vendorId, rec) {
   if (error) throw error;
 }
 
+// ── refunds ─────────────────────────────────────────────────────────────────
+// Same keying convention as payments (vendor_id+event_id), admin-write-only —
+// no vendor-side mutation exists in the app, only a read of their own row.
+
+function rowToRefundRec(row) {
+  return {
+    remote: true,
+    refCode: row.ref_code || '',
+    date: row.refund_date || '',
+    time: row.refund_time || '',
+    status: row.status,
+  };
+}
+
+const refundsToMap = (rows) => Object.fromEntries(
+  (rows || []).map(r => [`${r.vendor_id}-${r.event_id}`, rowToRefundRec(r)])
+);
+
+export async function fetchAllRefunds() {
+  const { data, error } = await supabase.from('refunds').select('*');
+  if (error) throw error;
+  return refundsToMap(data);
+}
+
+export async function fetchRefundsByVendorId(vendorId) {
+  const { data, error } = await supabase.from('refunds').select('*').eq('vendor_id', vendorId);
+  if (error) throw error;
+  return refundsToMap(data);
+}
+
+export async function upsertRefund(vendorId, eventId, rec) {
+  const { error } = await supabase.from('refunds').upsert({
+    vendor_id: vendorId,
+    event_id: eventId,
+    ref_code: rec.refCode || null,
+    refund_date: rec.date || null,       // date columns reject '' — null means unset
+    refund_time: rec.time || null,
+    status: rec.status || 'completed',
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'vendor_id,event_id' });
+  if (error) throw error;
+}
+
+export async function saveRefundRecord(payKey, rec, ctx) {
+  const { vendors, events, dispatch, showToast } = ctx;
+  const [vid, eid] = splitPayKey(payKey);
+  const v = vendors.find(x => x.id === vid);
+  const ev = events.find(x => x.id === eid);
+  if (isSupabaseConfigured && v?.userId && ev?.remote) {
+    try { await upsertRefund(vid, eid, rec); rec = { ...rec, remote: true }; }
+    catch (e) { showToast("Couldn't save the refund — " + e.message, 'lock'); return false; }
+  }
+  dispatch({ type: 'MERGE_REFUNDS', payload: { [payKey]: rec } });
+  return true;
+}
+
 // ── write-then-reflect persistence helpers ──────────────────────────────────
 // Payment mutations are spread across four files (PayModal in App.jsx, the
 // admin Payments tab, DocPreviewModal, payScan's auto-record), so the shared

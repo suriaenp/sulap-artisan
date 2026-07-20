@@ -10,8 +10,9 @@ import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendor
 import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
 import { fetchAppsByVendorId } from './supaApps';
-import { fetchPaymentsByVendorId, fetchDepositByVendorId } from './supaPayments';
+import { fetchPaymentsByVendorId, fetchDepositByVendorId, fetchRefundsByVendorId } from './supaPayments';
 import { fetchProfileRequestsByVendor } from './supaProfileRequests';
+import { insertActivity } from './supaActivity';
 
 function readTabOrder(key) {
   try {
@@ -190,6 +191,15 @@ function reducer(state, action) {
       return { ...state, admins: [...byId.values()] };
     }
     case 'LOG_ACTIVITY': return { ...state, activity: [action.payload, ...state.activity] };
+    // Replaces just the "remote" portion of the log with the freshest fetch
+    // (already sorted newest-first), keeping the seeded demo entries — which
+    // have no `remote` marker and no real timestamp to interleave against —
+    // appended after. Avoids duplicating the optimistic-free LOG_ACTIVITY
+    // entry logActivity() itself just dispatched once the insert resolved.
+    case 'MERGE_ACTIVITY_FROM_SERVER': {
+      const nonRemote = state.activity.filter(a => !a.remote);
+      return { ...state, activity: [...action.payload, ...nonRemote] };
+    }
     default: return state;
   }
 }
@@ -267,6 +277,11 @@ export function StoreProvider({ children }) {
           fetchDepositByVendorId(vendor.id)
             .then(map => { if (map) dispatch({ type: 'MERGE_DEPOSITS', payload: map }); })
             .catch(e => console.error('Deposit fetch failed:', e));
+          // Their own refund record(s), if an overpayment was ever arranged —
+          // so the Payments tab's refund-status banner survives a refresh.
+          fetchRefundsByVendorId(vendor.id)
+            .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_REFUNDS', payload: map }); })
+            .catch(e => console.error('Refunds fetch failed:', e));
           // Any pending "Vendor details"/E-Invoice-edit change request, so the
           // Profile tab's "pending admin review" banner survives a refresh.
           fetchProfileRequestsByVendor(vendor.id)
@@ -333,9 +348,20 @@ export function StoreProvider({ children }) {
     dispatch({ type: 'SET', payload });
   };
 
+  // Write-then-reflect, like every other real mutation — but every call site
+  // (dozens, across admin AND vendor code) calls this synchronously with no
+  // await, so instead of blocking we fire the insert and dispatch once it
+  // resolves with the server's real id; the log entry appears a beat later
+  // than the toast it usually accompanies, which is fine for an audit trail.
   const logActivity = (who, what, opts = {}) => {
     if (adminLocked) return; // a blocked action must not leave a log entry
     const { type = 'admin', icon = 'check', tint = '#F3E4CC' } = opts;
+    if (isSupabaseConfigured) {
+      insertActivity({ who, what, tint, icon, type })
+        .then(entry => dispatch({ type: 'LOG_ACTIVITY', payload: entry }))
+        .catch(e => console.error('Activity log failed:', e));
+      return;
+    }
     const when = 'Today ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     dispatch({ type: 'LOG_ACTIVITY', payload: { who, what, when, tint, icon, type } });
   };
