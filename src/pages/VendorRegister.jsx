@@ -4,7 +4,7 @@ import PhotoTile from '../components/PhotoTile';
 import PasswordInput from '../components/PasswordInput';
 import { useStore } from '../lib/store';
 import { fmtShort, tcTimestamp } from '../lib/helpers';
-import { fileToPhoto } from '../lib/photoFiles';
+import { fileToResizedPhoto } from '../lib/photoFiles';
 import { EMPTY_EINVOICE } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { insertVendor, stashRegistrationDraft } from '../lib/supaVendors';
@@ -65,12 +65,15 @@ export default function VendorRegister() {
         ig: rf.ig.trim(), fb: rf.fb.trim(), tiktok: rf.tiktok.trim(),
         plate: rf.plate.trim(), power: rf.power.trim() || 'None', desc: rf.desc.trim(),
         regDate: fmtShort(new Date()), tcAcceptedAt: tcTimestamp(),
+        // Resized (not full-res) — see fileToResizedPhoto — so this whole
+        // object fits comfortably in the localStorage draft below.
+        logo: rf.logo, productPhotos: rf.photos,
       };
       if (data.session) {
         // Email confirmation is off (or already satisfied) — we have an active
         // session right away, so the vendor row (with photos) can be created now.
         try {
-          const created = await insertVendor(data.user.id, { ...fields, logo: rf.logo, productPhotos: rf.photos, docs: { ssm:null, halal:null, extra:[] }, einvoice: { ...EMPTY_EINVOICE } });
+          const created = await insertVendor(data.user.id, { ...fields, docs: { ssm:null, halal:null, extra:[] }, einvoice: { ...EMPTY_EINVOICE } });
           dispatch({ type: 'UPSERT_VENDOR', payload: created });
           logActivity(created.business, 'submitted a vendor application.', { icon: 'pen', tint: '#FEF8EC', type: 'vendor' });
           set({ regStep: 5, regResult: 'pending', selectedCat: null, tcAccepted: false, tcScrolled: false, rf: EMPTY_RF });
@@ -175,7 +178,7 @@ export default function VendorRegister() {
               <input type="file" accept="image/*" style={{ display:'none' }} onChange={async e => {
                 const file = e.target.files[0]; e.target.value = '';
                 if (!file) return;
-                upd('logo', await fileToPhoto(file));
+                upd('logo', await fileToResizedPhoto(file, 400, 0.8));
               }}/>
               {rf.logo?.url ? (
                 <img src={rf.logo.url} alt="Business logo" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
@@ -266,7 +269,7 @@ export default function VendorRegister() {
               const files = [...e.target.files]; e.target.value = '';
               const room = 8 - rf.photos.length;
               if (files.length > room) showToast('Up to 8 photos — extra files were skipped','info');
-              const added = await Promise.all(files.slice(0, Math.max(room,0)).map(fileToPhoto));
+              const added = await Promise.all(files.slice(0, Math.max(room,0)).map(f => fileToResizedPhoto(f, 900, 0.75)));
               if (added.length) upd('photos', [...rf.photos, ...added]);
             }}/>
             <Icon name="camera" size={32} color="#9A5B26" />

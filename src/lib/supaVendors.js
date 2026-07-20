@@ -84,8 +84,10 @@ export async function insertVendor(userId, v) {
 // so the vendor row can't be inserted yet (RLS needs an authenticated
 // auth.uid()). We stash the form fields locally and create the row once a
 // confirmed session appears for this same email (see store.jsx's auth
-// listener). Deliberately excludes photos — base64 data URLs risk blowing
-// localStorage's quota; they're added afterward from the dashboard instead.
+// listener). Includes logo + product photos — VendorRegister.jsx resizes
+// both (fileToResizedPhoto) before they ever reach this draft, specifically
+// so the stashed JSON stays well under a browser's localStorage quota
+// (full-resolution camera photos would blow past it on their own).
 const DRAFT_KEY = 'sulap_pending_vendor_draft';
 
 export function stashRegistrationDraft(fields) {

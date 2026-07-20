@@ -29,6 +29,42 @@ export function fileToPhoto(file) {
   });
 }
 
+// Downscaled variant of fileToPhoto — same shape, but the data URL is a
+// resized JPEG instead of the raw file. Used only for vendor-registration
+// photos (logo + product photos), which must survive in a localStorage
+// draft across the email-confirmation gap (store.jsx completes the vendor
+// row once a confirmed session appears); full-resolution camera photos
+// routinely exceed a browser's few-MB per-origin localStorage quota on
+// their own, which used to mean registration photos were silently dropped.
+// Not used anywhere photos are uploaded directly against a live session
+// (Photos tab, docs, event photos, pass photos) since those go straight to
+// Supabase and have no such size constraint.
+export function fileToResizedPhoto(file, maxDim = 900, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale) || 1;
+        const h = Math.round(img.height * scale) || 1;
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve({
+          id: 'p' + Date.now() + Math.random().toString(36).slice(2, 7),
+          name: file.name,
+          url: canvas.toDataURL('image/jpeg', quality),
+        });
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export async function photoToBlob(photo) {
   if (photo.url) {
     const res = await fetch(photo.url);

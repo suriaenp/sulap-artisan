@@ -207,6 +207,9 @@ export default function AdminDashboard() {
   // actual registrations, not just the seeded demo vendors). Any confirmed
   // admin session can read every vendor row (RLS: is_admin()), not just super
   // — vendor visibility isn't a super-only concern the way admin management is.
+  // Re-runs on every tab switch (not just once at login) — otherwise a vendor
+  // applying/paying while the admin's session stays open never shows up until
+  // they log out and back in, which is exactly the friction this refetch avoids.
   useEffect(() => {
     if (!isSupabaseConfigured || !acting) return;
     fetchAllVendors()
@@ -226,7 +229,7 @@ export default function AdminDashboard() {
     fetchAllDeposits()
       .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_DEPOSITS', payload: map }); })
       .catch(e => console.error('Failed to load deposits:', e));
-  }, [acting?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [acting?.id, aTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
   const eById = id => events.find(e=>e.id===id)||{};
