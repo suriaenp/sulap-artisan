@@ -29,6 +29,7 @@ import { fetchAllActivity } from '../lib/supaActivity';
 import { updateContent } from '../lib/supaContent';
 import { fetchAllOffenses, fetchOffenseTypes, insertOffenseType, deleteOffenseType, insertOffense, updateOffensePhotos, deleteOffense } from '../lib/supaOffences';
 import { fetchAllParking, upsertParkingSerial } from '../lib/supaParking';
+import { fetchAllPassApps, decidePassPerson, updatePassBooth, grantExtraPassSlots } from '../lib/supaVendorPasses';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -253,6 +254,9 @@ export default function AdminDashboard() {
     fetchAllParking()
       .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PARKING', payload: map }); })
       .catch(e => console.error('Failed to load parking:', e));
+    fetchAllPassApps()
+      .then(list => { if (list.length) dispatch({ type: 'MERGE_PASS_APPS_FROM_SERVER', payload: list }); })
+      .catch(e => console.error('Failed to load vendor passes:', e));
   }, [acting?.id, aTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -2157,8 +2161,12 @@ export default function AdminDashboard() {
             const ev = events.find(e=>e.id===a.eventId) || {};
             const passApp = passApps.find(p=>p.vendorId===a.vendorId && p.eventId===a.eventId);
 
-            const decidePerson = (person, status, rejectReason=null) => {
-              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, people: p.people.map(pp=>pp.id===person.id ? { ...pp, status, rejectReason, decidedAt:fmtShort(new Date()) } : pp) } : p) });
+            const decidePerson = async (person, status, rejectReason=null) => {
+              if (isSupabaseConfigured && passApp.remote) {
+                try { await decidePassPerson(person.id, status, rejectReason); }
+                catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+              }
+              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, people: p.people.map(pp=>pp.id===person.id ? { ...pp, status, rejectReason, decidedAt: fmtShort(new Date()) } : pp) } : p) });
               logActivity('Admin', `${status==='approved'?'approved':'rejected'} ${person.name}'s Vendor Pass — ${v.business}, ${ev.name}.${status==='rejected' && rejectReason ? ` Reason: ${rejectReason}` : ''}`, { icon: status==='approved'?'check':'x', tint: status==='approved'?'var(--tint-green-bg)':'var(--tint-red-bg)' });
               showToast(`Pass ${status}`, status==='approved'?'check':'x');
               setRejectingPersonId(null); setRejectReasonKey(''); setRejectReasonOther('');
@@ -2168,12 +2176,21 @@ export default function AdminDashboard() {
               if (!reason) { showToast('Pick a reason (or describe one) first','info'); return; }
               decidePerson(person, 'rejected', reason);
             };
-            const updateBooth = (val) => {
+            const updateBooth = async (val) => {
+              if (isSupabaseConfigured && passApp.remote) {
+                try { await updatePassBooth(passApp.id, val); }
+                catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+              }
               dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, boothNumber:val } : p) });
             };
-            const confirmAddPass = () => {
+            const confirmAddPass = async () => {
               const count = Number(addPassCount) || 1;
-              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:(p.extraApproved||0)+count } : p) });
+              const nextExtra = (passApp.extraApproved||0)+count;
+              if (isSupabaseConfigured && passApp.remote) {
+                try { await grantExtraPassSlots(passApp.id, nextExtra); }
+                catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+              }
+              dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p=>p.id===passApp.id ? { ...p, extraApproved:nextExtra } : p) });
               logActivity('Admin', `granted ${v.business} ${count} additional Vendor Pass slot${count>1?'s':''} — ${ev.name}.`, { icon:'badge', tint:'var(--tint-green-bg)' });
               showToast(`${count} additional pass slot${count>1?'s':''} granted`,'check');
               setAddingPassFor(null); setAddPassCount(1);

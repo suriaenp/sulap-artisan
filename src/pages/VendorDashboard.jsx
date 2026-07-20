@@ -15,6 +15,7 @@ import { scanAndRecord, scanNotice } from '../lib/payScan';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial } from '../lib/supaVendors';
 import { insertProfileRequest } from '../lib/supaProfileRequests';
+import { insertPassApp, insertPassPerson, updatePassPerson, deletePassApp } from '../lib/supaVendorPasses';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -186,20 +187,32 @@ export default function VendorDashboard() {
     if (form.length >= PASS_SELF_SERVICE_MAX) return;
     setPassForms(f => ({ ...f, [eventId]: [...form, { name:'', photo:null }] }));
   };
-  const submitInitialApp = (eventId, ev) => {
+  const submitInitialApp = async (eventId, ev) => {
     const filled = getInitialForm(eventId).filter(p => p.name.trim() && p.photo);
     if (!filled.length) { showToast('Add at least one pass holder — name + photo required', 'info'); return; }
-    const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo, status:'pending', rejectReason:null, decidedAt:null }));
-    const rec = { id:'vp'+Date.now(), vendorId:myId, eventId, extraApproved:0, boothNumber:'', people, submittedAt: fmtShort(new Date()) };
+    let rec;
+    if (isSupabaseConfigured && me.userId && ev.remote) {
+      try { rec = await insertPassApp({ vendorId: myId, eventId, people: filled.map(p => ({ name: p.name.trim(), photo: p.photo })) }); }
+      catch (e) { showToast("Couldn't submit — " + e.message, 'lock'); return; }
+    } else {
+      const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo, status:'pending', rejectReason:null, decidedAt:null }));
+      rec = { id:'vp'+Date.now(), vendorId:myId, eventId, extraApproved:0, boothNumber:'', people, submittedAt: fmtShort(new Date()) };
+    }
     dispatch({ type:'MERGE_PASS_APPS', payload:[...passApps, rec] });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
     logActivity(me.business, `applied for a Vendor Pass — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Vendor Pass application submitted', 'badge');
   };
-  const submitExtraSlot = (passApp, ev) => {
+  const submitExtraSlot = async (passApp, ev) => {
     const draft = extraForms[passApp.id] || { name:'', photo:null };
     if (!draft.name.trim() || !draft.photo) { showToast('Name + photo required', 'info'); return; }
-    const person = { id:`vp${Date.now()}p${passApp.people.length}`, name:draft.name.trim(), photo:draft.photo, status:'pending', rejectReason:null, decidedAt:null };
+    let person;
+    if (isSupabaseConfigured && passApp.remote) {
+      try { person = await insertPassPerson(passApp.id, { name: draft.name.trim(), photo: draft.photo }); }
+      catch (e) { showToast("Couldn't submit — " + e.message, 'lock'); return; }
+    } else {
+      person = { id:`vp${Date.now()}p${passApp.people.length}`, name:draft.name.trim(), photo:draft.photo, status:'pending', rejectReason:null, decidedAt:null };
+    }
     dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people:[...p.people, person] } : p) });
     setExtraForms(f => ({ ...f, [passApp.id]: undefined }));
     logActivity(me.business, `added an additional Vendor Pass holder — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
@@ -210,8 +223,12 @@ export default function VendorDashboard() {
   // pass holders or their approval status.
   const startEditPerson = (person) => { setEditingPersonId(person.id); setPersonEditForm({ name:person.name, photo:person.photo }); };
   const cancelEditPerson = () => { setEditingPersonId(null); setPersonEditForm(null); };
-  const submitPersonEdit = (passApp, person, ev) => {
+  const submitPersonEdit = async (passApp, person, ev) => {
     if (!personEditForm.name.trim() || !personEditForm.photo) { showToast('Name + photo required', 'info'); return; }
+    if (isSupabaseConfigured && passApp.remote) {
+      try { await updatePassPerson(person.id, { name: personEditForm.name.trim(), photo: personEditForm.photo }); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
     dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people: p.people.map(pp => pp.id===person.id ? { ...pp, name:personEditForm.name.trim(), photo:personEditForm.photo, status:'pending', rejectReason:null, decidedAt:null } : pp) } : p) });
     cancelEditPerson();
     logActivity(me.business, `updated a Vendor Pass holder's details — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
@@ -220,8 +237,13 @@ export default function VendorDashboard() {
   // Testing helper — clears this vendor's Vendor Pass application for an event so the
   // whole apply → admin approve → digital pass flow can be walked through again from
   // scratch. Not a real business action; for trying out the flow only.
-  const resetMyPassForTesting = (eventId, ev) => {
+  const resetMyPassForTesting = async (eventId, ev) => {
     if (!window.confirm(`Reset your Vendor Pass for ${ev.name}? This clears your application so you can apply again from scratch (testing only).`)) return;
+    const passApp = passApps.find(p => p.vendorId === myId && p.eventId === eventId);
+    if (isSupabaseConfigured && passApp?.remote) {
+      try { await deletePassApp(passApp.id); }
+      catch (e) { showToast("Couldn't reset — " + e.message, 'lock'); return; }
+    }
     dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === myId && p.eventId === eventId)) });
     setPassForms(f => ({ ...f, [eventId]: undefined }));
     cancelEditPerson();

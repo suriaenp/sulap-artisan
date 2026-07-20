@@ -12,6 +12,7 @@ import { fetchAllEvents } from './supaEvents';
 import { fetchContent } from './supaContent';
 import { fetchOffenseTypes, fetchOffensesByVendorId } from './supaOffences';
 import { fetchParkingByVendorId } from './supaParking';
+import { fetchPassAppsByVendorId } from './supaVendorPasses';
 import { fetchAppsByVendorId } from './supaApps';
 import { fetchPaymentsByVendorId, fetchDepositByVendorId, fetchRefundsByVendorId } from './supaPayments';
 import { fetchProfileRequestsByVendor } from './supaProfileRequests';
@@ -168,6 +169,13 @@ function reducer(state, action) {
       return { ...state, offenses: [...byId.values()] };
     }
     case 'MERGE_PASS_APPS': return { ...state, passApps: action.payload };
+    // Merges real pass apps in alongside any local-session demo ones (byId),
+    // same merge-not-replace pattern as events/vendors/apps/offences.
+    case 'MERGE_PASS_APPS_FROM_SERVER': {
+      const byId = new Map(state.passApps.map(p => [p.id, p]));
+      action.payload.forEach(p => byId.set(p.id, p));
+      return { ...state, passApps: [...byId.values()] };
+    }
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
     case 'MERGE_PHOTO_DOWNLOADS': return { ...state, photoDownloads: { ...state.photoDownloads, ...action.payload } };
@@ -313,6 +321,10 @@ export function StoreProvider({ children }) {
           fetchParkingByVendorId(vendor.id)
             .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PARKING', payload: map }); })
             .catch(e => console.error('Parking fetch failed:', e));
+          // Their own Vendor Pass application(s), so it survives a refresh.
+          fetchPassAppsByVendorId(vendor.id)
+            .then(list => { if (list.length) dispatch({ type: 'MERGE_PASS_APPS_FROM_SERVER', payload: list }); })
+            .catch(e => console.error('Vendor pass fetch failed:', e));
           // Any pending "Vendor details"/E-Invoice-edit change request, so the
           // Profile tab's "pending admin review" banner survives a refresh.
           fetchProfileRequestsByVendor(vendor.id)
