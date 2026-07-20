@@ -50,6 +50,15 @@ export async function updateVendorStatus(id, status) {
   if (error) throw error;
 }
 
+// A vendor's own first-ever E-Invoice & bank details submission writes here
+// directly (no admin approval needed) — see einvoiceComplete()'s call site in
+// VendorDashboard.jsx. Allowed under the existing vendors_self_update RLS
+// policy (a vendor can update any field on their own row).
+export async function updateVendorEinvoice(id, einvoice) {
+  const { error } = await supabase.from('vendors').update({ einvoice }).eq('id', id);
+  if (error) throw error;
+}
+
 // `v` is any subset of the app-shape vendor fields (business, owner, category,
 // email, phone, ig/fb/tiktok, plate, power, desc, regDate, tcAcceptedAt, and
 // optionally logo/productPhotos/docs/einvoice). Always inserts as 'pending' —

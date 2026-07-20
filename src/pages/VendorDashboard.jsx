@@ -13,6 +13,7 @@ import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { updateVendorEinvoice } from '../lib/supaVendors';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -105,9 +106,20 @@ export default function VendorDashboard() {
   const [eiForm, setEiForm] = useState(null);
   const einvoiceReq = pendingReq('einvoice');
   const startEditEI = () => { setEiForm({ ...EMPTY_EINVOICE, ...(me.einvoice||{}) }); setEditingEI(true); };
-  const saveEI = () => {
+  // First-ever completion takes effect immediately — a vendor with nothing on
+  // file yet isn't "changing" anything, so there's nothing for admin to review.
+  // Only an edit to an already-complete E-Invoice goes through the request
+  // queue (submitRequest), since that IS a change to something already relied on.
+  const saveEI = async () => {
     if (EINVOICE_FIELDS.some(([k]) => !eiForm[k].trim())) { showToast('Please fill in every field (use "N/A" for SST if not registered)', 'info'); return; }
-    submitRequest('einvoice', eiForm);
+    if (einvoiceOk) { submitRequest('einvoice', eiForm); setEditingEI(false); return; }
+    if (isSupabaseConfigured && me.userId) {
+      try { await updateVendorEinvoice(me.id, eiForm); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, einvoice: eiForm } : v) });
+    logActivity(me.business, 'completed their E-Invoice & bank details.', { icon:'check', tint:'#E8F5F0', type:'vendor' });
+    showToast('E-Invoice & bank details saved — you can now apply to markets', 'check');
     setEditingEI(false);
   };
 
@@ -396,7 +408,7 @@ export default function VendorDashboard() {
               {!einvoiceOk && !editingEI && !einvoiceReq && (
                 <div style={{ display:'flex', gap:9, background:'#FEF8EC', border:'1px solid #f3e6c9', borderRadius:12, padding:'12px 13px', marginTop:13, fontSize:12, color:'#B7770D', lineHeight:1.45 }}>
                   <Icon name="info" size={15} color="#B7770D" style={{ marginTop:1 }} />
-                  Required before you can apply to any market. Please complete every field — enter "N/A" for SST if you're not SST-registered. Submitted details go to admin for review before they take effect.
+                  Required before you can apply to any market. Please complete every field — enter "N/A" for SST if you're not SST-registered. Saves immediately — no admin review needed for your first submission.
                 </div>
               )}
 
@@ -411,7 +423,7 @@ export default function VendorDashboard() {
                   ))}
                   <div style={{ display:'flex', gap:9, marginTop:2 }}>
                     <button onClick={()=>setEditingEI(false)} style={{ flex:1, background:'#F2EDE6', color:'var(--text-primary)', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Cancel</button>
-                    <button onClick={saveEI} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>Send request</button>
+                    <button onClick={saveEI} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13.5, fontWeight:600, borderRadius:12, padding:12, cursor:'pointer' }}>{einvoiceOk ? 'Send request' : 'Save details'}</button>
                   </div>
                 </div>
               ) : (
@@ -466,7 +478,12 @@ export default function VendorDashboard() {
                     onClick={() => {
                       if (applied) { showToast('You have already applied','info'); return; }
                       if (!vendorApproved) { showToast('Your vendor registration must be approved before you can apply to markets','lock'); return; }
-                      if (!einvoiceOk) { showToast('Please complete your E-Invoice & bank details in Profile before applying','lock'); return; }
+                      if (!einvoiceOk) {
+                        set({ vTab:'profile' });
+                        if (!einvoiceReq) startEditEI();
+                        showToast('Please complete your E-Invoice & bank details to apply','lock');
+                        return;
+                      }
                       if (!open)   { showToast('Applications closed for this market','lock'); return; }
                       set({ showApplyModal:true, applyEventId:ev.id, applyShare:null, applyPartners:[], applyPartnerSearch:'' });
                     }}
