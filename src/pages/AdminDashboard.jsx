@@ -20,10 +20,11 @@ import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId } from '../lib/supaAdmins';
-import { fetchAllVendors, updateVendorStatus } from '../lib/supaVendors';
+import { fetchAllVendors, updateVendorStatus, updateVendorDetails, updateVendorEinvoice } from '../lib/supaVendors';
 import { insertEvent } from '../lib/supaEvents';
 import { fetchAllApps, updateAppStatus, deleteApp } from '../lib/supaApps';
 import { fetchAllPayments, fetchAllDeposits, savePaymentRecord } from '../lib/supaPayments';
+import { fetchAllProfileRequests, updateProfileRequestStatus } from '../lib/supaProfileRequests';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -229,6 +230,10 @@ export default function AdminDashboard() {
     fetchAllDeposits()
       .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_DEPOSITS', payload: map }); })
       .catch(e => console.error('Failed to load deposits:', e));
+    // Real vendor-submitted "Vendor details"/E-Invoice-edit change requests.
+    fetchAllProfileRequests()
+      .then(list => { if (list.length) dispatch({ type: 'MERGE_PROFILE_REQUESTS_FROM_SERVER', payload: list }); })
+      .catch(e => console.error('Failed to load profile requests:', e));
   }, [acting?.id, aTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -1063,8 +1068,21 @@ export default function AdminDashboard() {
       {aTab === 'profileReq' && (() => {
         const pending = profileRequests.filter(r=>r.status==='pending');
         const decided = profileRequests.filter(r=>r.status!=='pending').sort((a,b)=>b.id.localeCompare(a.id));
-        const decide = (req, decision) => {
+        // A real request (submitted by a Supabase-backed vendor — see
+        // rowToRequest's `remote` marker) writes the decision to Supabase
+        // first, local state only updates on success; a demo request keeps
+        // the old local-only behavior unchanged.
+        const decide = async (req, decision) => {
           const v = vendors.find(x=>x.id===req.vendorId);
+          if (isSupabaseConfigured && req.remote) {
+            try {
+              if (decision === 'approved') {
+                if (req.section === 'einvoice') await updateVendorEinvoice(req.vendorId, req.changes);
+                else await updateVendorDetails(req.vendorId, req.changes);
+              }
+              await updateProfileRequestStatus(req.id, decision);
+            } catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+          }
           if (decision === 'approved') {
             const patch = req.section === 'einvoice' ? { einvoice: req.changes } : req.changes;
             dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===req.vendorId?{...x,...patch}:x) });

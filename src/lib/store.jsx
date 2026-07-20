@@ -11,6 +11,7 @@ import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
 import { fetchAppsByVendorId } from './supaApps';
 import { fetchPaymentsByVendorId, fetchDepositByVendorId } from './supaPayments';
+import { fetchProfileRequestsByVendor } from './supaProfileRequests';
 
 function readTabOrder(key) {
   try {
@@ -162,6 +163,15 @@ function reducer(state, action) {
     case 'MERGE_PAY_DOC_DOWNLOADS': return { ...state, payDocDownloads: { ...state.payDocDownloads, ...action.payload } };
     case 'MERGE_CATS': return { ...state, cats: action.payload };
     case 'MERGE_PROFILE_REQUESTS': return { ...state, profileRequests: action.payload };
+    // Merges real requests in alongside any local-session demo ones (byId),
+    // same merge-not-replace pattern as events/vendors/apps — unlike
+    // MERGE_PROFILE_REQUESTS above (a full replace, used when the caller
+    // already has the complete recomputed array in hand).
+    case 'MERGE_PROFILE_REQUESTS_FROM_SERVER': {
+      const byId = new Map(state.profileRequests.map(r => [r.id, r]));
+      action.payload.forEach(r => byId.set(r.id, r));
+      return { ...state, profileRequests: [...byId.values()] };
+    }
     case 'MERGE_ADMINS': return { ...state, admins: action.payload };
     // Insert-or-replace-by-id, same pattern as UPSERT_VENDOR — used when the
     // signed-in admin's own profile arrives from the session listener.
@@ -257,6 +267,11 @@ export function StoreProvider({ children }) {
           fetchDepositByVendorId(vendor.id)
             .then(map => { if (map) dispatch({ type: 'MERGE_DEPOSITS', payload: map }); })
             .catch(e => console.error('Deposit fetch failed:', e));
+          // Any pending "Vendor details"/E-Invoice-edit change request, so the
+          // Profile tab's "pending admin review" banner survives a refresh.
+          fetchProfileRequestsByVendor(vendor.id)
+            .then(list => { if (list.length) dispatch({ type: 'MERGE_PROFILE_REQUESTS_FROM_SERVER', payload: list }); })
+            .catch(e => console.error('Profile requests fetch failed:', e));
         } else {
           const msg = vendor.status === 'pending'
             ? "Your application is still under review — we'll email you once you're approved"

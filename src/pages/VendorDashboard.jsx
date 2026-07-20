@@ -13,7 +13,8 @@ import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { updateVendorEinvoice, updateVendorPhotos } from '../lib/supaVendors';
+import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial } from '../lib/supaVendors';
+import { insertProfileRequest } from '../lib/supaProfileRequests';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -73,10 +74,22 @@ export default function VendorDashboard() {
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
   const pendingReq = (section) => profileRequests.find(r => r.vendorId === myId && r.section === section && r.status === 'pending');
-  const submitRequest = (section, changes) => {
-    dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: [...profileRequests, { id:`pr-${Date.now()}`, vendorId:myId, section, changes, submittedAt: fmtShort(new Date()), status:'pending' }] });
+  // Real vendor: the request itself lands in Supabase first (so a different
+  // admin session can see it — see supaProfileRequests.js), local state only
+  // reflects it on success. Demo vendor: unchanged local-only behavior.
+  const submitRequest = async (section, changes) => {
+    let id = `pr-${Date.now()}`;
+    let submittedAt = fmtShort(new Date());
+    if (isSupabaseConfigured && me.userId) {
+      try {
+        const created = await insertProfileRequest({ vendorId: myId, section, changes });
+        id = created.id; submittedAt = created.submittedAt;
+      } catch (e) { showToast("Couldn't submit — " + e.message, 'lock'); return false; }
+    }
+    dispatch({ type:'MERGE_PROFILE_REQUESTS', payload: [...profileRequests, { id, vendorId:myId, section, changes, submittedAt, status:'pending' }] });
     logActivity(me.business, section === 'einvoice' ? 'submitted E-Invoice & bank details for admin review.' : 'requested changes to their vendor profile.', { icon:'pencil', tint:'#F2EDE6', type:'vendor' });
     showToast('Change request sent to admin', 'check');
+    return true;
   };
 
   // ── Vendor details (locked — request-based) ──
@@ -84,17 +97,21 @@ export default function VendorDashboard() {
   const [detailsForm, setDetailsForm] = useState(null);
   const detailsReq = pendingReq('details');
   const startEditDetails = () => { setDetailsForm({ business:me.business||'', owner:me.owner||'', category:me.category||'', email:me.email||'', phone:me.phone||'', plate:me.plate||'', desc:me.desc||'' }); setEditingDetails(true); };
-  const sendDetailsRequest = () => {
+  const sendDetailsRequest = async () => {
     if (!detailsForm.business.trim() || !detailsForm.owner.trim() || !detailsForm.email.trim() || !detailsForm.phone.trim()) { showToast('Please fill in all required fields', 'info'); return; }
-    submitRequest('details', detailsForm);
+    if (!await submitRequest('details', detailsForm)) return;
     setEditingDetails(false);
   };
 
-  // ── Social media & power supply (directly vendor-editable) ──
+  // ── Social media & power supply (directly vendor-editable, not request-gated) ──
   const [editingSocial, setEditingSocial] = useState(false);
   const [socialForm, setSocialForm] = useState(null);
   const startEditSocial = () => { setSocialForm({ ig:me.ig||'', fb:me.fb||'', tiktok:me.tiktok||'', power:me.power||'' }); setEditingSocial(true); };
-  const saveSocial = () => {
+  const saveSocial = async () => {
+    if (isSupabaseConfigured && me.userId) {
+      try { await updateVendorSocial(me.id, socialForm); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
     dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, ...socialForm } : v) });
     logActivity(me.business, 'updated their social media & power supply info.', { icon:'pencil', tint:'#F2EDE6', type:'vendor' });
     showToast('Updated', 'check');
@@ -112,7 +129,7 @@ export default function VendorDashboard() {
   // queue (submitRequest), since that IS a change to something already relied on.
   const saveEI = async () => {
     if (EINVOICE_FIELDS.some(([k]) => !eiForm[k].trim())) { showToast('Please fill in every field (use "N/A" for SST if not registered)', 'info'); return; }
-    if (einvoiceOk) { submitRequest('einvoice', eiForm); setEditingEI(false); return; }
+    if (einvoiceOk) { if (!await submitRequest('einvoice', eiForm)) return; setEditingEI(false); return; }
     if (isSupabaseConfigured && me.userId) {
       try { await updateVendorEinvoice(me.id, eiForm); }
       catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }

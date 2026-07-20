@@ -68,6 +68,31 @@ export async function updateVendorPhotos(id, productPhotos) {
   if (error) throw error;
 }
 
+// "Social media & power supply" (directly vendor-editable, no admin approval
+// — rule 17). Also used by admin's own direct edit (VendorDetailModal), which
+// bypasses the request queue entirely by design.
+export async function updateVendorSocial(id, { ig, fb, tiktok, power }) {
+  const { error } = await supabase.from('vendors').update({ ig, fb, tiktok, power }).eq('id', id);
+  if (error) throw error;
+}
+
+// "Vendor details" — used by admin's own direct edit (bypasses the request
+// queue) and by approving a vendor-submitted 'details' change request (both
+// apply the same patch shape). `patch` is any subset of the app-shape fields;
+// `desc` maps to the DB's `description` column, everything else is 1:1.
+export async function updateVendorDetails(id, patch) {
+  const dbPatch = {};
+  if ('business' in patch) dbPatch.business = patch.business;
+  if ('owner' in patch) dbPatch.owner = patch.owner;
+  if ('category' in patch) dbPatch.category = patch.category;
+  if ('email' in patch) dbPatch.email = patch.email;
+  if ('phone' in patch) dbPatch.phone = patch.phone;
+  if ('plate' in patch) dbPatch.plate = patch.plate;
+  if ('desc' in patch) dbPatch.description = patch.desc;
+  const { error } = await supabase.from('vendors').update(dbPatch).eq('id', id);
+  if (error) throw error;
+}
+
 // `v` is any subset of the app-shape vendor fields (business, owner, category,
 // email, phone, ig/fb/tiktok, plate, power, desc, regDate, tcAcceptedAt, and
 // optionally logo/productPhotos/docs/einvoice). Always inserts as 'pending' —

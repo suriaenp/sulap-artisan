@@ -9,10 +9,11 @@ import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_F
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { updateVendorStatus } from '../lib/supaVendors';
+import { updateVendorStatus, updateVendorDetails, updateVendorSocial, updateVendorEinvoice } from '../lib/supaVendors';
 import { isRealEvent, updateEvent } from '../lib/supaEvents';
 import { insertApp } from '../lib/supaApps';
 import { savePaymentRecord, saveDepositRecord } from '../lib/supaPayments';
+import { updateProfileRequestStatus } from '../lib/supaProfileRequests';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -104,8 +105,15 @@ export function VendorDetailModal() {
     then?.();
   };
 
+  // Admin's own edits bypass the request queue entirely (rule 17) — write-
+  // then-reflect for a real vendor, local-only for a demo one, same
+  // convention as setVendorStatus above.
   const startEditDetails = () => { setDetailsForm({ business:v.business||'', owner:v.owner||'', category:v.category||'', email:v.email||'', phone:v.phone||'', plate:v.plate||'', desc:v.desc||'' }); setEditingDetails(true); };
-  const saveDetails = () => {
+  const saveDetails = async () => {
+    if (isSupabaseConfigured && v.userId) {
+      try { await updateVendorDetails(v.id, detailsForm); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
     dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,...detailsForm}:x) });
     logActivity('Admin', `updated ${v.business}'s vendor details.`, {icon:'pencil', tint:'#F2EDE6'});
     showToast('Vendor details updated','check');
@@ -113,7 +121,11 @@ export function VendorDetailModal() {
   };
 
   const startEditSocials = () => { setSocialForm({ ig:v.ig||'', fb:v.fb||'', tiktok:v.tiktok||'', power:v.power||'' }); setEditingSocials(true); };
-  const saveSocials = () => {
+  const saveSocials = async () => {
+    if (isSupabaseConfigured && v.userId) {
+      try { await updateVendorSocial(v.id, socialForm); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
     dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,...socialForm}:x) });
     logActivity('Admin', `updated ${v.business}'s social media & power supply info.`, {icon:'pencil', tint:'#F2EDE6'});
     showToast('Updated','check');
@@ -121,7 +133,11 @@ export function VendorDetailModal() {
   };
 
   const startEditEI = () => { setEiForm({ ...EMPTY_EINVOICE, ...(v.einvoice||{}) }); setEditingEI(true); };
-  const saveEI = () => {
+  const saveEI = async () => {
+    if (isSupabaseConfigured && v.userId) {
+      try { await updateVendorEinvoice(v.id, eiForm); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
     dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===vendorDetailId?{...x,einvoice:eiForm}:x) });
     logActivity('Admin', `updated ${v.business}'s E-Invoice & bank details.`, {icon:'pencil', tint:'#F2EDE6'});
     showToast('E-Invoice details updated','check');
@@ -129,8 +145,20 @@ export function VendorDetailModal() {
   };
 
   const pendingReqs = profileRequests.filter(r => r.vendorId===vendorDetailId && r.status==='pending');
-  const decideRequest = (reqId, decision) => {
+  // Same write-then-reflect contract as AdminDashboard.jsx's Profile
+  // Requests tab decide() — duplicated across the two files since this is a
+  // separate component (same precedent as setVendorStatus above).
+  const decideRequest = async (reqId, decision) => {
     const req = profileRequests.find(r=>r.id===reqId);
+    if (isSupabaseConfigured && req.remote) {
+      try {
+        if (decision === 'approved') {
+          if (req.section === 'einvoice') await updateVendorEinvoice(req.vendorId, req.changes);
+          else await updateVendorDetails(req.vendorId, req.changes);
+        }
+        await updateProfileRequestStatus(req.id, decision);
+      } catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+    }
     if (decision === 'approved') {
       const patch = req.section === 'einvoice' ? { einvoice: req.changes } : req.changes;
       dispatch({ type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===req.vendorId?{...x,...patch}:x) });
