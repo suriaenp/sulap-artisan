@@ -68,6 +68,15 @@ export async function updateVendorPhotos(id, productPhotos) {
   if (error) throw error;
 }
 
+// Documents tab (directly vendor-editable, no admin approval — admin only
+// downloads/reviews, never uploads). `docs` files now live in the
+// `vendor-docs` Storage bucket (migration 0011); this just persists the
+// `{ssm, halal, extra[]}` reference object (each entry `{id,name,path,url}`).
+export async function updateVendorDocs(id, docs) {
+  const { error } = await supabase.from('vendors').update({ docs }).eq('id', id);
+  if (error) throw error;
+}
+
 // "Social media & power supply" (directly vendor-editable, no admin approval
 // — rule 17). Also used by admin's own direct edit (VendorDetailModal), which
 // bypasses the request queue entirely by design.

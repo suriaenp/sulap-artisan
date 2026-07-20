@@ -13,9 +13,10 @@ import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial } from '../lib/supaVendors';
+import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial, updateVendorDocs } from '../lib/supaVendors';
 import { insertProfileRequest } from '../lib/supaProfileRequests';
 import { insertPassApp, insertPassPerson, updatePassPerson, deletePassApp } from '../lib/supaVendorPasses';
+import { uploadPrivateFile, removePrivateFile } from '../lib/supaStorage';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -695,14 +696,32 @@ export default function VendorDashboard() {
           product photos; admin sees them via the vendor record too. */}
       {vTab === 'docs' && (() => {
         const docs = me.docs || { ssm:null, halal:null, extra:[] };
-        const setDocs = (patch) => dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, docs:{ ...docs, ...patch } } : v) });
+        // Write-then-reflect for a real vendor (files now live in the
+        // vendor-docs Storage bucket, migration 0011); local-only for a demo
+        // vendor. Returns whether local state should update — callers that
+        // also need to log activity/toast check this first.
+        const setDocs = async (patch) => {
+          const next = { ...docs, ...patch };
+          if (isSupabaseConfigured && me.userId) {
+            try { await updateVendorDocs(me.id, next); }
+            catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return false; }
+          }
+          dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, docs: next } : v) });
+          return true;
+        };
         const MAX_DOC_MB = 10;
         const pickDoc = (label, onFile) => async (e) => {
           const f = e.target.files[0]; e.target.value = '';
           if (!f) return;
           if (f.size > MAX_DOC_MB * 1024 * 1024) { showToast(`File is over ${MAX_DOC_MB}MB — please upload a smaller copy`, 'info'); return; }
-          const doc = await fileToPhoto(f);
-          onFile(doc);
+          let doc;
+          if (isSupabaseConfigured && me.userId) {
+            try { doc = await uploadPrivateFile('vendor-docs', me.userId, f); }
+            catch (e) { showToast("Couldn't upload — " + e.message, 'lock'); return; }
+          } else {
+            doc = await fileToPhoto(f);
+          }
+          if (!await onFile(doc)) return;
           logActivity(me.business, `uploaded a document — ${label}.`, { icon:'file', tint:'#E8F5F0', type:'vendor' });
           showToast(`${label} uploaded`, 'file');
         };
@@ -730,11 +749,19 @@ export default function VendorDashboard() {
         return (
           <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:11 }}>
             {docRow({ key:'ssm', icon:'file', title:'SSM Registration', optional:false, file:docs.ssm, onSet:(doc)=>setDocs({ ssm:doc }) })}
-            {docRow({ key:'halal', icon:'badge', title:'Halal / Food Cert', optional:true, file:docs.halal, onSet:(doc)=>setDocs({ halal:doc }), onRemove:()=>{ setDocs({ halal:null }); showToast('Document removed','x'); } })}
+            {docRow({ key:'halal', icon:'badge', title:'Halal / Food Cert', optional:true, file:docs.halal, onSet:(doc)=>setDocs({ halal:doc }), onRemove: async ()=>{
+              if (!await setDocs({ halal:null })) return;
+              if (isSupabaseConfigured) removePrivateFile('vendor-docs', docs.halal?.path);
+              showToast('Document removed','x');
+            } })}
             {(docs.extra||[]).map((d,i) => docRow({
               key:d.id, icon:'folder', title:d.name || `Document ${i+1}`, optional:true, file:d,
               onSet:(doc)=>setDocs({ extra: docs.extra.map(x=>x.id===d.id?doc:x) }),
-              onRemove:()=>{ setDocs({ extra: docs.extra.filter(x=>x.id!==d.id) }); showToast('Document removed','x'); },
+              onRemove: async ()=>{
+                if (!await setDocs({ extra: docs.extra.filter(x=>x.id!==d.id) })) return;
+                if (isSupabaseConfigured) removePrivateFile('vendor-docs', d.path);
+                showToast('Document removed','x');
+              },
             }))}
             <label style={{ border:'2px dashed #d8c6b2', borderRadius:16, background:'#FBF7F1', padding:24, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
               <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={pickDoc('Additional document', (doc)=>setDocs({ extra:[...(docs.extra||[]), doc] }))}/>
