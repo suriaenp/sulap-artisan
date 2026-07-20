@@ -26,6 +26,8 @@ import { fetchAllApps, updateAppStatus, deleteApp } from '../lib/supaApps';
 import { fetchAllPayments, fetchAllDeposits, savePaymentRecord, fetchAllRefunds, saveRefundRecord } from '../lib/supaPayments';
 import { fetchAllProfileRequests, updateProfileRequestStatus } from '../lib/supaProfileRequests';
 import { fetchAllActivity } from '../lib/supaActivity';
+import { updateContent } from '../lib/supaContent';
+import { fetchAllOffenses, fetchOffenseTypes, insertOffenseType, deleteOffenseType, insertOffense, updateOffensePhotos, deleteOffense } from '../lib/supaOffences';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -241,6 +243,12 @@ export default function AdminDashboard() {
     fetchAllActivity()
       .then(list => { if (list.length) dispatch({ type: 'MERGE_ACTIVITY_FROM_SERVER', payload: list }); })
       .catch(e => console.error('Failed to load activity:', e));
+    fetchAllOffenses()
+      .then(list => { if (list.length) dispatch({ type: 'MERGE_OFFENSES_FROM_SERVER', payload: list }); })
+      .catch(e => console.error('Failed to load offenses:', e));
+    fetchOffenseTypes()
+      .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...offenseTypes, ...types } } }); })
+      .catch(e => console.error('Failed to load offense types:', e));
   }, [acting?.id, aTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -2520,13 +2528,26 @@ export default function AdminDashboard() {
                         {vOff.map(o => {
                           const ot = offenseTypes[o.type]||{};
                           const oPhotos = o.photos||[];
-                          const updOffense = (patch) => dispatch({type:'MERGE_OFFENSES', payload: offenses.map(x=>x.id===o.id?{...x,...patch}:x)});
+                          const updOffense = async (patch) => {
+                            if (isSupabaseConfigured && o.remote) {
+                              try { await updateOffensePhotos(o.id, patch.photos); }
+                              catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+                            }
+                            dispatch({type:'MERGE_OFFENSES', payload: offenses.map(x=>x.id===o.id?{...x,...patch}:x)});
+                          };
                           return (
                             <div key={o.id} style={{ background:'rgba(154,91,38,0.06)', borderRadius:11, padding:'10px 11px' }}>
                               <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                                 <span style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', background:ot.bg, color:ot.color }}><span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}</span>
                                 <span style={{ fontSize:11.5, color:'var(--text-secondary)' }}>{eById(o.eventId).name || 'Unknown event'}</span>
-                                <button title="Remove this offence" onClick={()=>{ if(!window.confirm(`Remove this ${ot.label||'offence'} record for ${v.business}?`)) return; dispatch({type:'MERGE_OFFENSES', payload: offenses.filter(x=>x.id!==o.id)}); logActivity('Admin', `removed a ${ot.label||'offence'} record for ${v.business}.`, {icon:'shield', tint:'var(--bg-subtle)'}); showToast('Offence removed','x'); }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', padding:2, flexShrink:0 }}>
+                                <button title="Remove this offence" onClick={async ()=>{
+                                  if(!window.confirm(`Remove this ${ot.label||'offence'} record for ${v.business}?`)) return;
+                                  if (isSupabaseConfigured && o.remote) {
+                                    try { await deleteOffense(o.id); }
+                                    catch (e) { showToast("Couldn't remove — " + e.message, 'lock'); return; }
+                                  }
+                                  dispatch({type:'MERGE_OFFENSES', payload: offenses.filter(x=>x.id!==o.id)}); logActivity('Admin', `removed a ${ot.label||'offence'} record for ${v.business}.`, {icon:'shield', tint:'var(--bg-subtle)'}); showToast('Offence removed','x');
+                                }} style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', padding:2, flexShrink:0 }}>
                                   <Icon name="x" size={13} color="#8A6A4A"/>
                                 </button>
                               </div>
@@ -2581,12 +2602,18 @@ export default function AdminDashboard() {
               <div style={{ background:'var(--glass-card)', backdropFilter:'blur(24px)', WebkitBackdropFilter:'blur(24px)', border:'1px solid var(--glass-card-border)', borderRadius:24, padding:'22px 24px', boxShadow:'0 20px 50px rgba(58,34,16,0.12)' }}>
                 <div style={{ display:'flex', gap:9, marginBottom:12 }}>
                   <input value={newOffType} onChange={e=>set({newOffType:e.target.value})} placeholder="New offence type, e.g. Smoking in booth" style={{ flex:1, border:'1px solid var(--glass-chip-border)', background:'var(--glass-input)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
-                  <button onClick={()=>{
+                  <button onClick={async ()=>{
                     const n = newOffType.trim();
                     if (!n) return;
                     if (Object.values(offenseTypes).some(t=>t.label.toLowerCase()===n.toLowerCase())) { showToast('That offence type already exists','info'); return; }
                     const pal = OFFENSE_PALETTE[Object.keys(offenseTypes).length % OFFENSE_PALETTE.length];
-                    dispatch({type:'MERGE_OFFENSE_TYPES', payload:{ ...offenseTypes, ['ot'+Date.now()]: { label:n, color:pal.color, bg:pal.bg } }});
+                    const id = 'ot'+Date.now();
+                    const newType = { label:n, color:pal.color, bg:pal.bg };
+                    if (isSupabaseConfigured) {
+                      try { await insertOffenseType(id, newType); }
+                      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+                    }
+                    dispatch({type:'MERGE_OFFENSE_TYPES', payload:{ ...offenseTypes, [id]: newType }});
                     set({newOffType:''});
                     logActivity('Admin', `added the "${n}" offence type.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
                     showToast('Offence type added','shield');
@@ -2597,7 +2624,13 @@ export default function AdminDashboard() {
                     <span key={type} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:11.5, fontWeight:600, borderRadius:999, padding:'5px 6px 5px 11px', background:ot.bg, color:ot.color }}>
                       <span style={{ width:6, height:6, borderRadius:'50%', background:ot.color }}/>{ot.label}
                       {offenses.every(o=>o.type!==type) && (
-                        <button title="Remove this offence type" onClick={()=>{ const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x'); }} style={{ background:'rgba(0,0,0,0.08)', border:'none', width:16, height:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                        <button title="Remove this offence type" onClick={async ()=>{
+                          if (isSupabaseConfigured) {
+                            try { await deleteOffenseType(type); }
+                            catch (e) { showToast("Couldn't remove — " + e.message, 'lock'); return; }
+                          }
+                          const t={...offenseTypes}; delete t[type]; dispatch({type:'MERGE_OFFENSE_TYPES', payload:t}); showToast('Offence type removed','x');
+                        }} style={{ background:'rgba(0,0,0,0.08)', border:'none', width:16, height:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
                           <Icon name="x" size={9} color={ot.color}/>
                         </button>
                       )}
@@ -2669,10 +2702,16 @@ export default function AdminDashboard() {
                                   );
                                 })}
                               </div>
-                              <button disabled={!compTypeSel.length} onClick={()=>{
+                              <button disabled={!compTypeSel.length} onClick={async ()=>{
                                 if (!compTypeSel.length) return;
-                                let id = Date.now();
-                                const added = compTypeSel.map(type => ({ id:'o'+(id++), vendorId:v.id, eventId:filterEvent, type, photos:[] }));
+                                let added;
+                                if (isSupabaseConfigured && v.userId && curEv?.remote) {
+                                  try { added = await Promise.all(compTypeSel.map(type => insertOffense({ vendorId:v.id, eventId:filterEvent, type, photos:[] }))); }
+                                  catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+                                } else {
+                                  let id = Date.now();
+                                  added = compTypeSel.map(type => ({ id:'o'+(id++), vendorId:v.id, eventId:filterEvent, type, photos:[] }));
+                                }
                                 dispatch({type:'MERGE_OFFENSES', payload:[...offenses, ...added]});
                                 logActivity('Admin', `logged ${added.length} offence${added.length>1?'s':''} for ${v.business} — ${curEv.name}.`, {icon:'shield', tint:'var(--tint-pink-bg)'});
                                 showToast(`${added.length} offence${added.length>1?'s':''} logged for ${v.business}`,'shield');
@@ -2908,7 +2947,14 @@ export default function AdminDashboard() {
                 <RichTextEditor value={state.cf?.terms ?? content.terms} onChange={val=>set({cf:{...(state.cf||content),terms:val}})} minHeight={240}/>
               </div>
             </div>
-            <button onClick={()=>{ set({content:{...content,...state.cf},cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check'); }} className="cta" style={{ marginTop:16, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
+            <button onClick={async ()=>{
+              const next = {...content,...state.cf};
+              if (isSupabaseConfigured) {
+                try { await updateContent(next); }
+                catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+              }
+              set({content:next,cf:null}); logActivity('Admin', 'updated the homepage content.', {icon:'pen', tint:'var(--tint-pink-bg)'}); showToast('Content updated','check');
+            }} className="cta" style={{ marginTop:16, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14.5, fontWeight:600, borderRadius:12, padding:14, cursor:'pointer' }}>Save changes</button>
           </div>
         </div>
       )}

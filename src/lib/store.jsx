@@ -9,6 +9,8 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendors';
 import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
+import { fetchContent } from './supaContent';
+import { fetchOffenseTypes, fetchOffensesByVendorId } from './supaOffences';
 import { fetchAppsByVendorId } from './supaApps';
 import { fetchPaymentsByVendorId, fetchDepositByVendorId, fetchRefundsByVendorId } from './supaPayments';
 import { fetchProfileRequestsByVendor } from './supaProfileRequests';
@@ -157,6 +159,13 @@ function reducer(state, action) {
     case 'MERGE_DEPOSITS': return { ...state, deposits: { ...state.deposits, ...action.payload } };
     case 'MERGE_OFFENSES': return { ...state, offenses: action.payload };
     case 'MERGE_OFFENSE_TYPES': return { ...state, offenseTypes: action.payload };
+    // Merges real offences in alongside any local-session demo ones (byId),
+    // same merge-not-replace pattern as events/vendors/apps.
+    case 'MERGE_OFFENSES_FROM_SERVER': {
+      const byId = new Map(state.offenses.map(o => [o.id, o]));
+      action.payload.forEach(o => byId.set(o.id, o));
+      return { ...state, offenses: [...byId.values()] };
+    }
     case 'MERGE_PASS_APPS': return { ...state, passApps: action.payload };
     case 'MERGE_PARKING': return { ...state, parking: { ...state.parking, ...action.payload } };
     case 'MERGE_PHOTOS': return { ...state, eventPhotos: { ...state.eventPhotos, ...action.payload } };
@@ -230,7 +239,20 @@ export function StoreProvider({ children }) {
     fetchAllEvents()
       .then(evs => { if (evs.length) dispatch({ type: 'MERGE_EVENTS_FROM_SERVER', payload: evs }); })
       .catch(e => console.error('Events fetch failed:', e));
-  }, []);
+    // Site content is public-read too, same reasoning — but only overrides
+    // the local INITIAL_CONTENT defaults once an admin has actually saved
+    // something (fetchContent returns null for an empty/missing row), so a
+    // fresh Supabase project's public home page never renders blank.
+    fetchContent()
+      .then(data => { if (data) dispatch({ type: 'SET', payload: { content: data } }); })
+      .catch(e => console.error('Content fetch failed:', e));
+    // Offense types are also public-read (a vendor's own Compliance tab needs
+    // the labels/colors); merges the DB's dictionary over the mock defaults
+    // it was seeded from, plus any types an admin has since added.
+    fetchOffenseTypes()
+      .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...state.offenseTypes, ...types } } }); })
+      .catch(e => console.error('Offense types fetch failed:', e));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-once fetch; including state.offenseTypes would refetch every time this same effect updates it
 
   // ── Supabase session sync ──
   // Single place that reacts to "there's an authenticated Supabase session" —
@@ -282,6 +304,10 @@ export function StoreProvider({ children }) {
           fetchRefundsByVendorId(vendor.id)
             .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_REFUNDS', payload: map }); })
             .catch(e => console.error('Refunds fetch failed:', e));
+          // Their own compliance record (Compliance tab), so it survives a refresh.
+          fetchOffensesByVendorId(vendor.id)
+            .then(list => { if (list.length) dispatch({ type: 'MERGE_OFFENSES_FROM_SERVER', payload: list }); })
+            .catch(e => console.error('Offenses fetch failed:', e));
           // Any pending "Vendor details"/E-Invoice-edit change request, so the
           // Profile tab's "pending admin review" banner survives a refresh.
           fetchProfileRequestsByVendor(vendor.id)
