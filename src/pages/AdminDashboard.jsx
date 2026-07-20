@@ -28,6 +28,7 @@ import { fetchAllProfileRequests, updateProfileRequestStatus } from '../lib/supa
 import { fetchAllActivity } from '../lib/supaActivity';
 import { updateContent } from '../lib/supaContent';
 import { fetchAllOffenses, fetchOffenseTypes, insertOffenseType, deleteOffenseType, insertOffense, updateOffensePhotos, deleteOffense } from '../lib/supaOffences';
+import { fetchAllParking, upsertParkingSerial } from '../lib/supaParking';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -249,6 +250,9 @@ export default function AdminDashboard() {
     fetchOffenseTypes()
       .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...offenseTypes, ...types } } }); })
       .catch(e => console.error('Failed to load offense types:', e));
+    fetchAllParking()
+      .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PARKING', payload: map }); })
+      .catch(e => console.error('Failed to load parking:', e));
   }, [acting?.id, aTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const vById = id => vendors.find(v=>v.id===id)||{};
@@ -1955,7 +1959,7 @@ export default function AdminDashboard() {
             {pagedPark.map((a,idx) => {
               const v = vById(a.vendorId);
               const cells = Array.from({length:ev.days||1},(_,i)=>({
-                dayLabel:`Day ${i+1}`, key:`${a.vendorId}-${ev.id}-${i+1}`,
+                dayLabel:`Day ${i+1}`, key:`${a.vendorId}-${ev.id}-${i+1}`, dayIndex:i+1,
                 value: parking[`${a.vendorId}-${ev.id}-${i+1}`]||'',
               }));
               return (
@@ -1974,7 +1978,11 @@ export default function AdminDashboard() {
                     {cells.map(c => (
                       <div key={c.key} style={{ flex:1, minWidth:70 }}>
                         <div style={{ fontSize:10, color:'var(--text-muted)', marginBottom:4, textAlign:'center' }}>{c.dayLabel}</div>
-                        <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} placeholder="—" style={{ width:'100%', border:'1px solid var(--glass-chip-border)', background:editable?'var(--glass-input)':'rgba(154,91,38,0.06)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:700, textAlign:'center', outline:'none', color:'var(--text-primary)', cursor:editable?'text':'not-allowed' }}/>
+                        <input value={c.value} disabled={!editable} onChange={e=>{ const p={...parking}; p[c.key]=e.target.value; dispatch({type:'MERGE_PARKING',payload:p}); }} onBlur={async e=>{
+                          if (!isSupabaseConfigured || !v.userId || !ev.remote) return;
+                          try { await upsertParkingSerial(a.vendorId, ev.id, c.dayIndex, e.target.value); }
+                          catch (err) { showToast("Couldn't save — " + err.message, 'lock'); }
+                        }} placeholder="—" style={{ width:'100%', border:'1px solid var(--glass-chip-border)', background:editable?'var(--glass-input)':'rgba(154,91,38,0.06)', borderRadius:9, padding:'9px 8px', fontSize:13, fontWeight:700, textAlign:'center', outline:'none', color:'var(--text-primary)', cursor:editable?'text':'not-allowed' }}/>
                       </div>
                     ))}
                   </div>

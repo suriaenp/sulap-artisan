@@ -11,6 +11,7 @@ import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
 import { fetchContent } from './supaContent';
 import { fetchOffenseTypes, fetchOffensesByVendorId } from './supaOffences';
+import { fetchParkingByVendorId } from './supaParking';
 import { fetchAppsByVendorId } from './supaApps';
 import { fetchPaymentsByVendorId, fetchDepositByVendorId, fetchRefundsByVendorId } from './supaPayments';
 import { fetchProfileRequestsByVendor } from './supaProfileRequests';
@@ -308,6 +309,10 @@ export function StoreProvider({ children }) {
           fetchOffensesByVendorId(vendor.id)
             .then(list => { if (list.length) dispatch({ type: 'MERGE_OFFENSES_FROM_SERVER', payload: list }); })
             .catch(e => console.error('Offenses fetch failed:', e));
+          // Their own assigned parking serials (Parking tab), per event day.
+          fetchParkingByVendorId(vendor.id)
+            .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PARKING', payload: map }); })
+            .catch(e => console.error('Parking fetch failed:', e));
           // Any pending "Vendor details"/E-Invoice-edit change request, so the
           // Profile tab's "pending admin review" banner survives a refresh.
           fetchProfileRequestsByVendor(vendor.id)
