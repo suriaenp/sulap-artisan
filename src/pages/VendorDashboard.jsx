@@ -13,7 +13,7 @@ import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { updateVendorEinvoice } from '../lib/supaVendors';
+import { updateVendorEinvoice, updateVendorPhotos } from '../lib/supaVendors';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -121,6 +121,19 @@ export default function VendorDashboard() {
     logActivity(me.business, 'completed their E-Invoice & bank details.', { icon:'check', tint:'#E8F5F0', type:'vendor' });
     showToast('E-Invoice & bank details saved — you can now apply to markets', 'check');
     setEditingEI(false);
+  };
+
+  // ── Product photos (directly vendor-editable, not request-gated) ──
+  // Shared by both the add and remove handlers below — write-then-reflect
+  // for a real vendor, local-only dispatch for a demo one, same convention
+  // as every other real/demo branch in this file.
+  const saveProductPhotos = async (next) => {
+    if (isSupabaseConfigured && me.userId) {
+      try { await updateVendorPhotos(me.id, next); }
+      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return false; }
+    }
+    dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, productPhotos: next } : v) });
+    return true;
   };
 
   const depRec = (id) => deposits[id] || { status:'unpaid', inv:'', payDate:'', refundDate:'' };
@@ -548,9 +561,9 @@ export default function VendorDashboard() {
             <div style={{ fontSize:12.5, color:'var(--text-secondary)', lineHeight:1.5, marginTop:7 }}>These photos represent your brand across every market you apply to. When you update them here, the Sulap team automatically sees your latest set.</div>
             <div style={{ display:'flex', flexWrap:'wrap', gap:9, marginTop:14 }}>
               {(me.productPhotos||[]).map(ph => (
-                <PhotoTile key={ph.id} photo={ph} size={90} onRemove={()=>{
+                <PhotoTile key={ph.id} photo={ph} size={90} onRemove={async ()=>{
                   const next = (me.productPhotos||[]).filter(x=>x.id!==ph.id);
-                  dispatch({type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===me.id?{...x,productPhotos:next}:x)});
+                  if (!await saveProductPhotos(next)) return;
                   logActivity(me.business, 'removed a product photo.', {icon:'image', tint:'#F3E4CC', type:'vendor'});
                   showToast('Photo removed','image');
                 }}/>
@@ -564,7 +577,7 @@ export default function VendorDashboard() {
                   if (files.length > room) showToast('Up to 8 photos — extra files were skipped','info');
                   const added = await Promise.all(files.slice(0, room).map(fileToPhoto));
                   if (!added.length) return;
-                  dispatch({type:'MERGE_VENDORS', payload: vendors.map(x=>x.id===me.id?{...x,productPhotos:[...cur,...added]}:x)});
+                  if (!await saveProductPhotos([...cur,...added])) return;
                   logActivity(me.business, `uploaded ${added.length} new product photo(s).`, {icon:'image', tint:'#F3E4CC', type:'vendor'});
                   showToast(`${added.length} photo(s) uploaded`,'check');
                 }}/>

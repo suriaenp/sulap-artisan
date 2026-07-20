@@ -59,6 +59,15 @@ export async function updateVendorEinvoice(id, einvoice) {
   if (error) throw error;
 }
 
+// Product Photos tab (directly vendor-editable, no admin approval) — same
+// RLS as above. Product photos aren't request-gated (rule 17 only covers
+// "Vendor details" and E-Invoice), so both add and remove write straight
+// through.
+export async function updateVendorPhotos(id, productPhotos) {
+  const { error } = await supabase.from('vendors').update({ product_photos: productPhotos }).eq('id', id);
+  if (error) throw error;
+}
+
 // `v` is any subset of the app-shape vendor fields (business, owner, category,
 // email, phone, ig/fb/tiktok, plate, power, desc, regDate, tcAcceptedAt, and
 // optionally logo/productPhotos/docs/einvoice). Always inserts as 'pending' —
