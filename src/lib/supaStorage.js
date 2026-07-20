@@ -31,6 +31,19 @@ export async function uploadPrivateFile(bucket, ownerAuthUid, file) {
   return { id: 'f' + Date.now() + Math.random().toString(36).slice(2, 7), name: file.name, path, url: data.signedUrl };
 }
 
+// For flows where the file was already read into a local preview object via
+// fileToPhoto() (a data: URL) before the point where it's actually persisted
+// — Vendor Pass photos are picked at form-fill time but only uploaded at
+// submit time. Re-encodes the same bytes losslessly (fetch().blob() on a
+// data: URL is exact, no quality loss) rather than restructuring the picker
+// to hold onto the raw File across that gap.
+export async function uploadPrivatePhoto(bucket, ownerAuthUid, photo) {
+  const res = await fetch(photo.url);
+  const blob = await res.blob();
+  const file = new File([blob], photo.name, { type: blob.type });
+  return uploadPrivateFile(bucket, ownerAuthUid, file);
+}
+
 // Best-effort — a failed delete here shouldn't block the caller's own
 // mutation (the DB record is the source of truth for what's "current";
 // an orphaned Storage object is wasted space, not a correctness problem).

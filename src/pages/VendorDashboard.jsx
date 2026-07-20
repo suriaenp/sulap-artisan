@@ -16,7 +16,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial, updateVendorDocs } from '../lib/supaVendors';
 import { insertProfileRequest } from '../lib/supaProfileRequests';
 import { insertPassApp, insertPassPerson, updatePassPerson, deletePassApp } from '../lib/supaVendorPasses';
-import { uploadPrivateFile, removePrivateFile } from '../lib/supaStorage';
+import { uploadPrivateFile, removePrivateFile, uploadPrivatePhoto } from '../lib/supaStorage';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
 // Vendor Pass photo field (initial application, extra slot, single-person edit).
@@ -193,7 +193,10 @@ export default function VendorDashboard() {
     if (!filled.length) { showToast('Add at least one pass holder — name + photo required', 'info'); return; }
     let rec;
     if (isSupabaseConfigured && me.userId && ev.remote) {
-      try { rec = await insertPassApp({ vendorId: myId, eventId, people: filled.map(p => ({ name: p.name.trim(), photo: p.photo })) }); }
+      let people;
+      try { people = await Promise.all(filled.map(async p => ({ name: p.name.trim(), photo: await uploadPrivatePhoto('pass-photos', me.userId, p.photo) }))); }
+      catch (e) { showToast("Couldn't upload photos — " + e.message, 'lock'); return; }
+      try { rec = await insertPassApp({ vendorId: myId, eventId, people }); }
       catch (e) { showToast("Couldn't submit — " + e.message, 'lock'); return; }
     } else {
       const people = filled.map((p,i) => ({ id:`vp${Date.now()}p${i}`, name:p.name.trim(), photo:p.photo, status:'pending', rejectReason:null, decidedAt:null }));
@@ -209,7 +212,10 @@ export default function VendorDashboard() {
     if (!draft.name.trim() || !draft.photo) { showToast('Name + photo required', 'info'); return; }
     let person;
     if (isSupabaseConfigured && passApp.remote) {
-      try { person = await insertPassPerson(passApp.id, { name: draft.name.trim(), photo: draft.photo }); }
+      let photo;
+      try { photo = await uploadPrivatePhoto('pass-photos', me.userId, draft.photo); }
+      catch (e) { showToast("Couldn't upload photo — " + e.message, 'lock'); return; }
+      try { person = await insertPassPerson(passApp.id, { name: draft.name.trim(), photo }); }
       catch (e) { showToast("Couldn't submit — " + e.message, 'lock'); return; }
     } else {
       person = { id:`vp${Date.now()}p${passApp.people.length}`, name:draft.name.trim(), photo:draft.photo, status:'pending', rejectReason:null, decidedAt:null };
@@ -226,11 +232,14 @@ export default function VendorDashboard() {
   const cancelEditPerson = () => { setEditingPersonId(null); setPersonEditForm(null); };
   const submitPersonEdit = async (passApp, person, ev) => {
     if (!personEditForm.name.trim() || !personEditForm.photo) { showToast('Name + photo required', 'info'); return; }
+    let finalPhoto = personEditForm.photo;
     if (isSupabaseConfigured && passApp.remote) {
-      try { await updatePassPerson(person.id, { name: personEditForm.name.trim(), photo: personEditForm.photo }); }
+      try { finalPhoto = await uploadPrivatePhoto('pass-photos', me.userId, personEditForm.photo); }
+      catch (e) { showToast("Couldn't upload photo — " + e.message, 'lock'); return; }
+      try { await updatePassPerson(person.id, { name: personEditForm.name.trim(), photo: finalPhoto }); }
       catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
     }
-    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people: p.people.map(pp => pp.id===person.id ? { ...pp, name:personEditForm.name.trim(), photo:personEditForm.photo, status:'pending', rejectReason:null, decidedAt:null } : pp) } : p) });
+    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.map(p => p.id===passApp.id ? { ...p, people: p.people.map(pp => pp.id===person.id ? { ...pp, name:personEditForm.name.trim(), photo:finalPhoto, status:'pending', rejectReason:null, decidedAt:null } : pp) } : p) });
     cancelEditPerson();
     logActivity(me.business, `updated a Vendor Pass holder's details — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Updated — resubmitted for admin review', 'badge');
