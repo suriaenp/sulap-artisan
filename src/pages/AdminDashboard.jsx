@@ -30,6 +30,7 @@ import { updateContent } from '../lib/supaContent';
 import { fetchAllOffenses, fetchOffenseTypes, insertOffenseType, deleteOffenseType, insertOffense, updateOffensePhotos, deleteOffense } from '../lib/supaOffences';
 import { fetchAllParking, upsertParkingSerial } from '../lib/supaParking';
 import { fetchAllPassApps, decidePassPerson, updatePassBooth, grantExtraPassSlots } from '../lib/supaVendorPasses';
+import { uploadPrivateFile } from '../lib/supaStorage';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -486,7 +487,14 @@ export default function AdminDashboard() {
       const vid = nameMap[folder.toLowerCase().trim()];
       if (!vid) { unmatched.add(folder || f.name); continue; }
       if (matched.has(vid)) continue; // one document per vendor — first file wins
-      const doc = await fileToPhoto(f);
+      const targetVendor = vById(vid);
+      let doc;
+      if (isSupabaseConfigured && targetVendor.userId && curEv?.remote) {
+        try { doc = await uploadPrivateFile('payment-files', targetVendor.userId, f); }
+        catch { continue; } // skip this vendor on upload failure — not counted as matched
+      } else {
+        doc = await fileToPhoto(f);
+      }
       const key = `${vid}-${filterEvent}`;
       // Persisted (and counted) one vendor at a time — a real pair that the
       // server rejects shows its toast and simply isn't counted as matched.
@@ -1786,7 +1794,13 @@ export default function AdminDashboard() {
                             <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={async e=>{
                               const file = e.target.files[0]; e.target.value='';
                               if (!file) return;
-                              const uploaded = await fileToPhoto(file);
+                              let uploaded;
+                              if (isSupabaseConfigured && v.userId && curEv?.remote) {
+                                try { uploaded = await uploadPrivateFile('payment-files', v.userId, file); }
+                                catch (err) { showToast("Couldn't upload — " + err.message, 'lock'); return; }
+                              } else {
+                                uploaded = await fileToPhoto(file);
+                              }
                               if (!await savePaymentRecord(payKey, { ...rec, [doc.key]: uploaded }, { vendors, events, dispatch, showToast })) return;
                               logActivity('Admin', `uploaded the ${doc.label.toLowerCase()} for ${v.business} — ${curEv.name}.`, {icon:'file', tint:'var(--tint-green-bg)'});
                               showToast(`${doc.label} uploaded`,'file');

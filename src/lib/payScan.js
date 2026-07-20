@@ -4,14 +4,23 @@ import { savePaymentRecord, saveDepositRecord } from './supaPayments';
 // ── text extraction ───────────────────────────────────────────────────────────
 // pdfjs and tesseract are loaded lazily so they don't bloat the initial bundle.
 
-async function pdfToText(dataUrl) {
+// Accepts either a data: URL (demo/mock mode, still base64-encoded locally)
+// or a real Storage URL (a real vendor's advice, now uploaded to the
+// payment-files bucket) — pdfjs can fetch a remote URL directly, so only the
+// data: URL path needs the manual atob() byte conversion.
+async function pdfToText(url) {
   const pdfjs = await import('pdfjs-dist');
   const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
-  const bin = atob(dataUrl.split(',')[1]);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  const doc = await pdfjs.getDocument({ data: bytes }).promise;
+  let doc;
+  if (url.startsWith('data:')) {
+    const bin = atob(url.split(',')[1]);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    doc = await pdfjs.getDocument({ data: bytes }).promise;
+  } else {
+    doc = await pdfjs.getDocument({ url }).promise;
+  }
   let text = '';
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
@@ -21,9 +30,11 @@ async function pdfToText(dataUrl) {
   return text;
 }
 
-async function imageToText(dataUrl) {
+// Tesseract.recognize() already accepts either a data: URL or a remote URL
+// natively — no branching needed here.
+async function imageToText(url) {
   const { default: Tesseract } = await import('tesseract.js');
-  const { data } = await Tesseract.recognize(dataUrl, 'eng');
+  const { data } = await Tesseract.recognize(url, 'eng');
   return data.text || '';
 }
 
@@ -55,9 +66,14 @@ export function pickAmount(text) {
 export async function scanPaymentDoc(doc) {
   try {
     if (!doc?.url) return { amount: null };
+    // Storage-backed uploads are a real https URL, not a data: URL, so type
+    // detection falls back to the file's extension (doc.name) for those —
+    // the data: prefix checks still cover demo/mock-mode uploads unchanged.
+    const isPdf = doc.url.startsWith('data:application/pdf') || /\.pdf$/i.test(doc.name || '');
+    const isImage = doc.url.startsWith('data:image') || /\.(jpe?g|png|gif|webp|bmp|heic)$/i.test(doc.name || '');
     let text = '';
-    if (doc.url.startsWith('data:application/pdf')) text = await pdfToText(doc.url);
-    else if (doc.url.startsWith('data:image')) text = await imageToText(doc.url);
+    if (isPdf) text = await pdfToText(doc.url);
+    else if (isImage) text = await imageToText(doc.url);
     else return { amount: null };
     return { amount: pickAmount(text) };
   } catch {

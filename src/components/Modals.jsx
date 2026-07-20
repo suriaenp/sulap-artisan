@@ -14,6 +14,7 @@ import { isRealEvent, updateEvent } from '../lib/supaEvents';
 import { insertApp } from '../lib/supaApps';
 import { savePaymentRecord, saveDepositRecord, saveRefundRecord } from '../lib/supaPayments';
 import { updateProfileRequestStatus } from '../lib/supaProfileRequests';
+import { uploadPrivateFile, removePrivateFile } from '../lib/supaStorage';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -728,13 +729,21 @@ export function DocPreviewModal() {
   const close = () => set({ docPreview:null });
   if (!file) return null;
   const label = DOC_LABELS[field]||'Document';
-  const isPdf = (file.url||'').startsWith('data:application/pdf');
+  // Storage-backed files are a real https URL, not a data: URL — fall back
+  // to the file's extension for those (same detection payScan.js uses).
+  const isPdf = (file.url||'').startsWith('data:application/pdf') || /\.pdf$/i.test(file.name||'');
   const scan = field.startsWith('advice') ? rec.scans?.[field] : null;
 
   const onReplace = async (e) => {
     const f = e.target.files[0]; e.target.value='';
     if (!f) return;
-    const doc = await fileToPhoto(f);
+    let doc;
+    if (isSupabaseConfigured && v.userId && ev.remote) {
+      try { doc = await uploadPrivateFile('payment-files', v.userId, f); }
+      catch (err) { showToast("Couldn't upload — " + err.message, 'lock'); return; }
+    } else {
+      doc = await fileToPhoto(f);
+    }
     if (field.startsWith('advice')) {
       showToast('Scanning for the paid amount…','search');
       await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who:v.business });
@@ -749,6 +758,7 @@ export function DocPreviewModal() {
     if (!window.confirm(`Remove this ${label.toLowerCase()}?`)) return;
     const scans = { ...(rec.scans||{}) }; delete scans[field];
     if (!await savePaymentRecord(payKey, { ...rec, [field]: null, scans }, { vendors, events, dispatch, showToast })) return;
+    if (isSupabaseConfigured && file.path) removePrivateFile('payment-files', file.path);
     showToast(`${label} removed`,'x');
     close();
   };

@@ -811,7 +811,13 @@ export default function VendorDashboard() {
             const uploadAdvice = async (field, e) => {
               const f = e.target.files[0]; e.target.value = '';
               if (!f) return;
-              const doc = await fileToPhoto(f);
+              let doc;
+              if (isSupabaseConfigured && me.userId && ev.remote) {
+                try { doc = await uploadPrivateFile('payment-files', me.userId, f); }
+                catch (err) { showToast("Couldn't upload — " + err.message, 'lock'); return; }
+              } else {
+                doc = await fileToPhoto(f);
+              }
               showToast('Scanning your payment advice for the amount…','search');
               await scanAndRecord(doc, payKey, field, { payments, vendors, events, deposits, apps, dispatch, showToast, logActivity, who: me.business });
             };
