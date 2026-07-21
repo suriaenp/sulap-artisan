@@ -423,9 +423,15 @@ export function StoreProvider({ children }) {
   // await, so instead of blocking we fire the insert and dispatch once it
   // resolves with the server's real id; the log entry appears a beat later
   // than the toast it usually accompanies, which is fine for an audit trail.
-  const logActivity = (who, what, opts = {}) => {
+  const logActivity = (rawWho, what, opts = {}) => {
     if (adminLocked) return; // a blocked action must not leave a log entry
     const { type = 'admin', icon = 'check', tint = '#F3E4CC' } = opts;
+    // Every admin-side call site passes the literal string 'Admin' — substitute
+    // the acting admin's real name here, in one place, so the Activity log
+    // shows who specifically did something instead of a generic "Admin" for
+    // every entry. Vendor-side calls pass the vendor's business name, which
+    // is untouched (never equals the literal 'Admin').
+    const who = (rawWho === 'Admin' && acting) ? (acting.name || 'Admin') : rawWho;
     if (isSupabaseConfigured) {
       insertActivity({ who, what, tint, icon, type })
         .then(entry => dispatch({ type: 'LOG_ACTIVITY', payload: entry }))
