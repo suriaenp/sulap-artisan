@@ -14,7 +14,9 @@
   Referrer-Policy: strict-origin-when-cross-origin
   # Lock down powerful features. `camera=(self)` is kept because the Vendor Pass
   # flow uses a capture-enabled file input; nothing here needs mic or geo.
-  Permissions-Policy: camera=(self), microphone=(), geolocation=(), interest-cohort=()
+  # (interest-cohort was FLoC-blocking; Chrome dropped the feature entirely so
+  # the directive now just logs "Unrecognized feature" noise — removed.)
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
   # Cross-origin isolation hardening.
   X-Permitted-Cross-Domain-Policies: none
 
@@ -35,4 +37,7 @@
   # file with no build-time substitution) since it covers auth, REST, and
   # Storage, which all live on the same project domain. Update this if the
   # project is ever migrated to a different Supabase URL.
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://bcokmntwomaeexynujfl.supabase.co https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com data: blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  # frame-src: supabase-js's auth client opens a hidden iframe against the
+  # project URL for cross-tab session sync — without this it falls back to
+  # default-src 'self' and gets blocked.
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://bcokmntwomaeexynujfl.supabase.co https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com data: blob:; frame-src 'self' https://bcokmntwomaeexynujfl.supabase.co; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
