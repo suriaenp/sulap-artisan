@@ -864,15 +864,9 @@ export default function VendorDashboard() {
                     </div>
                     {isPartial && overpaidAmt <= 0 && <div style={{ display:'flex', justifyContent:'space-between', fontSize:11.5, color:'#C76A0D', fontWeight:600, marginTop:5 }}><span>Paid RM {money(rec.paid)} · Outstanding</span><span>RM {money(calc.total-rec.paid)}</span></div>}
                   </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <div style={{ flex:1, display:'flex', alignItems:'center', gap:8, background:'var(--glass-input)', border:'1px solid var(--glass-chip-border)', borderRadius:10, padding:'9px 11px' }}>
-                      <Icon name="file" size={15} color="#9A5B26"/><span style={{ fontSize:12, color:'var(--text-secondary)' }}>{rec.invoice ? rec.invoice.name : 'Invoice not issued yet'}</span>
-                    </div>
-                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', gap:6, background:rec.invoice?'#9A5B26':'#F2EDE6', color:rec.invoice?'#FAF8F5':'var(--text-muted)', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'10px 13px', cursor:'pointer' }}>
-                      <Icon name="eye" size={14} color={rec.invoice?'#FAF8F5':'var(--text-muted)'}/>Invoice
-                    </button>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:9 }}>
+                  {/* ── Your payment advice (vendor-uploaded) ── */}
+                  <div style={{ fontSize:10.5, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:7 }}>Your payment advice</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {rec.advice ? (
                       <button onClick={()=>set({docPreview:{payKey, field:'advice', editable:true}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#E8F5F0', border:'1px solid #cfe9df', color:'#2D6A4F', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
                         <Icon name="eye" size={14} color="#2D6A4F"/>Payment advice uploaded — view
@@ -893,11 +887,6 @@ export default function VendorDashboard() {
                         <Icon name="upload" size={14} color="#6B6560"/>Upload second payment advice (remaining balance)
                       </label>
                     ))}
-                    {rec.receipt && (
-                      <button onClick={()=>set({docPreview:{payKey, field:'receipt', editable:false}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
-                        <Icon name="eye" size={14} color="#9A5B26"/>Official receipt from Sulap — view
-                      </button>
-                    )}
                     {notice && notice.kind === 'unread' && (
                       <div style={{ background:'#F7F4EF', border:'1px solid #EFEAE2', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#8A837B', lineHeight:1.45 }}>
                         Auto-scan couldn't read an amount from your payment advice — the Sulap team will verify it manually.
@@ -911,6 +900,22 @@ export default function VendorDashboard() {
                     {notice && (notice.kind === 'short' || notice.kind === 'over') && (
                       <div style={{ background:'#FDF9EE', border:'1px solid #F3EBD5', borderRadius:10, padding:'9px 12px', fontSize:11.5, color:'#A98B3D', lineHeight:1.45 }}>
                         Auto-scan read RM {money(notice.scanned)} from your advice{notice.kind==='short' ? ` — RM ${money(notice.diff)} of the total due is still outstanding.` : ` — RM ${money(notice.diff)} more than the total due; a refund will be arranged.`}
+                      </div>
+                    )}
+                  </div>
+                  {/* ── From the Sulap team (view/download only — admin-uploaded) ── */}
+                  <div style={{ fontSize:10.5, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', margin:'14px 0 7px', paddingTop:11, borderTop:'1px solid var(--glass-divider)' }}>From the Sulap team</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <button onClick={()=>rec.invoice ? set({docPreview:{payKey, field:'invoice', editable:false}}) : showToast('Your invoice will appear here once the Sulap team issues it','info')} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:rec.invoice?'#FAF8F5':'#F2EDE6', border:rec.invoice?'1px solid #e3d8ca':'none', color:rec.invoice?'#9A5B26':'var(--text-muted)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                      <Icon name="eye" size={14} color={rec.invoice?'#9A5B26':'var(--text-muted)'}/>{rec.invoice ? 'Invoice — view' : 'Invoice not issued yet'}
+                    </button>
+                    {rec.receipt ? (
+                      <button onClick={()=>set({docPreview:{payKey, field:'receipt', editable:false}})} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#FAF8F5', border:'1px solid #e3d8ca', color:'#9A5B26', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10, cursor:'pointer' }}>
+                        <Icon name="eye" size={14} color="#9A5B26"/>Official receipt — view
+                      </button>
+                    ) : (
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#F2EDE6', color:'var(--text-muted)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:10 }}>
+                        <Icon name="eye" size={14} color="var(--text-muted)"/>Receipt not issued yet
                       </div>
                     )}
                   </div>
