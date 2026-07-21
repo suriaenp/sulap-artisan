@@ -19,7 +19,7 @@ import { scanNotice } from '../lib/payScan';
 import { downloadSignupForm, downloadSignupFormsZip } from '../lib/signupForm';
 import { downloadPassReport } from '../lib/passReport';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId } from '../lib/supaAdmins';
+import { fetchAllAdminProfiles, updateAdminPerms, updateAdminRole, updateAdminName, updateAdminStaffId, displayStaffId, createAdminAccount, resetAdminPassword, removeAdminAccount } from '../lib/supaAdmins';
 import { fetchAllVendors, updateVendorStatus, updateVendorDetails, updateVendorEinvoice } from '../lib/supaVendors';
 import { insertEvent } from '../lib/supaEvents';
 import { fetchAllApps, updateAppStatus, deleteApp } from '../lib/supaApps';
@@ -144,9 +144,11 @@ export default function AdminDashboard() {
   const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, docTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catFilter, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = orderTabs(ADMIN_TABS.filter(t => !t.hidden && (t.superOnly ? isSuperActing : canViewTab(t.id))), state.aTabOrder);
-  const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
+  const [newAdmin, setNewAdmin] = useState({ id:'', name:'', email:'', password:'' });
   const [newDocType, setNewDocType] = useState({ label:'', required:false });
   const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix (or transfer panel) is open
+  const [resettingAdminId, setResettingAdminId] = useState(null); // admin whose "reset password" inline form is open
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [transferTo, setTransferTo] = useState('');
   const [transferConfirm, setTransferConfirm] = useState('');
   const [acctName, setAcctName] = useState(acting?.name || '');
@@ -3138,33 +3140,63 @@ export default function AdminDashboard() {
           showToast(level === 'none' ? 'All access cleared' : `All tabs set to ${level}`, 'lock');
         };
         // Creating/removing an admin account, or resetting someone else's
-        // password, needs a privileged server call (Supabase Admin API via a
-        // service-role Edge Function) that the browser's anon key can never
-        // make — RLS governs table rows, not auth.users identity. Not wired
-        // yet (own follow-up batch); the panels below explain the manual
-        // path via the dashboard in the meantime, same as onboarding the
-        // first super admin.
-        const createAdmin = () => {
+        // password, needs a privileged server call (Supabase Admin API via
+        // the admin-manage Edge Function — see supabase/functions/admin-manage)
+        // that the browser's anon key can never make: RLS governs table
+        // rows, not auth.users identity. Real mode goes through that
+        // function; demo mode keeps the exact old local-only behavior.
+        const refreshAdminList = async () => {
+          try { dispatch({ type:'MERGE_ADMINS_FROM_SERVER', payload: await fetchAllAdminProfiles() }); }
+          catch (e) { console.error('Failed to refresh admin list:', e); }
+        };
+        const createAdmin = async () => {
+          if (isSupabaseConfigured) {
+            const email = newAdmin.email.trim();
+            const name = newAdmin.name.trim();
+            const password = newAdmin.password;
+            if (!email || !name || !password) { showToast('Fill in email, full name, and a password', 'info'); return; }
+            if (!isStrongPassword(password)) { showToast(PASSWORD_HINT, 'info'); return; }
+            try { await createAdminAccount({ email, password, name, role:'staff' }); }
+            catch (e) { showToast("Couldn't create admin — " + e.message, 'lock'); return; }
+            setNewAdmin({ id:'', name:'', email:'', password:'' });
+            logActivity('Admin', `created an admin account for ${name} (${email}).`, { icon:'lock', tint:'var(--tint-pink-bg)' });
+            showToast(`Admin created — share the password with ${name} directly`, 'check');
+            await refreshAdminList();
+            return;
+          }
           const id = newAdmin.id.trim().toLowerCase().replace(/\s+/g, '');
           const name = newAdmin.name.trim();
           if (!id || !name) { showToast('Fill in both the admin ID and full name', 'info'); return; }
           if (!/^[a-z0-9_.-]+$/.test(id)) { showToast('Admin ID can only use letters, numbers, dots, dashes', 'info'); return; }
           if (admins.some(a => a.id === id)) { showToast('That admin ID already exists', 'info'); return; }
           dispatch({ type:'MERGE_ADMINS', payload: [...admins, { id, name, role:'staff', password:DEFAULT_ADMIN_PASSWORD, mustReset:true, perms:{} }] });
-          setNewAdmin({ id:'', name:'' });
+          setNewAdmin({ id:'', name:'', email:'', password:'' });
           logActivity('Admin', `created the admin ID "${id}" for ${name}.`, { icon:'lock', tint:'var(--tint-pink-bg)' });
           showToast(`Admin created — they sign in with ${id} / ${DEFAULT_ADMIN_PASSWORD}`, 'check');
         };
+        const confirmResetPassword = async (a) => {
+          if (!isStrongPassword(resetPasswordValue)) { showToast(PASSWORD_HINT, 'info'); return; }
+          try { await resetAdminPassword(a.id, resetPasswordValue); }
+          catch (e) { showToast("Couldn't reset password — " + e.message, 'lock'); return; }
+          setResettingAdminId(null); setResetPasswordValue('');
+          logActivity('Admin', `reset the password for ${a.name}.`, { icon:'lock', tint:'var(--tint-amber-bg)' });
+          showToast(`${a.name}'s password has been reset`, 'lock');
+        };
         const resetPassword = (a) => {
+          if (isSupabaseConfigured) { setResettingAdminId(a.id); setResetPasswordValue(''); return; }
           if (!window.confirm(`Reset ${a.name}'s password back to the default (${DEFAULT_ADMIN_PASSWORD})? They'll set a new one on their next sign-in.`)) return;
           dispatch({ type:'MERGE_ADMINS', payload: admins.map(x => x.id === a.id ? { ...x, password:DEFAULT_ADMIN_PASSWORD, mustReset:true } : x) });
           logActivity('Admin', `reset the password for admin "${a.id}".`, { icon:'lock', tint:'var(--tint-amber-bg)' });
           showToast(`${a.name}'s password reset to ${DEFAULT_ADMIN_PASSWORD}`, 'lock');
         };
-        const removeAdmin = (a) => {
-          if (!window.confirm(`Remove admin "${a.id}" (${a.name})? They will no longer be able to sign in.`)) return;
+        const removeAdmin = async (a) => {
+          if (!window.confirm(`Remove admin "${a.name}"? They will no longer be able to sign in.`)) return;
+          if (isSupabaseConfigured) {
+            try { await removeAdminAccount(a.id); }
+            catch (e) { showToast("Couldn't remove admin — " + e.message, 'lock'); return; }
+          }
           dispatch({ type:'MERGE_ADMINS', payload: admins.filter(x => x.id !== a.id) });
-          logActivity('Admin', `removed the admin ID "${a.id}".`, { icon:'x', tint:'var(--tint-red-bg)' });
+          logActivity('Admin', `removed ${a.name}'s admin account.`, { icon:'x', tint:'var(--tint-red-bg)' });
           showToast('Admin removed', 'x');
         };
         const staffAdmins = admins.filter(a => a.role !== 'super');
@@ -3195,19 +3227,23 @@ export default function AdminDashboard() {
         const segStyle = (on, color) => ({ flex:1, border:'none', fontSize:11, fontWeight:600, borderRadius:7, padding:'6px 4px', cursor:'pointer', background:on?color:'transparent', color:on?'#fff':'var(--text-secondary)' });
         return (
           <div style={{ padding:'14px 16px 20px' }}>
-            {/* Create admin — needs a privileged server call once Supabase is
-                connected (creating another person's auth account isn't
-                possible from the browser's anon key, RLS or not), so this is
-                clearly disabled rather than silently writing to nowhere. */}
+            {/* Create admin — real for a Supabase-backed project (admin-manage
+                Edge Function, migration 0015), local-only in mock mode. */}
             <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:16 }}>
-              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Create admin ID</div>
+              <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Create admin</div>
               {isSupabaseConfigured ? (
-                <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8, lineHeight:1.6 }}>
-                  Creating an admin account needs a server-side function (not built yet — see PROJECT_NOTES). For now: create the account in Supabase Dashboard → <b style={{ color:'var(--text-secondary)' }}>Authentication → Users → Add user</b>, then grant them access with:
-                  <div style={{ marginTop:8, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:9, padding:'9px 11px', fontFamily:'monospace', fontSize:11, color:'var(--text-secondary)', overflowX:'auto', whiteSpace:'pre' }}>
-{`update public.profiles set role = 'staff'\nwhere id = (select id from auth.users where email = '...');`}
+                <>
+                  <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3, lineHeight:1.5 }}>They sign in with the email + password below. New admins start as staff — grant tab access below, or transfer super admin later if needed.</div>
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:10, marginTop:14 }}>
+                    <input type="email" value={newAdmin.email} onChange={e=>setNewAdmin(s=>({...s,email:e.target.value}))} placeholder="Email address" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
+                    <input value={newAdmin.name} onChange={e=>setNewAdmin(s=>({...s,name:e.target.value}))} placeholder="Full name" style={{ flex:1, minWidth:150, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
                   </div>
-                </div>
+                  <div style={{ marginTop:10 }}>
+                    <PasswordInput value={newAdmin.password} onChange={e=>setNewAdmin(s=>({...s,password:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&createAdmin()} placeholder="Temporary password" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
+                    {newAdmin.password && <PasswordChecklist password={newAdmin.password}/>}
+                  </div>
+                  <button onClick={createAdmin} style={{ marginTop:10, width:'100%', background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:14, fontWeight:600, borderRadius:11, padding:'11px 18px', cursor:'pointer' }}>Create admin</button>
+                </>
               ) : (
                 <>
                   <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3, lineHeight:1.5 }}>New admins start with the default password <b style={{ color:'var(--text-secondary)' }}>{DEFAULT_ADMIN_PASSWORD}</b> and must set their own the first time they sign in.</div>
@@ -3333,19 +3369,22 @@ export default function AdminDashboard() {
                             );
                           })}
                         </div>
-                        {isSupabaseConfigured ? (
-                          <div style={{ display:'flex', gap:9, background:'var(--bg-subtle-alt)', border:'1px solid var(--border-light)', borderRadius:11, padding:'11px 13px', marginTop:14, fontSize:11.5, color:'var(--text-muted)', lineHeight:1.5 }}>
-                            <Icon name="info" size={14} color="var(--text-muted)" style={{ marginTop:1, flexShrink:0 }}/>
-                            <div>Password reset and account removal need the same server function as creating an admin (not built yet). For now, use Supabase Dashboard → Authentication → Users for either.</div>
-                          </div>
-                        ) : (
-                          <div style={{ display:'flex', gap:9, marginTop:14, paddingTop:12, borderTop:'1px solid var(--border-faint)' }}>
+                        <div style={{ display:'flex', gap:9, marginTop:14, paddingTop:12, borderTop:'1px solid var(--border-faint)' }}>
                             <button onClick={()=>resetPassword(a)} style={{ flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'var(--bg-card)', border:'1px solid var(--border-medium)', color:'#9A5B26', fontSize:12, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>
-                              <Icon name="lock" size={13} color="#9A5B26"/>Reset password to default
+                              <Icon name="lock" size={13} color="#9A5B26"/>{isSupabaseConfigured ? 'Reset password' : 'Reset password to default'}
                             </button>
                             <button onClick={()=>{ removeAdmin(a); setExpandedAdmin(null); }} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'var(--tint-red-bg)', border:'none', color:'var(--tint-red-text)', fontSize:12, fontWeight:600, borderRadius:10, padding:'9px 13px', cursor:'pointer' }}>
                               <Icon name="trash" size={13} color="var(--tint-red-text)"/>Remove
                             </button>
+                        </div>
+                        {isSupabaseConfigured && resettingAdminId === a.id && (
+                          <div style={{ marginTop:10 }}>
+                            <PasswordInput value={resetPasswordValue} onChange={e=>setResetPasswordValue(e.target.value)} onKeyDown={e=>e.key==='Enter'&&confirmResetPassword(a)} placeholder="New password" style={{ width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:14, color:'var(--text-primary)', outline:'none' }}/>
+                            {resetPasswordValue && <PasswordChecklist password={resetPasswordValue}/>}
+                            <div style={{ display:'flex', gap:8, marginTop:8 }}>
+                              <button onClick={()=>{ setResettingAdminId(null); setResetPasswordValue(''); }} style={{ flex:1, background:'var(--bg-subtle)', color:'var(--text-primary)', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Cancel</button>
+                              <button onClick={()=>confirmResetPassword(a)} style={{ flex:1, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:12.5, fontWeight:600, borderRadius:10, padding:9, cursor:'pointer' }}>Set new password</button>
+                            </div>
                           </div>
                         )}
                       </div>

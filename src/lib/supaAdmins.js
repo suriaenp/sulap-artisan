@@ -52,6 +52,39 @@ export async function updateAdminStaffId(id, staffId) {
   if (error) throw error;
 }
 
+// ── admin-manage Edge Function (create/reset-password/remove) ──────────────
+// The one thing this data layer can't do with just the anon key + RLS —
+// creating another person's auth account, resetting someone else's
+// password, or removing an admin outright all need the service_role key,
+// which only runs server-side. `functions.invoke()` automatically attaches
+// the caller's own access token, which the function verifies server-side
+// before doing anything privileged (see supabase/functions/admin-manage).
+async function invokeAdminManage(action, payload) {
+  const { data, error } = await supabase.functions.invoke('admin-manage', { body: { action, ...payload } });
+  // A non-2xx response still resolves (not throws) with `error` set and the
+  // function's own JSON body available via error.context — surface that
+  // message instead of the generic "Edge Function returned a non-2xx status".
+  if (error) {
+    let message = error.message;
+    try { const body = await error.context.json(); if (body?.error) message = body.error; } catch { /* fall back to error.message */ }
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
+
+export function createAdminAccount({ email, password, name, role, staffId }) {
+  return invokeAdminManage('createAdmin', { email, password, name, role, staffId });
+}
+
+export function resetAdminPassword(userId, newPassword) {
+  return invokeAdminManage('resetPassword', { userId, newPassword });
+}
+
+export function removeAdminAccount(userId) {
+  return invokeAdminManage('removeAdmin', { userId });
+}
+
 // What the UI should show as "Staff ID". Mock-mode admins (mockData.js)
 // don't have a staffId field at all — their short id ('admin'/'staff01') IS
 // the human-facing identifier by design, so it's the fallback there. A real
