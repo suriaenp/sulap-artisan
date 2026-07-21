@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { clickable } from '../lib/a11yClickable';
 
 // Warm amber palette (the day this pass is actually valid for) vs. a
 // desaturated grey palette (concluded or not-yet-arrived days) — same shape,
@@ -83,7 +84,7 @@ export default function ParkingPassCard({ vendorName, plateNumber, marketName, d
 
   return (
     <div style={{ position: 'relative', width: '100%', maxWidth: 360, margin: '0 auto' }}>
-      <div onClick={interactive ? () => setOpen(o => !o) : undefined} style={{ position: 'relative', cursor: interactive ? 'pointer' : 'default', paddingTop: effectiveOpen ? 360 : 0, transition: 'padding-top 1.1s cubic-bezier(0.34,1.1,0.3,1)' }}>
+      <div {...(interactive ? clickable(() => setOpen(o => !o)) : {})} aria-label={interactive ? (effectiveOpen ? 'Fold parking pass' : `Unfold parking pass for ${validDateLabel || 'this day'}`) : undefined} style={{ position: 'relative', cursor: interactive ? 'pointer' : 'default', paddingTop: effectiveOpen ? 360 : 0, transition: 'padding-top 1.1s cubic-bezier(0.34,1.1,0.3,1)' }}>
         <div style={{ position: 'relative', width: '100%', height: 360, perspective: 1700 }}>
 
           {/* ============ BOTTOM HALF: VALIDITY + BARCODE ============ */}

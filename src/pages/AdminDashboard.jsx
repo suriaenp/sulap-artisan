@@ -33,6 +33,8 @@ import { fetchAllPassApps, decidePassPerson, updatePassBooth, grantExtraPassSlot
 import { uploadPrivateFile } from '../lib/supaStorage';
 import { fetchDocTypes, insertDocType, deleteDocType, updateDocTypeRequired } from '../lib/supaDocTypes';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
+import { useModalA11y } from '../lib/useModalA11y';
+import { clickable } from '../lib/a11yClickable';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
 // Admin Roles permission matrix all render from this list, so adding or
@@ -154,6 +156,13 @@ export default function AdminDashboard() {
   const [acctName, setAcctName] = useState(acting?.name || '');
   const [acctStaffId, setAcctStaffId] = useState(acting?.staffId || '');
   const [acctPw, setAcctPw] = useState({ current:'', next:'', confirm:'' });
+  // The Category editor is a bespoke inline modal (not the shared `Sheet`
+  // wrapper), so it needs its own dialog accessibility wiring — same hook,
+  // called unconditionally here (gated by `active`) since this whole
+  // component is one giant function and hooks can't be called conditionally
+  // deep inside the JSX where the modal actually renders.
+  const closeCatEditor = () => set({ catEditId:null, cf:null });
+  const catDialogRef = useModalA11y(closeCatEditor, !!state.catEditId);
   const [acctPwMsg, setAcctPwMsg] = useState(null);
   const [compVendorOpen, setCompVendorOpen] = useState(null); // vendor id whose offence checklist is expanded in Log Offences
   const [compTypeSel, setCompTypeSel] = useState([]); // offence types checked in that open checklist
@@ -1396,7 +1405,7 @@ export default function AdminDashboard() {
                             <Icon name="pencil" size={12} color="#FFF8EE"/>
                           </button>
                         </div>
-                        <div onClick={()=>openEdit(ev)} style={{ padding:'12px 12px 14px', cursor:'pointer' }}>
+                        <div {...clickable(()=>openEdit(ev))} aria-label={`Edit ${ev.name}`} style={{ padding:'12px 12px 14px', cursor:'pointer' }}>
                           <div style={{ fontFamily:"'Marcellus',serif", fontSize:14.5, fontWeight:400, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.name}</div>
                           <div style={{ display:'flex', flexDirection:'column', gap:4, marginTop:7 }}>
                             <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--text-secondary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}><Icon name="pin" size={11} color="var(--text-muted)"/>{ev.location || 'Location TBC'}</div>
@@ -2243,7 +2252,7 @@ export default function AdminDashboard() {
                       {passApp.people.map(p => (
                         <div key={p.id} style={{ background:'rgba(154,91,38,0.06)', borderRadius:12, padding:'9px 10px' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <div onClick={()=>set({passPhotoPreview:{name:p.name, photo:p.photo}})} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0, cursor:'pointer' }}>
+                            <div {...clickable(()=>set({passPhotoPreview:{name:p.name, photo:p.photo}}))} title="View uploaded photo" style={{ display:'flex', alignItems:'center', gap:7, flex:1, minWidth:0, cursor:'pointer' }}>
                               <PhotoTile photo={p.photo} size={34}/>
                               <span style={{ fontSize:12.5, fontWeight:700, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</span>
                               <Icon name="eye" size={12} color="#8A6A4A"/>
@@ -2332,8 +2341,8 @@ export default function AdminDashboard() {
 
           {/* Category Editor Modal */}
           {state.catEditId && (
-            <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }} onClick={()=>set({catEditId:null})}>
-              <div onClick={e=>e.stopPropagation()} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:20, maxWidth:420, width:'90%', maxHeight:'80vh', overflow:'hidden', display:'flex', flexDirection:'column' }}>
+            <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999 }} onClick={closeCatEditor}>
+              <div ref={catDialogRef} onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label={state.catEditId==='new'?'Add Category':'Edit Category'} tabIndex={-1} style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:20, maxWidth:420, width:'90%', maxHeight:'80vh', overflow:'hidden', display:'flex', flexDirection:'column', outline:'none' }}>
                 <div className="themed-scroll" style={{ overflowY:'auto', padding:24 }}>
                 <div style={{ fontSize:18, fontWeight:700, color:'var(--text-primary)', marginBottom:16 }}>
                   {state.catEditId==='new'?'Add Category':'Edit Category'}
@@ -3020,7 +3029,7 @@ export default function AdminDashboard() {
                   <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)' }}>{s.title}</div>
                   <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2, lineHeight:1.4 }}>{s.desc}</div>
                 </div>
-                <div onClick={()=>set({settings:{...settings,[s.key]:!on}})} style={{ width:48, height:28, borderRadius:14, background:on?'#9A5B26':'var(--border-dashed)', position:'relative', cursor:'pointer', flexShrink:0, transition:'background .2s' }}>
+                <div onClick={()=>set({settings:{...settings,[s.key]:!on}})} onKeyDown={e=>{ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); set({settings:{...settings,[s.key]:!on}}); } }} role="switch" aria-checked={on} aria-label={s.title} tabIndex={0} style={{ width:48, height:28, borderRadius:14, background:on?'#9A5B26':'var(--border-dashed)', position:'relative', cursor:'pointer', flexShrink:0, transition:'background .2s' }}>
                   <div style={{ position:'absolute', top:3, left:on?22:3, width:22, height:22, borderRadius:'50%', background:'var(--bg-card)', transition:'left .2s', boxShadow:'0 1px 4px rgba(0,0,0,0.15)' }}/>
                 </div>
               </div>
@@ -3059,14 +3068,14 @@ export default function AdminDashboard() {
               {[...docTypes].sort((a,b)=>a.sortOrder-b.sortOrder).map(dt => (
                 <div key={dt.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle)', borderRadius:10, padding:'9px 12px' }}>
                   <span style={{ flex:1, fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{dt.label}</span>
-                  <span onClick={async ()=>{
+                  <span {...clickable(async ()=>{
                     const required = !dt.required;
                     if (isSupabaseConfigured) {
                       try { await updateDocTypeRequired(dt.id, required); }
                       catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
                     }
                     dispatch({ type:'MERGE_DOC_TYPES', payload: docTypes.map(t=>t.id===dt.id?{...t,required}:t) });
-                  }} style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', cursor:'pointer', color: dt.required?'#B7770D':'#3F7A54', background: dt.required?'#FEF8EC':'rgba(90,145,110,0.14)' }}>{dt.required?'Required':'Optional'}</span>
+                  })} style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', cursor:'pointer', color: dt.required?'#B7770D':'#3F7A54', background: dt.required?'#FEF8EC':'rgba(90,145,110,0.14)' }}>{dt.required?'Required':'Optional'}</span>
                   <button title="Remove this document type" onClick={async ()=>{
                     if (!window.confirm(`Remove "${dt.label}" from required documents? Vendors who already uploaded one won't lose the file, it just stops being asked for.`)) return;
                     if (isSupabaseConfigured) {

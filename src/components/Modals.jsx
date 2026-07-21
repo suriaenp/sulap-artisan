@@ -15,6 +15,8 @@ import { insertApp } from '../lib/supaApps';
 import { savePaymentRecord, saveDepositRecord, saveRefundRecord } from '../lib/supaPayments';
 import { updateProfileRequestStatus } from '../lib/supaProfileRequests';
 import { uploadPrivateFile, removePrivateFile } from '../lib/supaStorage';
+import { useModalA11y } from '../lib/useModalA11y';
+import { clickable } from '../lib/a11yClickable';
 
 // ── shared sheet wrapper ──────────────────────────────────────────────────────
 // Always centered (all popups across admin + vendor are centered dialogs, not
@@ -24,10 +26,11 @@ import { uploadPrivateFile, removePrivateFile } from '../lib/supaStorage';
 // still uses hardcoded light-mode text colors throughout — following the
 // admin dark-mode background here without also reworking every hex color
 // inside would make the text unreadable.
-function Sheet({ onClose, children, maxW = 560 }) {
+function Sheet({ onClose, children, maxW = 560, title = 'Dialog' }) {
+  const dialogRef = useModalA11y(onClose);
   return (
     <div onClick={onClose} style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24, animation:'scrimIn 0.25s ease' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius:20, maxHeight:'90%', overflow:'hidden', animation:'modalIn 0.3s var(--ease-spring)', display:'flex', flexDirection:'column' }}>
+      <div ref={dialogRef} onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} style={{ width:'100%', maxWidth:maxW, background:'#FAF8F5', borderRadius:20, maxHeight:'90%', overflow:'hidden', animation:'modalIn 0.3s var(--ease-spring)', display:'flex', flexDirection:'column', outline:'none' }}>
         <div className="themed-scroll-light" style={{ overflowY:'auto', padding:'22px 22px 30px' }}>
           {children}
         </div>
@@ -171,7 +174,7 @@ export function VendorDetailModal() {
 
   const einvoiceOk = einvoiceComplete(v);
   return (
-    <Sheet onClose={close}>
+    <Sheet onClose={close} title={v.business}>
       <SheetHeader title={v.business} sub={`${v.owner} · ${v.category}`} onClose={close} avatar={<VendorAvatar v={v} size={46}/>}/>
       <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginTop:12 }}>
         <Badge status={v.status}/>
@@ -206,7 +209,7 @@ export function VendorDetailModal() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Vendor details</span>
           {!editingDetails && (
-            <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
+            <span {...clickable(startEditDetails)} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
               <Icon name="pencil" size={12} color="#9A5B26"/>Edit
             </span>
           )}
@@ -254,7 +257,7 @@ export function VendorDetailModal() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ fontSize:11, fontWeight:700, color:'#1C1A17' }}>Social media &amp; power supply</span>
           {!editingSocials && (
-            <span onClick={startEditSocials} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
+            <span {...clickable(startEditSocials)} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
               <Icon name="pencil" size={12} color="#9A5B26"/>Edit
             </span>
           )}
@@ -317,8 +320,8 @@ export function VendorDetailModal() {
                   </div>
                   {r.file && (
                     <div style={{ display:'flex', gap:10, flexShrink:0 }}>
-                      <span onClick={()=>set({vendorDocPreview:{name:r.file.name, url:r.file.url}})} style={{ fontSize:11.5, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>View</span>
-                      <span onClick={()=>downloadPhoto(r.file, r.file.name)} style={{ fontSize:11.5, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>
+                      <span {...clickable(()=>set({vendorDocPreview:{name:r.file.name, url:r.file.url}}))} style={{ fontSize:11.5, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>View</span>
+                      <span {...clickable(()=>downloadPhoto(r.file, r.file.name))} style={{ fontSize:11.5, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>
                     </div>
                   )}
                 </div>
@@ -334,7 +337,7 @@ export function VendorDetailModal() {
             <div style={{ display:'flex', alignItems:'center', gap:8 }}>
               <span style={{ fontSize:10.5, fontWeight:600, color: einvoiceOk?'#2D6A4F':'#B7770D', background: einvoiceOk?'#E8F5F0':'#FEF8EC', borderRadius:999, padding:'3px 9px' }}>{einvoiceOk ? 'Complete' : 'Incomplete'}</span>
               {!editingEI && (
-                <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
+                <span {...clickable(startEditEI)} style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>
                   <Icon name="pencil" size={12} color="#9A5B26"/>Edit
                 </span>
               )}
@@ -408,12 +411,12 @@ export function AppDetailModal() {
   const partners = (a.partners||[]).map(pid=>vendors.find(x=>x.id===pid)).filter(Boolean);
   const close = () => set({appDetailId:null});
   return (
-    <Sheet onClose={close}>
+    <Sheet onClose={close} title={v.business}>
       <SheetHeader title={v.business} sub={`${ev.name} · ${v.category}`} onClose={close} avatar={<VendorAvatar v={v} size={46}/>}/>
       <span style={{ display:'inline-block', marginTop:8, fontSize:12, fontWeight:600, color: a.status==='approved' ? '#8FB8A4' : a.status==='rejected' ? '#CB9A93' : '#B7770D' }}>
         {a.status==='approved' ? 'Approved' : a.status==='rejected' ? 'Rejected' : 'Awaiting review'}
       </span>
-      <div onClick={()=>set({appDetailId:null, vendorDetailId:v.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', marginTop:13, cursor:'pointer' }}>
+      <div {...clickable(()=>set({appDetailId:null, vendorDetailId:v.id, vendorDetailReturnAppId:appDetailId}))} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', marginTop:13, cursor:'pointer' }}>
         <VendorAvatar v={v} size={30}/>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{v.business}</div>
@@ -436,7 +439,7 @@ export function AppDetailModal() {
           <>
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginTop:12 }}>
               {partners.map(p => (
-                <div key={p.id} onClick={()=>set({appDetailId:null, vendorDetailId:p.id, vendorDetailReturnAppId:appDetailId})} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', cursor:'pointer' }}>
+                <div key={p.id} {...clickable(()=>set({appDetailId:null, vendorDetailId:p.id, vendorDetailReturnAppId:appDetailId}))} style={{ display:'flex', alignItems:'center', gap:10, background:'#F3E4CC', borderRadius:11, padding:'9px 11px', cursor:'pointer' }}>
                   <VendorAvatar v={p} size={30}/>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17' }}>{p.business}</div>
@@ -502,7 +505,7 @@ export function EventDetailModal() {
     close();
   };
   return (
-    <Sheet onClose={close} maxW={560}>
+    <Sheet onClose={close} maxW={560} title="Edit event">
       <SheetHeader title="Edit event" sub={ev.name} onClose={close}/>
       <div style={{ marginTop:18 }}>
         <ModalSectionHead icon="pencil" text="Basics"/>
@@ -620,7 +623,7 @@ export function ApplyModal() {
   const btnSel = (active) => ({ flex:1, border:`1.5px solid ${active?'#9A5B26':'#e3d8ca'}`, background:active?'#F3E4CC':'#fff', color:active?'#9A5B26':'#6B6560', fontSize:13, fontWeight:600, borderRadius:12, padding:13, cursor:'pointer' });
 
   return (
-    <Sheet onClose={close} maxW={480}>
+    <Sheet onClose={close} maxW={480} title="Apply to this market">
       <SheetHeader title="Apply to this market" sub={`${ev.name} · ${ev.dateRange}`} onClose={close}/>
       <div style={{ fontSize:13, fontWeight:600, color:'#1C1A17', margin:'18px 0 9px' }}>Will you be sharing a booth?</div>
       <div style={{ display:'flex', gap:9 }}>
@@ -696,7 +699,7 @@ export function DepositModal() {
   };
   const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' };
   return (
-    <Sheet onClose={close} maxW={460}>
+    <Sheet onClose={close} maxW={460} title="Deposit record">
       <SheetHeader title="Deposit record" sub={`${v.business} · RM100 refundable`} onClose={close}/>
       <div style={{ fontSize:12, fontWeight:600, color:'#1C1A17', margin:'16px 0 7px' }}>Status</div>
       <div style={{ display:'flex', gap:8 }}>
@@ -733,7 +736,7 @@ export function RefundModal() {
   };
   const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'11px 13px', fontSize:14, outline:'none' };
   return (
-    <Sheet onClose={close} maxW={440}>
+    <Sheet onClose={close} maxW={440} title="Arrange refund">
       <SheetHeader title="Arrange refund" sub={`${v.business} · ${ev.name}`} onClose={close}/>
       <div style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:'#6B6560', background:'#FDEEEC', border:'1px solid #f3d5d0', borderRadius:11, padding:'11px 13px', marginTop:14 }}>
         <span>Amount paid</span><span style={{ fontWeight:700, color:'#B03A2E' }}>RM {money(rec.paid)}</span>
@@ -800,7 +803,7 @@ export function DocPreviewModal() {
   };
 
   return (
-    <Sheet onClose={close} maxW={620}>
+    <Sheet onClose={close} maxW={620} title={label}>
       <SheetHeader title={label} sub={`${v.business} · ${ev.name}`} onClose={close}/>
       <div style={{ display:'flex', alignItems:'center', gap:7, marginTop:10, fontSize:12, color:'#6B6560' }}>
         <Icon name="file" size={14} color="#A09890"/><span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{file.name}</span>
@@ -853,7 +856,7 @@ export function PassPhotoPreviewModal() {
   const close = () => set({ passPhotoPreview:null });
   const grad = `linear-gradient(135deg,${photo?.grad?.[0]||'#F0D8DD'},${photo?.grad?.[1]||'#B97434'})`;
   return (
-    <Sheet onClose={close} maxW={420}>
+    <Sheet onClose={close} maxW={420} title={name||'Pass holder'}>
       <SheetHeader title={name||'Pass holder'} sub="Uploaded photo" onClose={close}/>
       <div style={{ marginTop:14, borderRadius:14, overflow:'hidden', border:'1px solid #efe7dc', background: photo?.url ? '#fff' : grad, minHeight:320, display:'flex', alignItems:'center', justifyContent:'center' }}>
         {photo?.url
@@ -883,7 +886,7 @@ export function VendorDocPreviewModal() {
   const close = () => set({ vendorDocPreview:null });
   const isPdf = (url||'').startsWith('data:application/pdf') || /\.pdf$/i.test(name||'');
   return (
-    <Sheet onClose={close} maxW={620}>
+    <Sheet onClose={close} maxW={620} title={name||'Document'}>
       <SheetHeader title={name||'Document'} sub="Uploaded document" onClose={close}/>
       <div style={{ marginTop:12, borderRadius:14, overflow:'hidden', border:'1px solid #efe7dc', background:'#fff', height:360 }}>
         {isPdf ? (

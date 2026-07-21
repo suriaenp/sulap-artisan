@@ -4,6 +4,7 @@ import PasswordInput from '../components/PasswordInput';
 import { useStore } from '../lib/store';
 import { DEMO_VENDOR_PASSWORD } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { clickable } from '../lib/a11yClickable';
 
 const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:13, padding:'14px 15px', fontSize:16, color:'#1C1A17', outline:'none' };
 const lbl = { fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:7 };
@@ -100,7 +101,7 @@ export default function VendorLogin() {
         <div>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:7 }}>
             <div style={{ ...lbl, marginBottom:0 }}>Password</div>
-            <span onClick={()=>setMode('forgot')} style={{ fontSize:12, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>Forgot password?</span>
+            <span {...clickable(()=>setMode('forgot'))} style={{ fontSize:12, fontWeight:600, color:'#9A5B26', cursor:'pointer' }}>Forgot password?</span>
           </div>
           <PasswordInput value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()} placeholder="••••••••" style={inp} />
         </div>
@@ -114,7 +115,7 @@ export default function VendorLogin() {
       <button onClick={login} className="cta" style={{ marginTop:22, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:15, fontWeight:600, borderRadius:13, padding:15, cursor:'pointer', boxShadow:'0 4px 12px rgba(154,91,38,0.22)', width:'100%' }}>Sign in</button>
       <div style={{ textAlign:'center', fontSize:13, color:'#6B6560', marginTop:20 }}>
         New here?{' '}
-        <span onClick={() => set({ vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false })} style={{ color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Register as a vendor</span>
+        <span {...clickable(() => set({ vScreen:'register', regStep:1, tcAccepted:false, tcScrolled:false }))} style={{ color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Register as a vendor</span>
       </div>
     </div>
   );

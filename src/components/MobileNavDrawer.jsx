@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import Icon from './Icon';
+import { useModalA11y } from '../lib/useModalA11y';
 
 // Slide-in mobile nav drawer — replaces the old wrapping pill tab bar (which grew to
 // several cramped rows once a portal had 10+ tabs) with a single "current tab" trigger
@@ -32,6 +33,12 @@ export default function MobileNavDrawer({ open, onClose, title, subtitle, tabs, 
 
   // Reset the closing latch whenever the drawer is (re)opened
   useEffect(() => { if (open) closingRef.current = false; }, [open]);
+
+  // `() => requestClose()` (not `requestClose` directly) since this call sits
+  // above requestClose's own declaration further down — safe because the
+  // closure is only ever invoked later, asynchronously, on an actual Escape
+  // keypress, by which point requestClose is long since assigned.
+  useModalA11y(() => requestClose(), open, panelRef);
 
   if (!open) return null;
 
@@ -104,12 +111,13 @@ export default function MobileNavDrawer({ open, onClose, title, subtitle, tabs, 
     <div onClick={requestClose} style={{ position:'fixed', inset:0, zIndex:90, display:'flex' }}>
       <div ref={scrimRef} style={{ position:'absolute', inset:0, background:'rgba(28,26,23,0.5)', animation:'scrimIn .25s ease' }}/>
       <div ref={panelRef} onClick={e=>e.stopPropagation()} className="themed-scroll"
+        role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}
         onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
         style={{
           width:'82%', maxWidth:300, height:'100%', background:panelBg,
           display:'flex', flexDirection:'column', boxShadow:'4px 0 24px rgba(0,0,0,0.18)',
           animation:`drawerIn .3s ${EASE_SHEET}`,
-          position:'relative', touchAction:'pan-y',
+          position:'relative', touchAction:'pan-y', outline:'none',
         }}>
         <div style={{ padding:'18px 16px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:`1px solid ${borderC}`, flexShrink:0 }}>
           <div>

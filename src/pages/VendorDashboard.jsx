@@ -18,6 +18,7 @@ import { insertProfileRequest } from '../lib/supaProfileRequests';
 import { insertPassApp, insertPassPerson, updatePassPerson } from '../lib/supaVendorPasses';
 import { fetchOffenseTypes } from '../lib/supaOffences';
 import { fetchDocTypes } from '../lib/supaDocTypes';
+import { clickable } from '../lib/a11yClickable';
 import { uploadPrivateFile, removePrivateFile, uploadPrivatePhoto } from '../lib/supaStorage';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
@@ -366,7 +367,7 @@ export default function VendorDashboard() {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Vendor details</div>
               {!editingDetails && !detailsReq && (
-                <span onClick={startEditDetails} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
+                <span {...clickable(startEditDetails)} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
                   <Icon name="pencil" size={13} color="#9A5B26"/>Request a change
                 </span>
               )}
@@ -418,7 +419,7 @@ export default function VendorDashboard() {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Social media &amp; power supply</div>
               {!editingSocial && (
-                <span onClick={startEditSocial} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
+                <span {...clickable(startEditSocial)} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
                   <Icon name="pencil" size={13} color="#9A5B26"/>Edit
                 </span>
               )}
@@ -461,7 +462,7 @@ export default function VendorDashboard() {
                   <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:2 }}>Used for e-invoicing and deposit refunds</div>
                 </div>
                 {!editingEI && !einvoiceReq && (
-                  <span onClick={startEditEI} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
+                  <span {...clickable(startEditEI)} style={{ display:'inline-flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#9A5B26', cursor:'pointer', flexShrink:0 }}>
                     <Icon name="pencil" size={13} color="#9A5B26"/>{einvoiceOk ? 'Request a change' : 'Complete now'}
                   </span>
                 )}
@@ -760,13 +761,13 @@ export default function VendorDashboard() {
               </div>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
-              {file && <span onClick={()=>set({vendorDocPreview:{name:file.name, url:file.url}})} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>View</span>}
-              {file && <span onClick={()=>downloadPhoto(file, file.name)} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>}
+              {file && <span {...clickable(()=>set({vendorDocPreview:{name:file.name, url:file.url}}))} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>View</span>}
+              {file && <span {...clickable(()=>downloadPhoto(file, file.name))} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>}
               <label style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>
                 {file ? 'Replace' : 'Upload'}
                 <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={pickDoc(title, onSet)}/>
               </label>
-              {file && onRemove && <span onClick={onRemove} style={{ fontSize:13, color:'#B03A2E', fontWeight:600, cursor:'pointer' }}>Remove</span>}
+              {file && onRemove && <span {...clickable(onRemove)} style={{ fontSize:13, color:'#B03A2E', fontWeight:600, cursor:'pointer' }}>Remove</span>}
             </div>
           </div>
         );
@@ -1063,7 +1064,7 @@ export default function VendorDashboard() {
                         </div>
                       ))}
                       {getInitialForm(ev.id).length < PASS_SELF_SERVICE_MAX && (
-                        <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:12.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', marginBottom:12 }} onClick={()=>addInitialFormRow(ev.id)}>
+                        <div {...clickable(()=>addInitialFormRow(ev.id))} style={{ display:'flex', alignItems:'center', gap:5, fontSize:12.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', marginBottom:12 }}>
                           <Icon name="plus" size={13} color="#9A5B26"/>Add another pass holder
                         </div>
                       )}
@@ -1120,7 +1121,7 @@ export default function VendorDashboard() {
                             <div key={p.id}>
                               <DigitalPassCard personName={p.name} vendorName={me.business} marketName={ev.name} validRange={ev.dateRange} photo={p.photo} boothNumber={passApp.boothNumber}/>
                               <div style={{ textAlign:'center', marginTop:8 }}>
-                                <span onClick={()=>startEditPerson(p)} style={{ fontSize:11.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Need to change this pass holder? Edit</span>
+                                <span {...clickable(()=>startEditPerson(p))} style={{ fontSize:11.5, fontWeight:600, color:'#9A5B26', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>Need to change this pass holder? Edit</span>
                               </div>
                             </div>
                           );

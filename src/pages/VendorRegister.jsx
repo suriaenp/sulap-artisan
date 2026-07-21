@@ -9,6 +9,7 @@ import { EMPTY_EINVOICE } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { insertVendor, stashRegistrationDraft } from '../lib/supaVendors';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
+import { clickable } from '../lib/a11yClickable';
 
 const EMPTY_RF = { business:'', owner:'', email:'', phone:'', desc:'', password:'', ig:'', fb:'', tiktok:'', plate:'', power:'', photos:[], logo:null };
 
@@ -186,7 +187,7 @@ export default function VendorRegister() {
                 <Icon name="camera" size={22} color={rf.logo ? '#fff' : '#9A5B26'}/>
               )}
               {rf.logo && (
-                <div onClick={e=>{ e.preventDefault(); upd('logo', null); }} style={{ position:'absolute', bottom:0, right:0, width:22, height:22, borderRadius:'50%', background:'rgba(28,26,23,0.65)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <div {...clickable(e=>{ e.preventDefault(); upd('logo', null); })} aria-label="Remove logo" style={{ position:'absolute', bottom:0, right:0, width:22, height:22, borderRadius:'50%', background:'rgba(28,26,23,0.65)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <Icon name="x" size={12} color="#fff"/>
                 </div>
               )}
@@ -207,7 +208,7 @@ export default function VendorRegister() {
                 {cats.map(c => {
                   const sel = selectedCat === c.id;
                   return (
-                    <div key={c.id} onClick={() => set({ selectedCat: c.id })} style={{ display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${sel?'#9A5B26':'#e3d8ca'}`, background:sel?'#F3E4CC':'#fff', borderRadius:13, padding:'12px 13px', cursor:'pointer', maxWidth:460 }}>
+                    <div key={c.id} {...clickable(() => set({ selectedCat: c.id }))} aria-pressed={sel} style={{ display:'flex', alignItems:'center', gap:12, border:`1.5px solid ${sel?'#9A5B26':'#e3d8ca'}`, background:sel?'#F3E4CC':'#fff', borderRadius:13, padding:'12px 13px', cursor:'pointer', maxWidth:460 }}>
                       <Icon name={c.icon} size={22} color="#9A5B26" />
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:14, fontWeight:600, color:'#1C1A17' }}>{c.name}</div>
@@ -304,7 +305,7 @@ export default function VendorRegister() {
             )}
           </div>
           {!tcScrolled && <div style={{ fontSize:12, color:'#B7770D', marginTop:9, display:'flex', alignItems:'center', gap:6 }}><Icon name="info" size={14} color="#B7770D" />Scroll through the full terms to unlock acceptance.</div>}
-          <div onClick={toggleTc} style={{ display:'flex', alignItems:'flex-start', gap:12, marginTop:14, cursor:'pointer', opacity: tcScrolled ? 1 : 0.5 }}>
+          <div onClick={toggleTc} onKeyDown={e=>{ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); toggleTc(); } }} role="checkbox" aria-checked={tcAccepted} tabIndex={0} style={{ display:'flex', alignItems:'flex-start', gap:12, marginTop:14, cursor:'pointer', opacity: tcScrolled ? 1 : 0.5 }}>
             <div style={{ width:22, height:22, borderRadius:6, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', background:tcAccepted?'#9A5B26':'#fff', border:tcAccepted?'none':'1.5px solid #d8c6b2', marginTop:1 }}>
               {tcAccepted && <Icon name="check" size={14} color="#fff" />}
             </div>

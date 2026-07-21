@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { clickable } from '../lib/a11yClickable';
 
 // Digital Vendor Pass — bi-fold flip card recreated from the Claude Design
 // handoff (`Vendor Pass.dc.html`). Tap to unfold: the top flap rotates on
@@ -16,7 +17,7 @@ export default function DigitalPassCard({ personName, vendorName, marketName, va
 
   return (
     <div style={{ position:'relative', width:'100%', maxWidth:340, margin:'0 auto' }}>
-      <div onClick={() => setOpen(o => !o)} style={{ position:'relative', cursor:'pointer', paddingTop: open ? 226 : 0, transition:'padding-top 0.7s cubic-bezier(0.45,0,0.2,1)' }}>
+      <div {...clickable(() => setOpen(o => !o))} aria-label={open ? 'Fold pass card' : `Unfold pass card for ${personName || 'this pass holder'}`} style={{ position:'relative', cursor:'pointer', paddingTop: open ? 226 : 0, transition:'padding-top 0.7s cubic-bezier(0.45,0,0.2,1)' }}>
         <div style={{ position:'relative', width:'100%', height:226, perspective:1400 }}>
 
           {/* bottom half — details, always in place */}

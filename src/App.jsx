@@ -6,6 +6,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, DepositModal, RefundModal, DocPreviewModal, PassPhotoPreviewModal, VendorDocPreviewModal } from './components/Modals';
 import { payCalc, money, splitPayKey } from './lib/helpers';
 import { savePaymentRecord, saveDepositRecord } from './lib/supaPayments';
+import { useModalA11y } from './lib/useModalA11y';
 import PublicHome from './pages/PublicHome';
 import VendorLogin from './pages/VendorLogin';
 import VendorRegister from './pages/VendorRegister';
@@ -17,6 +18,11 @@ import './index.css';
 function PayModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
   const { payModalKey, payf, payments, vendors, events, deposits, apps } = state;
+  // `close` and the a11y hook are called before the early return below (Rules
+  // of Hooks — every hook must run every render); `close` itself doesn't
+  // touch payModalKey so it's safe to define up here regardless.
+  const close = () => set({ payModalKey: null });
+  const dialogRef = useModalA11y(close, !!payModalKey);
   if (!payModalKey) return null;
   const [vid, eid] = splitPayKey(payModalKey);
   const v = vendors.find(x => x.id === vid) || {};
@@ -24,7 +30,6 @@ function PayModal() {
   const app = apps.find(a => a.vendorId === vid && a.eventId === eid);
   const dep = deposits[vid] || { status: 'unpaid' };
   const calc = payCalc(v, ev, dep.status, app?.tier);
-  const close = () => set({ payModalKey: null });
   const save = async () => {
     const amt = parseFloat(payf.amount) || 0;
     const status = amt <= 0 ? 'unpaid' : amt < calc.total ? 'partial' : 'paid';
@@ -45,7 +50,7 @@ function PayModal() {
   };
   return (
     <div onClick={close} style={{ position:'absolute', inset:0, zIndex:75, background:'rgba(28,26,23,0.5)', display:'flex', alignItems:'center', justifyContent:'center', padding:24, animation:'scrimIn 0.25s ease' }}>
-      <div onClick={e=>e.stopPropagation()} style={{ width:'100%', maxWidth:380, background:'var(--bg-card)', borderRadius:20, padding:22, animation:'modalIn 0.3s var(--ease-spring)' }}>
+      <div ref={dialogRef} onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Record payment — ${v.business}`} tabIndex={-1} style={{ width:'100%', maxWidth:380, background:'var(--bg-card)', borderRadius:20, padding:22, animation:'modalIn 0.3s var(--ease-spring)', outline:'none' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
           <div>
             <div style={{ fontFamily:"'Marcellus',serif", fontSize:19, fontWeight:400, color:'var(--text-primary)' }}>Record payment</div>
