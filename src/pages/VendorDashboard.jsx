@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
 import PhotoTile from '../components/PhotoTile';
@@ -16,6 +16,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial, updateVendorDocs } from '../lib/supaVendors';
 import { insertProfileRequest } from '../lib/supaProfileRequests';
 import { insertPassApp, insertPassPerson, updatePassPerson, deletePassApp } from '../lib/supaVendorPasses';
+import { fetchOffenseTypes } from '../lib/supaOffences';
 import { uploadPrivateFile, removePrivateFile, uploadPrivatePhoto } from '../lib/supaStorage';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
@@ -73,6 +74,18 @@ export default function VendorDashboard() {
   // email+password match) — no more hardcoded myId.
   const myId = state.currentVendorId;
   const me = vendors.find(v => v.id === myId) || {};
+  // Offense types are only fetched once at page load (store.jsx's mount-once
+  // effect) — a type an admin adds mid-session (e.g. while this vendor's tab
+  // has been open the whole time) never reaches this vendor's local state
+  // until they refresh, and the Compliance tab below silently falls back to
+  // the word "Offence" for a type it doesn't recognize. Refetch whenever the
+  // vendor actually opens that tab, matching admin's own tab-switch refetch.
+  useEffect(() => {
+    if (!isSupabaseConfigured || vTab !== 'compliance') return;
+    fetchOffenseTypes()
+      .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...offenseTypes, ...types } } }); })
+      .catch(e => console.error('Offense types fetch failed:', e));
+  }, [vTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
   const pendingReq = (section) => profileRequests.find(r => r.vendorId === myId && r.section === section && r.status === 'pending');
