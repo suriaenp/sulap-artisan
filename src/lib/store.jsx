@@ -231,6 +231,11 @@ const EDIT_SET_KEYS = ['content','settings','parkOverride','compOverrides','payM
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, INIT);
   const toastTimer = useRef(null);
+  // Kept current every render so routeSession() below (defined once inside a
+  // useEffect with a stable dependency array) can read live state instead of
+  // whatever was captured in its closure the one time it was created.
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const showToast = useCallback((msg, icon = 'check') => {
     dispatch({ type: 'SET', payload: { toast: msg, toastIcon: icon } });
@@ -283,7 +288,15 @@ export function StoreProvider({ children }) {
 
         if (profile.role === 'staff' || profile.role === 'super') {
           dispatch({ type: 'UPSERT_ADMIN', payload: rowToAdmin(profile) });
-          dispatch({ type: 'SET', payload: { currentAdminId: profile.id, view: 'admin', aScreen: 'dashboard', aTab: 'overview', page: 1 } });
+          // Supabase re-emits a session event well beyond just sign-in —
+          // notably when the browser tab regains focus, even with no token
+          // refresh involved. Only reset navigation to the Dashboard tab on
+          // a genuine fresh sign-in (no admin session yet, or a different
+          // admin); re-fires for the SAME already-logged-in admin must not
+          // knock them off whatever tab they were working on.
+          if (stateRef.current.currentAdminId !== profile.id) {
+            dispatch({ type: 'SET', payload: { currentAdminId: profile.id, view: 'admin', aScreen: 'dashboard', aTab: 'overview', page: 1 } });
+          }
           return;
         }
 
@@ -292,7 +305,12 @@ export function StoreProvider({ children }) {
         if (!vendor) return; // confirmed session, but no vendor row/draft for it — leave the UI as-is
         dispatch({ type: 'UPSERT_VENDOR', payload: vendor });
         if (vendor.status === 'approved') {
-          dispatch({ type: 'SET', payload: { currentVendorId: vendor.id, view: 'vendor', vScreen: 'dashboard', vTab: 'events', page: 1 } });
+          // Same reasoning as the admin branch above — don't reset the
+          // vendor portal back to Available Markets on a re-fired event for
+          // the same already-logged-in vendor.
+          if (stateRef.current.currentVendorId !== vendor.id) {
+            dispatch({ type: 'SET', payload: { currentVendorId: vendor.id, view: 'vendor', vScreen: 'dashboard', vTab: 'events', page: 1 } });
+          }
           // This vendor's real event applications (My Applications / Payments /
           // Available Markets' "already applied" gate survive a refresh).
           // Non-blocking: routing shouldn't wait on it.
