@@ -5,7 +5,7 @@ import PhotoTile from './PhotoTile';
 import VendorAvatar from './VendorAvatar';
 import { useStore } from '../lib/store';
 import { EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, EMPTY_EINVOICE } from '../data/mockData';
-import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, splitPayKey } from '../lib/helpers';
+import { dayCount, fmtShort, money, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, splitPayKey, normalizeDocs } from '../lib/helpers';
 import { fileToPhoto, downloadPhoto, photoExt, safeName } from '../lib/photoFiles';
 import { scanAndRecord } from '../lib/payScan';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -79,7 +79,7 @@ const ADMIN_DETAIL_FIELDS = [
 // ── Vendor Application Detail ─────────────────────────────────────────────────
 export function VendorDetailModal() {
   const { state, dispatch, set, showToast, logActivity } = useStore();
-  const { vendorDetailId, vendorDetailReturnAppId, vendors, settings, cats, profileRequests } = state;
+  const { vendorDetailId, vendorDetailReturnAppId, vendors, settings, cats, profileRequests, docTypes } = state;
   const [editingDetails, setEditingDetails] = useState(false);
   const [detailsForm, setDetailsForm] = useState(null);
   const [editingSocials, setEditingSocials] = useState(false);
@@ -291,6 +291,42 @@ export function VendorDetailModal() {
         {(v.productPhotos||[]).map(ph=><PhotoTile key={ph.id} photo={ph} size={96}/>)}
         {!(v.productPhotos||[]).length && <div style={{ fontSize:12, color:'#A09890' }}>No photos uploaded yet.</div>}
       </div>
+      {/* Documents — read-only here; vendor uploads/replaces from their own
+          Documents tab, admin only views/downloads. Doc types are the same
+          admin-configurable list the vendor side reads (migration 0014). */}
+      {(() => {
+        const docs = normalizeDocs(v.docs);
+        const rows = [
+          ...[...docTypes].sort((a,b)=>a.sortOrder-b.sortOrder).map(dt => ({ key:dt.id, title:dt.label, optional:!dt.required, file:docs.byType[dt.id] })),
+          ...(docs.extra||[]).map((d,i) => ({ key:d.id, title:d.name||`Document ${i+1}`, optional:true, file:d })),
+        ];
+        return (
+          <>
+            <div style={{ fontSize:12, fontWeight:700, color:'#1C1A17', margin:'16px 2px 8px' }}>Documents</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {rows.map(r => (
+                <div key={r.key} style={{ background:'#fff', border:'1px solid #efe7dc', borderRadius:12, padding:'10px 12px', display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:32, height:32, borderRadius:9, background: r.file?'#E8F5F0':'#FEF8EC', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Icon name="file" size={16} color={r.file?'#2D6A4F':'#B7770D'}/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12.5, fontWeight:600, color:'#1C1A17' }}>{r.title}</div>
+                    <div style={{ fontSize:11, color: r.file?'#2D6A4F':'#B7770D', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {r.file ? r.file.name : `${r.optional?'Optional':'Required'} · not uploaded`}
+                    </div>
+                  </div>
+                  {r.file && (
+                    <div style={{ display:'flex', gap:10, flexShrink:0 }}>
+                      <span onClick={()=>set({vendorDocPreview:{name:r.file.name, url:r.file.url}})} style={{ fontSize:11.5, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>View</span>
+                      <span onClick={()=>downloadPhoto(r.file, r.file.name)} style={{ fontSize:11.5, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
       {v.status === 'approved' && (
         <>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', margin:'16px 2px 8px' }}>
@@ -829,6 +865,36 @@ export function PassPhotoPreviewModal() {
           <Icon name="download" size={14} color="#FAF8F5"/>Download
         </button>
       )}
+    </Sheet>
+  );
+}
+
+// Read-only preview for a vendor document — used both from the vendor's own
+// Documents tab and from admin's read-only view of a vendor's docs (Vendor
+// Listing detail modal). Same isPdf-detection convention as DocPreviewModal
+// (payment files), duplicated rather than shared since that component is
+// tightly coupled to the `payments` table's replace/remove flow and this one
+// is deliberately view+download only.
+export function VendorDocPreviewModal() {
+  const { state, set } = useStore();
+  const { vendorDocPreview } = state;
+  if (!vendorDocPreview) return null;
+  const { name, url } = vendorDocPreview;
+  const close = () => set({ vendorDocPreview:null });
+  const isPdf = (url||'').startsWith('data:application/pdf') || /\.pdf$/i.test(name||'');
+  return (
+    <Sheet onClose={close} maxW={620}>
+      <SheetHeader title={name||'Document'} sub="Uploaded document" onClose={close}/>
+      <div style={{ marginTop:12, borderRadius:14, overflow:'hidden', border:'1px solid #efe7dc', background:'#fff', height:360 }}>
+        {isPdf ? (
+          <iframe title={name} src={url} style={{ width:'100%', height:'100%', border:'none' }}/>
+        ) : (
+          <img src={url} alt={name} style={{ width:'100%', height:'100%', objectFit:'contain', display:'block', background:'#FBF7F1' }}/>
+        )}
+      </div>
+      <button onClick={()=>downloadPhoto({name,url}, name)} style={{ marginTop:14, width:'100%', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6, background:'#9A5B26', color:'#FAF8F5', border:'none', fontSize:13, fontWeight:600, borderRadius:11, padding:12, cursor:'pointer' }}>
+        <Icon name="download" size={14} color="#FAF8F5"/>Download
+      </button>
     </Sheet>
   );
 }

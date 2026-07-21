@@ -1,3 +1,18 @@
+// Vendor docs used to be a fixed {ssm, halal, extra[]} shape; doc TYPES are
+// now admin-configurable (vendor_doc_types, migration 0014), so docs are
+// stored as {byType: {[typeId]: file}, extra: [...]}. Normalizes old-shape
+// records — every seeded demo vendor, and any real vendor who uploaded
+// before this change — into the new shape so every render site (vendor
+// Documents tab, admin's read-only view) can treat them uniformly.
+export function normalizeDocs(docs) {
+  if (!docs) return { byType: {}, extra: [] };
+  if (docs.byType) return { byType: docs.byType, extra: docs.extra || [] };
+  const byType = {};
+  if (docs.ssm) byType.ssm = docs.ssm;
+  if (docs.halal) byType.halal = docs.halal;
+  return { byType, extra: docs.extra || [] };
+}
+
 export function money(n) {
   return Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

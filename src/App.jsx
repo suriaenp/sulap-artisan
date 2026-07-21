@@ -3,7 +3,7 @@ import Sidebar from './components/Sidebar';
 import AuthLayout from './components/AuthLayout';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, DepositModal, RefundModal, DocPreviewModal, PassPhotoPreviewModal } from './components/Modals';
+import { VendorDetailModal, AppDetailModal, EventDetailModal, ApplyModal, DepositModal, RefundModal, DocPreviewModal, PassPhotoPreviewModal, VendorDocPreviewModal } from './components/Modals';
 import { payCalc, money, splitPayKey } from './lib/helpers';
 import { savePaymentRecord, saveDepositRecord } from './lib/supaPayments';
 import PublicHome from './pages/PublicHome';
@@ -119,6 +119,7 @@ function AppShell() {
           <RefundModal />
           <DocPreviewModal />
           <PassPhotoPreviewModal />
+          <VendorDocPreviewModal />
         </div>
       </div>
     </div>

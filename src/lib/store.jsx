@@ -3,7 +3,7 @@ import {
   INITIAL_EVENTS, INITIAL_VENDORS, INITIAL_APPS, INITIAL_PAYMENTS, INITIAL_REFUNDS,
   INITIAL_DEPOSITS, INITIAL_OFFENSES, INITIAL_EVENT_PHOTOS, INITIAL_PHOTO_DOWNLOADS, INITIAL_PAY_DOC_DOWNLOADS,
   INITIAL_PARKING, INITIAL_PASS_APPS, INITIAL_CATS, INITIAL_CONTENT, INITIAL_ACTIVITY,
-  EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS, INITIAL_PROFILE_REQUESTS,
+  EVENT_IMG_PALETTE, OFFENSE_TYPES, INITIAL_ADMINS, INITIAL_PROFILE_REQUESTS, INITIAL_DOC_TYPES,
 } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from './supabase';
 import { fetchVendorByUserId, completeRegistrationFromDraft } from './supaVendors';
@@ -11,6 +11,7 @@ import { fetchProfileByUserId, rowToAdmin } from './supaAdmins';
 import { fetchAllEvents } from './supaEvents';
 import { fetchContent } from './supaContent';
 import { fetchOffenseTypes, fetchOffensesByVendorId } from './supaOffences';
+import { fetchDocTypes } from './supaDocTypes';
 import { fetchParkingByVendorId } from './supaParking';
 import { fetchPassAppsByVendorId } from './supaVendorPasses';
 import { fetchAppsByVendorId } from './supaApps';
@@ -51,6 +52,8 @@ const INIT = {
   deposits: INITIAL_DEPOSITS,
   offenses: INITIAL_OFFENSES,
   offenseTypes: OFFENSE_TYPES,
+  docTypes: INITIAL_DOC_TYPES,   // admin-configurable list of required/optional vendor document types
+  vendorDocPreview: null,        // { name, url } — the vendor-docs equivalent of passPhotoPreview
   compOverrides: {},      // `${vendorId}-${eventId}` → true when admin overrides a compliance hold
   eventPhotos: INITIAL_EVENT_PHOTOS,
   photoDownloads: INITIAL_PHOTO_DOWNLOADS,
@@ -161,6 +164,7 @@ function reducer(state, action) {
     case 'MERGE_DEPOSITS': return { ...state, deposits: { ...state.deposits, ...action.payload } };
     case 'MERGE_OFFENSES': return { ...state, offenses: action.payload };
     case 'MERGE_OFFENSE_TYPES': return { ...state, offenseTypes: action.payload };
+    case 'MERGE_DOC_TYPES': return { ...state, docTypes: action.payload };
     // Merges real offences in alongside any local-session demo ones (byId),
     // same merge-not-replace pattern as events/vendors/apps.
     case 'MERGE_OFFENSES_FROM_SERVER': {
@@ -266,6 +270,11 @@ export function StoreProvider({ children }) {
     fetchOffenseTypes()
       .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...state.offenseTypes, ...types } } }); })
       .catch(e => console.error('Offense types fetch failed:', e));
+    // Vendor document types are also public-read — a vendor's own Documents
+    // tab needs the current list to know what to ask for.
+    fetchDocTypes()
+      .then(types => { if (types.length) dispatch({ type: 'MERGE_DOC_TYPES', payload: types }); })
+      .catch(e => console.error('Doc types fetch failed:', e));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-once fetch; including state.offenseTypes would refetch every time this same effect updates it
 
   // ── Supabase session sync ──

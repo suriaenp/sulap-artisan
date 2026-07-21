@@ -31,6 +31,7 @@ import { fetchAllOffenses, fetchOffenseTypes, insertOffenseType, deleteOffenseTy
 import { fetchAllParking, upsertParkingSerial } from '../lib/supaParking';
 import { fetchAllPassApps, decidePassPerson, updatePassBooth, grantExtraPassSlots } from '../lib/supaVendorPasses';
 import { uploadPrivateFile } from '../lib/supaStorage';
+import { fetchDocTypes, insertDocType, deleteDocType, updateDocTypeRequired } from '../lib/supaDocTypes';
 import { PASSWORD_HINT, isStrongPassword, PasswordChecklist, friendlyAuthError } from '../lib/passwordPolicy';
 
 // Single source of truth for console tabs — the sidebar, mobile pills, AND the
@@ -140,10 +141,11 @@ function SearchBox({ value, onChange, placeholder = 'Search by business or owner
 
 export default function AdminDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity, acting, canViewTab, canEditTab } = useStore();
-  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catFilter, profileRequests } = state;
+  const { aTab, events, vendors, apps, payments, refunds, deposits, offenses, offenseTypes, docTypes, compOverrides, eventPhotos, photoDownloads, payDocDownloads, parking, passApps, cats, content, settings, activity, filterEvent, page, PER_PAGE, compTab, actTab, parkOverride, newOffType, admins, currentAdminId, appsTab, darkMode, catFilter, profileRequests } = state;
   const isSuperActing = !acting || acting.role === 'super';
   const visibleTabs = orderTabs(ADMIN_TABS.filter(t => !t.hidden && (t.superOnly ? isSuperActing : canViewTab(t.id))), state.aTabOrder);
   const [newAdmin, setNewAdmin] = useState({ id:'', name:'' });
+  const [newDocType, setNewDocType] = useState({ label:'', required:false });
   const [expandedAdmin, setExpandedAdmin] = useState(null); // admin id whose permission matrix (or transfer panel) is open
   const [transferTo, setTransferTo] = useState('');
   const [transferConfirm, setTransferConfirm] = useState('');
@@ -252,6 +254,9 @@ export default function AdminDashboard() {
     fetchOffenseTypes()
       .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...offenseTypes, ...types } } }); })
       .catch(e => console.error('Failed to load offense types:', e));
+    fetchDocTypes()
+      .then(types => { if (types.length) dispatch({ type: 'MERGE_DOC_TYPES', payload: types }); })
+      .catch(e => console.error('Failed to load doc types:', e));
     fetchAllParking()
       .then(map => { if (Object.keys(map).length) dispatch({ type: 'MERGE_PARKING', payload: map }); })
       .catch(e => console.error('Failed to load parking:', e));
@@ -3019,6 +3024,63 @@ export default function AdminDashboard() {
               </div>
             );
           })}
+
+          {/* Required vendor documents — admin-configurable list of what a vendor
+              is asked to upload on their Documents tab (migration 0014). Add/remove
+              types and toggle required-vs-optional here instead of a code change. */}
+          <div style={{ fontFamily:"'Marcellus',serif", fontSize:17, fontWeight:400, color:'var(--text-primary)', margin:'10px 2px 0' }}>Required vendor documents</div>
+          <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:14, padding:14 }}>
+            <div style={{ display:'flex', gap:9, marginBottom:12 }}>
+              <input value={newDocType.label} onChange={e=>setNewDocType({...newDocType, label:e.target.value})} placeholder="New document type, e.g. Insurance certificate" style={{ flex:1, border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'11px 13px', fontSize:13.5, color:'var(--text-primary)', outline:'none' }}/>
+              <label style={{ display:'flex', alignItems:'center', gap:6, fontSize:12.5, color:'var(--text-secondary)', flexShrink:0, cursor:'pointer' }}>
+                <input type="checkbox" checked={newDocType.required} onChange={e=>setNewDocType({...newDocType, required:e.target.checked})} style={{ accentColor:'#9A5B26', width:15, height:15, cursor:'pointer' }}/>
+                Required
+              </label>
+              <button onClick={async ()=>{
+                const label = newDocType.label.trim();
+                if (!label) return;
+                if (docTypes.some(t=>t.label.toLowerCase()===label.toLowerCase())) { showToast('That document type already exists','info'); return; }
+                const id = 'dt'+Date.now();
+                const sortOrder = docTypes.length ? Math.max(...docTypes.map(t=>t.sortOrder))+1 : 1;
+                const newType = { id, label, required:newDocType.required, sortOrder };
+                if (isSupabaseConfigured) {
+                  try { await insertDocType(newType); }
+                  catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+                }
+                dispatch({ type:'MERGE_DOC_TYPES', payload:[...docTypes, newType] });
+                setNewDocType({ label:'', required:false });
+                logActivity('Admin', `added "${label}" to required vendor documents.`, {icon:'file', tint:'var(--tint-pink-bg)'});
+                showToast('Document type added','file');
+              }} style={{ background:'linear-gradient(135deg, #B97434, #7A431A)', color:'#FFF8EE', border:'none', fontSize:13.5, fontWeight:700, borderRadius:11, padding:'11px 16px', cursor:'pointer', flexShrink:0 }}>Add</button>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              {[...docTypes].sort((a,b)=>a.sortOrder-b.sortOrder).map(dt => (
+                <div key={dt.id} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-subtle)', borderRadius:10, padding:'9px 12px' }}>
+                  <span style={{ flex:1, fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{dt.label}</span>
+                  <span onClick={async ()=>{
+                    const required = !dt.required;
+                    if (isSupabaseConfigured) {
+                      try { await updateDocTypeRequired(dt.id, required); }
+                      catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return; }
+                    }
+                    dispatch({ type:'MERGE_DOC_TYPES', payload: docTypes.map(t=>t.id===dt.id?{...t,required}:t) });
+                  }} style={{ fontSize:11, fontWeight:700, borderRadius:999, padding:'4px 10px', cursor:'pointer', color: dt.required?'#B7770D':'#3F7A54', background: dt.required?'#FEF8EC':'rgba(90,145,110,0.14)' }}>{dt.required?'Required':'Optional'}</span>
+                  <button title="Remove this document type" onClick={async ()=>{
+                    if (!window.confirm(`Remove "${dt.label}" from required documents? Vendors who already uploaded one won't lose the file, it just stops being asked for.`)) return;
+                    if (isSupabaseConfigured) {
+                      try { await deleteDocType(dt.id); }
+                      catch (e) { showToast("Couldn't remove — " + e.message, 'lock'); return; }
+                    }
+                    dispatch({ type:'MERGE_DOC_TYPES', payload: docTypes.filter(t=>t.id!==dt.id) });
+                    showToast('Document type removed','x');
+                  }} style={{ background:'rgba(196,74,74,0.1)', border:'none', width:24, height:24, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 }}>
+                    <Icon name="x" size={11} color="#B03A2E"/>
+                  </button>
+                </div>
+              ))}
+              {!docTypes.length && <div style={{ fontSize:12.5, color:'var(--text-muted)' }}>No document types configured — vendors won't be asked to upload anything.</div>}
+            </div>
+          </div>
 
           {/* Portal tab order — super admin only. The arrangement set here is what every
               admin and every vendor sees; they have no reorder controls of their own. */}

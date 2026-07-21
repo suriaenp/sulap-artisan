@@ -8,7 +8,7 @@ import PortalFooter from '../components/PortalFooter';
 import DigitalPassCard from '../components/DigitalPassCard';
 import ParkingPassCard from '../components/ParkingPassCard';
 import { useStore } from '../lib/store';
-import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, orderTabs, eventDayDate, monthDayLabel, fmtTime12, isoLocal, parseDateOnly } from '../lib/helpers';
+import { money, fmt, fmtShort, fmtTime, payCalc, EINVOICE_FIELDS, einvoiceComplete, DETAILS_FIELDS, orderTabs, eventDayDate, monthDayLabel, fmtTime12, isoLocal, parseDateOnly, normalizeDocs } from '../lib/helpers';
 import { EMPTY_EINVOICE, PASS_SELF_SERVICE_MAX } from '../data/mockData';
 import { fileToPhoto, downloadPhoto, downloadZip, safeName, photoExt } from '../lib/photoFiles';
 import { scanAndRecord, scanNotice } from '../lib/payScan';
@@ -17,6 +17,7 @@ import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial, updateVen
 import { insertProfileRequest } from '../lib/supaProfileRequests';
 import { insertPassApp, insertPassPerson, updatePassPerson } from '../lib/supaVendorPasses';
 import { fetchOffenseTypes } from '../lib/supaOffences';
+import { fetchDocTypes } from '../lib/supaDocTypes';
 import { uploadPrivateFile, removePrivateFile, uploadPrivatePhoto } from '../lib/supaStorage';
 
 // Gallery-upload + direct camera-capture, side by side — reused across every
@@ -69,7 +70,7 @@ export const VENDOR_TABS = [
 
 export default function VendorDashboard() {
   const { state, set, dispatch, showToast, closeModals, logActivity } = useStore();
-  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passApps, eventPhotos, offenses, offenseTypes, settings, cats, profileRequests } = state;
+  const { vTab, events, vendors, apps, payments, refunds, deposits, parking, passApps, eventPhotos, offenses, offenseTypes, docTypes, settings, cats, profileRequests } = state;
   // The signed-in vendor comes from the store (set by VendorLogin's real
   // email+password match) — no more hardcoded myId.
   const myId = state.currentVendorId;
@@ -85,6 +86,14 @@ export default function VendorDashboard() {
     fetchOffenseTypes()
       .then(types => { if (Object.keys(types).length) dispatch({ type: 'SET', payload: { offenseTypes: { ...offenseTypes, ...types } } }); })
       .catch(e => console.error('Offense types fetch failed:', e));
+  }, [vTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Same staleness issue as offense types above — required document types
+  // are admin-configurable and only fetched once at page load otherwise.
+  useEffect(() => {
+    if (!isSupabaseConfigured || vTab !== 'docs') return;
+    fetchDocTypes()
+      .then(types => { if (types.length) dispatch({ type: 'MERGE_DOC_TYPES', payload: types }); })
+      .catch(e => console.error('Doc types fetch failed:', e));
   }, [vTab]); // eslint-disable-line react-hooks/exhaustive-deps
   const today = new Date(); today.setHours(0,0,0,0);
   const einvoiceOk = einvoiceComplete(me);
@@ -697,24 +706,31 @@ export default function VendorDashboard() {
       )}
 
       {/* ── Documents ── */}
-      {/* Real uploads (2026-07-19) — used to be hardcoded placeholder rows with
-          dead "Replace"/"Upload" labels. Files live on the vendor record
-          (`me.docs`: { ssm, halal, extra[] }) as data URLs, same mechanism as
-          product photos; admin sees them via the vendor record too. */}
+      {/* Real uploads (2026-07-19). Doc TYPES are admin-configurable
+          (state.docTypes, migration 0014) — files live on the vendor record
+          (`me.docs.byType[typeId]` + `.extra[]`, normalized via
+          normalizeDocs() so older {ssm,halal,extra} records still read
+          correctly) in the vendor-docs Storage bucket for a real vendor. */}
       {vTab === 'docs' && (() => {
-        const docs = me.docs || { ssm:null, halal:null, extra:[] };
-        // Write-then-reflect for a real vendor (files now live in the
-        // vendor-docs Storage bucket, migration 0011); local-only for a demo
+        const docs = normalizeDocs(me.docs);
+        // Write-then-reflect for a real vendor; local-only for a demo
         // vendor. Returns whether local state should update — callers that
         // also need to log activity/toast check this first.
-        const setDocs = async (patch) => {
-          const next = { ...docs, ...patch };
+        const persistDocs = async (next) => {
           if (isSupabaseConfigured && me.userId) {
             try { await updateVendorDocs(me.id, next); }
             catch (e) { showToast("Couldn't save — " + e.message, 'lock'); return false; }
           }
           dispatch({ type:'MERGE_VENDORS', payload: vendors.map(v => v.id===myId ? { ...v, docs: next } : v) });
           return true;
+        };
+        const setDocByType = (typeId, doc) => persistDocs({ ...docs, byType: { ...docs.byType, [typeId]: doc } });
+        const removeDocByType = async (typeId) => {
+          const path = docs.byType[typeId]?.path;
+          const nextByType = { ...docs.byType }; delete nextByType[typeId];
+          if (!await persistDocs({ ...docs, byType: nextByType })) return;
+          if (isSupabaseConfigured) removePrivateFile('vendor-docs', path);
+          showToast('Document removed','x');
         };
         const MAX_DOC_MB = 10;
         const pickDoc = (label, onFile) => async (e) => {
@@ -744,6 +760,7 @@ export default function VendorDashboard() {
               </div>
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
+              {file && <span onClick={()=>set({vendorDocPreview:{name:file.name, url:file.url}})} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>View</span>}
               {file && <span onClick={()=>downloadPhoto(file, file.name)} style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>Download</span>}
               <label style={{ fontSize:13, color:'#9A5B26', fontWeight:600, cursor:'pointer' }}>
                 {file ? 'Replace' : 'Upload'}
@@ -755,23 +772,22 @@ export default function VendorDashboard() {
         );
         return (
           <div style={{ padding:'12px 16px 20px', display:'flex', flexDirection:'column', gap:11 }}>
-            {docRow({ key:'ssm', icon:'file', title:'SSM Registration', optional:false, file:docs.ssm, onSet:(doc)=>setDocs({ ssm:doc }) })}
-            {docRow({ key:'halal', icon:'badge', title:'Halal / Food Cert', optional:true, file:docs.halal, onSet:(doc)=>setDocs({ halal:doc }), onRemove: async ()=>{
-              if (!await setDocs({ halal:null })) return;
-              if (isSupabaseConfigured) removePrivateFile('vendor-docs', docs.halal?.path);
-              showToast('Document removed','x');
-            } })}
+            {[...docTypes].sort((a,b)=>a.sortOrder-b.sortOrder).map(dt => docRow({
+              key: dt.id, icon:'file', title: dt.label, optional: !dt.required, file: docs.byType[dt.id],
+              onSet: (doc) => setDocByType(dt.id, doc),
+              onRemove: dt.required ? undefined : () => removeDocByType(dt.id),
+            }))}
             {(docs.extra||[]).map((d,i) => docRow({
               key:d.id, icon:'folder', title:d.name || `Document ${i+1}`, optional:true, file:d,
-              onSet:(doc)=>setDocs({ extra: docs.extra.map(x=>x.id===d.id?doc:x) }),
+              onSet:(doc)=>persistDocs({ ...docs, extra: docs.extra.map(x=>x.id===d.id?doc:x) }),
               onRemove: async ()=>{
-                if (!await setDocs({ extra: docs.extra.filter(x=>x.id!==d.id) })) return;
+                if (!await persistDocs({ ...docs, extra: docs.extra.filter(x=>x.id!==d.id) })) return;
                 if (isSupabaseConfigured) removePrivateFile('vendor-docs', d.path);
                 showToast('Document removed','x');
               },
             }))}
             <label style={{ border:'2px dashed #d8c6b2', borderRadius:16, background:'#FBF7F1', padding:24, textAlign:'center', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center' }}>
-              <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={pickDoc('Additional document', (doc)=>setDocs({ extra:[...(docs.extra||[]), doc] }))}/>
+              <input type="file" accept="image/*,application/pdf" style={{ display:'none' }} onChange={pickDoc('Additional document', (doc)=>persistDocs({ ...docs, extra:[...(docs.extra||[]), doc] }))}/>
               <Icon name="folder" size={26} color="#9A5B26"/>
               <div style={{ fontSize:13.5, fontWeight:600, color:'var(--text-primary)', marginTop:9 }}>Add another document</div>
               <div style={{ fontSize:11.5, color:'var(--text-muted)', marginTop:3 }}>PDF, JPG or PNG up to 10MB</div>

@@ -49,6 +49,15 @@ const EI = (companyName='', regNo='', tin='', sstNo='', regAddress='', bankName=
 // Blank e-invoice record for newly-registered vendors — filled in later from the Profile tab.
 export const EMPTY_EINVOICE = EI();
 
+// Admin-configurable list of required/optional vendor document types (mock
+// default — real projects load this from the vendor_doc_types table,
+// migration 0014). A vendor's uploaded docs are keyed by these ids under
+// vendor.docs.byType — see normalizeDocs() in lib/helpers.js.
+export const INITIAL_DOC_TYPES = [
+  { id:'ssm',   label:'SSM Registration',  required:true,  sortOrder:1 },
+  { id:'halal', label:'Halal / Food Cert', required:false, sortOrder:2 },
+];
+
 // Every seeded demo vendor signs in with this password (vendors registered
 // through the live form carry their own — see VendorRegister). Plain text for
 // the Phase 1 prototype only, same caveat as DEFAULT_ADMIN_PASSWORD below.
