@@ -5,7 +5,7 @@ import { useStore } from '../lib/store';
 import { DEMO_VENDOR_PASSWORD } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:13, padding:'14px 15px', fontSize:15, color:'#1C1A17', outline:'none' };
+const inp = { width:'100%', border:'1px solid #e3d8ca', background:'#fff', borderRadius:13, padding:'14px 15px', fontSize:16, color:'#1C1A17', outline:'none' };
 const lbl = { fontSize:12.5, fontWeight:600, color:'#1C1A17', marginBottom:7 };
 
 export default function VendorLogin() {

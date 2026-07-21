@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useStore } from '../lib/store';
 import { eventStatus } from '../lib/helpers';
+import Icon from '../components/Icon';
 
 // "Coming Soon" carousel card sizing — the centered/focused card is bigger
 // than the rest, and both scale down on narrow viewports (as a fraction of
@@ -98,6 +99,13 @@ export default function PublicHome() {
   const [comingSoonOffset, setComingSoonOffset] = useState(0);
   const [windowWidth, setWindowWidth] = useState(() => typeof window !== 'undefined' ? window.innerWidth : 1280);
   const isMobile = windowWidth < 720;
+  // Below 720px the inline nav + "Vendor Log In" button both disappear with
+  // nothing replacing them (Phase 4 mobile audit finding) — this hamburger +
+  // slide-down panel is that replacement. Reset on any resize past the
+  // breakpoint so rotating a device or resizing a window never leaves it
+  // stuck open behind the (now-visible again) inline nav.
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  useEffect(() => { if (!isMobile) setMobileMenuOpen(false); }, [isMobile]);
   const { cardW: CS_CARD_W, focusW: CS_FOCUS_W, focusH: CS_FOCUS_H, gap: CS_GAP } = csSizes(windowWidth);
 
   // Oldest-first so past events sit left (greyed) and future events sit right
@@ -169,8 +177,21 @@ export default function PublicHome() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
             <button onClick={goVendor} style={{ display: isMobile ? 'none' : 'inline-block', padding: '10px 20px', border: '1.5px solid #9A5B26', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#9A5B26', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>Vendor Log In</button>
             <button onClick={goRegister} style={{ padding: '10px 22px', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 700, color: '#FFF8EE', background: 'linear-gradient(135deg, #B97434 0%, #7A431A 100%)', boxShadow: '0 4px 14px rgba(122,67,26,0.35)', cursor: 'pointer', whiteSpace: 'nowrap' }}>Apply as a Vendor</button>
+            {isMobile && (
+              <button onClick={() => setMobileMenuOpen(o => !o)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'} aria-expanded={mobileMenuOpen} style={{ width: 40, height: 40, borderRadius: 10, border: '1px solid rgba(154,91,38,0.25)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                <Icon name={mobileMenuOpen ? 'x' : 'menu'} size={18} color="#5C3A1E" />
+              </button>
+            )}
           </div>
         </div>
+        {isMobile && mobileMenuOpen && (
+          <div style={{ borderTop: '1px solid rgba(154,91,38,0.15)', padding: '10px 24px 20px', display: 'flex', flexDirection: 'column', gap: 2, animation: 'tabIn 0.2s var(--ease-spring)' }}>
+            {showComingSoon && <a href="#coming-soon" onClick={() => setMobileMenuOpen(false)} style={{ ...navLink, padding: '12px 4px' }}>Coming Soon</a>}
+            <a href="#why-join" onClick={() => setMobileMenuOpen(false)} style={{ ...navLink, padding: '12px 4px' }}>Why Join</a>
+            <a href="#contact" onClick={() => setMobileMenuOpen(false)} style={{ ...navLink, padding: '12px 4px' }}>Contact</a>
+            <button onClick={() => { setMobileMenuOpen(false); goVendor(); }} style={{ marginTop: 10, padding: '13px 20px', border: '1.5px solid #9A5B26', borderRadius: 999, fontSize: 14.5, fontWeight: 700, color: '#9A5B26', background: 'transparent', cursor: 'pointer', width: '100%' }}>Vendor Log In</button>
+          </div>
+        )}
       </section>
 
       {/* Hero */}

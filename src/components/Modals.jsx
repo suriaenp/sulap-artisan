@@ -649,7 +649,7 @@ export function ApplyModal() {
             <>
               <div style={{ display:'flex', alignItems:'center', gap:8, border:'1px solid #e3d8ca', background:'#fff', borderRadius:11, padding:'0 12px' }}>
                 <Icon name="search" size={15} color="#A09890"/>
-                <input value={applyPartnerSearch} onChange={e=>set({applyPartnerSearch:e.target.value})} placeholder="Search a registered vendor…" style={{ flex:1, border:'none', background:'none', padding:'11px 0', fontSize:13.5, outline:'none', color:'#1C1A17' }}/>
+                <input value={applyPartnerSearch} onChange={e=>set({applyPartnerSearch:e.target.value})} placeholder="Search a registered vendor…" style={{ flex:1, border:'none', background:'none', padding:'11px 0', fontSize:16, outline:'none', color:'#1C1A17' }}/>
               </div>
               {results.length > 0 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:8 }}>

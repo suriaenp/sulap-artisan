@@ -5,7 +5,7 @@ import { useStore } from '../lib/store';
 import { DEFAULT_ADMIN_PASSWORD } from '../data/mockData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:13, padding:'14px 15px', fontSize:15, color:'var(--text-primary)', outline:'none' };
+const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:13, padding:'14px 15px', fontSize:16, color:'var(--text-primary)', outline:'none' };
 const lbl = { fontSize:12.5, fontWeight:600, color:'var(--text-primary)', marginBottom:7 };
 
 export default function AdminLogin() {

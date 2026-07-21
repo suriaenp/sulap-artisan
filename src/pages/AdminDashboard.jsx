@@ -3552,4 +3552,4 @@ export default function AdminDashboard() {
 }
 
 const lbl = { display:'block', fontSize:12, fontWeight:600, color:'var(--text-primary)', marginBottom:6 };
-const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:14, color:'var(--text-primary)', outline:'none', display:'block' };
+const inp = { width:'100%', border:'1px solid var(--border-medium)', background:'var(--bg-card)', borderRadius:11, padding:'12px 13px', fontSize:16, color:'var(--text-primary)', outline:'none', display:'block' };
