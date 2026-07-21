@@ -431,7 +431,7 @@ export function StoreProvider({ children }) {
     const who = (rawWho === 'Admin' && acting) ? (acting.name || 'Admin') : rawWho;
     if (isSupabaseConfigured) {
       insertActivity({ who, what, tint, icon, type })
-        .then(entry => dispatch({ type: 'LOG_ACTIVITY', payload: entry }))
+        .then(entry => { if (entry) dispatch({ type: 'LOG_ACTIVITY', payload: entry }); })
         .catch(e => console.error('Activity log failed:', e));
       return;
     }

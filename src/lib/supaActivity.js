@@ -34,7 +34,18 @@ export async function fetchAllActivity() {
 
 // Any authenticated session (vendor or admin) may insert — see migration
 // 0006's comment on why this isn't scoped to is_admin().
+//
+// logActivity() (store.jsx) fires this without awaiting it, so it can run at
+// any point in a call site's lifecycle — including right after a long CPU-bound
+// task (e.g. the OCR scan in payScan.js) where a backgrounded/throttled mobile
+// tab may not have finished restoring its persisted session yet. Explicitly
+// awaiting getSession() first forces that restore to complete before the
+// insert fires, instead of the request silently going out unauthenticated
+// (observed live: Supabase's API logs showed auth_user: null on the insert,
+// which reads as an RLS violation but is really "no session was attached").
 export async function insertActivity({ who, what, tint, icon, type }) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) { console.warn('Activity log skipped: no active session'); return null; }
   const { data, error } = await supabase.from('activity')
     .insert({ who, what, tint, icon, type })
     .select().single();
