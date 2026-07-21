@@ -33,31 +33,32 @@ export async function fetchAllActivity() {
 }
 
 // Any authenticated session (vendor or admin) may insert — see migration
-// 0006's comment on why this isn't scoped to is_admin().
-//
-// logActivity() (store.jsx) fires this without awaiting it, so it can run
-// concurrently with other in-flight requests from the same call site (e.g.
-// payScan.js's OCR flow: a Storage upload immediately followed by this
-// insert). Live testing surfaced a case where the request reached Supabase
-// with a well-formed Authorization: Bearer JWT (confirmed in the browser's
-// Network tab) but the server logged auth_user: null and RLS correctly
-// rejected the write — a client-side auth-attachment race in supabase-js
-// under concurrent requests, not a session or policy problem (getSession()
-// showed a valid session throughout; the RLS policy itself was verified
-// correct in the dashboard). Retrying once after an explicit refreshSession()
-// works around it without needing to pin down the exact internal cause.
+// 0006's comment on why this isn't scoped to is_admin(). But the table's
+// SELECT policy (`activity_admin_read`) *is* scoped to is_admin() — there is
+// no `owns_vendor()`-style self-read policy here, unlike every other
+// vendor-facing table. Postgres requires a matching SELECT policy to satisfy
+// `INSERT ... RETURNING` (see the CREATE POLICY docs: with an INSERT policy
+// but no matching SELECT policy, the RETURNING clause itself raises an RLS
+// violation, SQLSTATE 42501) — so a `.select()` chained onto this insert was
+// deterministically failing for every vendor-triggered call (e.g. payScan.js's
+// OCR flow), 100% of the time, regardless of session/auth state. That's why
+// two earlier fixes aimed at the client's session (a hydration guard, then a
+// refreshSession()-and-retry) didn't help: the session was never the problem.
+// Fix: don't ask Postgres to hand the row back at all — the caller already
+// has every field it needs to build the entry locally, and nothing reads
+// this table from a vendor session anyway (no vendor screen shows this log).
 async function tryInsert({ who, what, tint, icon, type }) {
-  return supabase.from('activity').insert({ who, what, tint, icon, type }).select().single();
+  return supabase.from('activity').insert({ who, what, tint, icon, type });
 }
 
 export async function insertActivity({ who, what, tint, icon, type }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) { console.warn('Activity log skipped: no active session'); return null; }
-  let { data, error } = await tryInsert({ who, what, tint, icon, type });
+  let { error } = await tryInsert({ who, what, tint, icon, type });
   if (error?.code === '42501') {
     await supabase.auth.refreshSession();
-    ({ data, error } = await tryInsert({ who, what, tint, icon, type }));
+    ({ error } = await tryInsert({ who, what, tint, icon, type }));
   }
   if (error) throw error;
-  return rowToActivity(data);
+  return { who, what, tint, icon, type, when: formatWhen(new Date().toISOString()), remote: true };
 }
