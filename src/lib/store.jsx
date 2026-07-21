@@ -388,21 +388,18 @@ export function StoreProvider({ children }) {
   // view/edit permission system — every admin can always edit their own profile.
   const adminLocked = state.view === 'admin' && state.aScreen === 'dashboard' && state.aTab !== 'account' && !canEditTab(state.aTab);
 
-  const blockedToast = () => {
-    clearTimeout(toastTimer.current);
-    // fires after any optimistic success toast so the block message wins
-    setTimeout(() => showToast('View-only access — ask a super admin for edit rights', 'lock'), 80);
-  };
-
+  // A view-only staff admin's blocked action is silent — no toast, the
+  // click just does nothing (removed at the user's request; it used to show
+  // "View-only access — ask a super admin for edit rights").
   const guardedDispatch = (action) => {
-    if (adminLocked && action.type !== 'SET') { blockedToast(); return; }
+    if (adminLocked && action.type !== 'SET') return;
     dispatch(action);
   };
 
   const set = (payload) => {
     if (adminLocked) {
       const hit = Object.keys(payload).some(k => EDIT_SET_KEYS.includes(k) && payload[k] != null && payload[k] !== false);
-      if (hit) { blockedToast(); return; }
+      if (hit) return;
       if (payload.docPreview?.editable) payload = { ...payload, docPreview: { ...payload.docPreview, editable: false } };
     }
     if ('darkMode' in payload) {
