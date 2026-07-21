@@ -18,6 +18,7 @@ import { fetchAppsByVendorId } from './supaApps';
 import { fetchPaymentsByVendorId, fetchDepositByVendorId, fetchRefundsByVendorId } from './supaPayments';
 import { fetchProfileRequestsByVendor } from './supaProfileRequests';
 import { insertActivity } from './supaActivity';
+import { pathForState, parsePath } from './router';
 
 function readTabOrder(key) {
   try {
@@ -26,14 +27,27 @@ function readTabOrder(key) {
   } catch { return null; }
 }
 
+// Seeds the initial screen from whatever URL the page was actually loaded
+// with (a bookmark, a shared link, a hard refresh) — see router.js. Never
+// includes vScreen/aScreen:'dashboard' on its own; a requested tab shows up
+// below as pending{Vendor,Admin}Tab for the session listener to apply once a
+// real session confirms that role.
+const initialRoute = typeof window !== 'undefined' ? parsePath(window.location.pathname) : { view: 'public' };
+
 const INIT = {
   // navigation
-  view: 'public',       // 'public' | 'vendor' | 'admin'
-  vScreen: 'login',     // 'login' | 'register' | 'dashboard'
-  aScreen: 'login',     // 'login' | 'reset' | 'dashboard'
+  view: initialRoute.view,       // 'public' | 'vendor' | 'admin'
+  vScreen: initialRoute.vScreen || 'login',     // 'login' | 'register' | 'dashboard'
+  aScreen: initialRoute.aScreen || 'login',     // 'login' | 'reset' | 'dashboard'
   pubScreen: 'home',
   vTab: 'events',
   aTab: 'overview',
+  // A tab requested by the initial URL, held here until a real session
+  // confirms the matching role (store.jsx's session listener consumes and
+  // clears these — see router.js's security note). Null once used or if the
+  // URL didn't request a specific tab.
+  pendingVendorTab: initialRoute.pendingVendorTab || null,
+  pendingAdminTab: initialRoute.pendingAdminTab || null,
   regStep: 1,
   regResult: null,
   selectedCat: null,
@@ -304,7 +318,8 @@ export function StoreProvider({ children }) {
           // admin); re-fires for the SAME already-logged-in admin must not
           // knock them off whatever tab they were working on.
           if (stateRef.current.currentAdminId !== profile.id) {
-            dispatch({ type: 'SET', payload: { currentAdminId: profile.id, view: 'admin', aScreen: 'dashboard', aTab: 'overview', page: 1 } });
+            const aTab = stateRef.current.pendingAdminTab || 'overview';
+            dispatch({ type: 'SET', payload: { currentAdminId: profile.id, view: 'admin', aScreen: 'dashboard', aTab, pendingAdminTab: null, page: 1 } });
           }
           return;
         }
@@ -318,7 +333,8 @@ export function StoreProvider({ children }) {
           // vendor portal back to Available Markets on a re-fired event for
           // the same already-logged-in vendor.
           if (stateRef.current.currentVendorId !== vendor.id) {
-            dispatch({ type: 'SET', payload: { currentVendorId: vendor.id, view: 'vendor', vScreen: 'dashboard', vTab: 'events', page: 1 } });
+            const vTab = stateRef.current.pendingVendorTab || 'events';
+            dispatch({ type: 'SET', payload: { currentVendorId: vendor.id, view: 'vendor', vScreen: 'dashboard', vTab, pendingVendorTab: null, page: 1 } });
           }
           // This vendor's real event applications (My Applications / Payments /
           // Available Markets' "already applied" gate survive a refresh).
@@ -375,6 +391,58 @@ export function StoreProvider({ children }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [showToast]);
+
+  // ── URL sync (browser back/forward) ──
+  // Mirrors router.js's security rule: a tab requested by a popstate URL only
+  // applies immediately if the matching portal is ALREADY authenticated in
+  // this session (currentVendorId/currentAdminId set) — otherwise it's
+  // treated exactly like a fresh unauthenticated page load of that URL (show
+  // the login screen; store the tab as pending in case a session resolves).
+  useEffect(() => {
+    const onPopState = () => {
+      const route = parsePath(window.location.pathname);
+      if (route.pendingVendorTab && stateRef.current.currentVendorId) {
+        dispatch({ type: 'SET', payload: { view: 'vendor', vScreen: 'dashboard', vTab: route.pendingVendorTab, page: 1 } });
+        return;
+      }
+      if (route.pendingAdminTab && stateRef.current.currentAdminId) {
+        dispatch({ type: 'SET', payload: { view: 'admin', aScreen: 'dashboard', aTab: route.pendingAdminTab, page: 1 } });
+        return;
+      }
+      dispatch({ type: 'SET', payload: {
+        view: route.view,
+        vScreen: route.vScreen || 'login',
+        aScreen: route.aScreen || 'login',
+        pendingVendorTab: route.pendingVendorTab || null,
+        pendingAdminTab: route.pendingAdminTab || null,
+      } });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  // ── URL sync (state → address bar) ──
+  // Keeps the URL in step with whatever the reducer already decided to
+  // render — every existing `set({view:...})`/`set({aTab:...})` call site
+  // across the app needed zero changes for this. Every real navigation after
+  // the initial page load pushes a new history entry (home → login → back →
+  // home; tab A → tab B → back → tab A — the actual audit complaint: "the
+  // back button does nothing"). Only the very first settle uses
+  // replaceState, since a deep-linked dashboard URL loaded while a session is
+  // still resolving asynchronously briefly computes a different (unauthenticated)
+  // path before the real one lands a moment later — pushState there would
+  // stack a spurious login-screen entry in history for a page the user never
+  // actually chose to visit.
+  const isFirstUrlSyncRef = useRef(true);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const path = pathForState(state);
+    if (window.location.pathname !== path) {
+      if (isFirstUrlSyncRef.current) window.history.replaceState({}, '', path);
+      else window.history.pushState({}, '', path);
+    }
+    isFirstUrlSyncRef.current = false;
+  }, [state.view, state.vScreen, state.aScreen, state.vTab, state.aTab]); // eslint-disable-line react-hooks/exhaustive-deps -- deliberately narrow: only these 5 fields affect the computed path, listing the whole `state` object would re-run this on every unrelated change (toast, forms, etc.)
 
   // ── Admin permissions (RBAC) ──
   // Super admins bypass everything. Staff perms map tabId → 'view' | 'edit';

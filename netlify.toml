@@ -6,3 +6,13 @@
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# SPA fallback — the app now uses real paths (/vendor/payments, /admin/vendors,
+# etc.), not just hash routing, so a refresh or direct link on any of them must
+# still serve index.html for the client-side router (src/lib/router.js) to
+# read the path and take over. Without this, Netlify's static host 404s on
+# anything but the exact root.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
