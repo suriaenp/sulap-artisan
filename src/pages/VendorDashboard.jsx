@@ -15,7 +15,7 @@ import { scanAndRecord, scanNotice } from '../lib/payScan';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { updateVendorEinvoice, updateVendorPhotos, updateVendorSocial, updateVendorDocs } from '../lib/supaVendors';
 import { insertProfileRequest } from '../lib/supaProfileRequests';
-import { insertPassApp, insertPassPerson, updatePassPerson, deletePassApp } from '../lib/supaVendorPasses';
+import { insertPassApp, insertPassPerson, updatePassPerson } from '../lib/supaVendorPasses';
 import { fetchOffenseTypes } from '../lib/supaOffences';
 import { uploadPrivateFile, removePrivateFile, uploadPrivatePhoto } from '../lib/supaStorage';
 
@@ -256,21 +256,6 @@ export default function VendorDashboard() {
     cancelEditPerson();
     logActivity(me.business, `updated a Vendor Pass holder's details — ${ev.name}.`, { icon:'badge', tint:'#F3E4CC', type:'vendor' });
     showToast('Updated — resubmitted for admin review', 'badge');
-  };
-  // Testing helper — clears this vendor's Vendor Pass application for an event so the
-  // whole apply → admin approve → digital pass flow can be walked through again from
-  // scratch. Not a real business action; for trying out the flow only.
-  const resetMyPassForTesting = async (eventId, ev) => {
-    if (!window.confirm(`Reset your Vendor Pass for ${ev.name}? This clears your application so you can apply again from scratch (testing only).`)) return;
-    const passApp = passApps.find(p => p.vendorId === myId && p.eventId === eventId);
-    if (isSupabaseConfigured && passApp?.remote) {
-      try { await deletePassApp(passApp.id); }
-      catch (e) { showToast("Couldn't reset — " + e.message, 'lock'); return; }
-    }
-    dispatch({ type:'MERGE_PASS_APPS', payload: passApps.filter(p => !(p.vendorId === myId && p.eventId === eventId)) });
-    setPassForms(f => ({ ...f, [eventId]: undefined }));
-    cancelEditPerson();
-    showToast('Vendor Pass reset — try the flow again', 'badge');
   };
 
   return (
@@ -1145,14 +1130,6 @@ export default function VendorDashboard() {
                         </div>
                       )}
                     </>
-                  )}
-
-                  {passApp && (
-                    <div style={{ marginTop:14, paddingTop:12, borderTop:'1px solid var(--glass-divider)', textAlign:'right' }}>
-                      <span onClick={()=>resetMyPassForTesting(ev.id, ev)} style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', cursor:'pointer', textDecoration:'underline', textUnderlineOffset:3 }}>
-                        Reset my Vendor Pass (testing)
-                      </span>
-                    </div>
                   )}
                 </div>
               );
