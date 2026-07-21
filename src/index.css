@@ -5,6 +5,15 @@ input, textarea, select, button { font-family: 'Karla', sans-serif; }
 .scrollarea::-webkit-scrollbar { width: 0; height: 0; }
 .scrollarea { scrollbar-width: none; }
 
+/* Keyboard-only focus ring. Inputs/buttons/spans across both portals set
+   outline:'none' inline (to kill the default ring on mouse click), which
+   also silently removes it for keyboard users. :focus-visible only matches
+   keyboard/programmatic focus, so this restores a visible ring there without
+   bringing back the on-click outline the inline styles were added to avoid.
+   !important is required since an inline `style` attribute otherwise always
+   wins over a stylesheet rule. */
+:focus-visible { outline: 2px solid #B97434 !important; outline-offset: 2px !important; }
+
 /* Thin, theme-matched scrollbars — used inside modals/popups and the sidebar
    tab list instead of the browser's default scrollbar, so it reads as part
    of the design rather than a stock OS element. */
