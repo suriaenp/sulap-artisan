@@ -361,6 +361,9 @@ export const INITIAL_CONTENT = {
   heroTitle:    'Showcase your craft at Sulap Artisan markets',
   heroSubtitle: 'Join a curated community of Sabahan makers at Suria Sabah Shopping Mall. Apply online, book your booth, and bring your craft to thousands of visitors.',
   heroImage:    '/assets/content/hero.jpg', // real photo (2026-07-17); data URL from admin upload takes over from here, else gradient placeholder. Renders full-bleed across the section, feathered on the left (see PublicHome.jsx) — no more floating stat badges.
+  heroImagePosX: 50, // focal point, 0-100% — admin-adjustable via Content tab sliders (see heroImgStyle() in PublicHome.jsx)
+  heroImagePosY: 50,
+  heroImageZoom: 1,  // 1 = fit, >1 = zoomed in around the focal point above
 
   // "Coming Soon" carousel (public home page) — cards are generated live from
   // state.events (see PublicHome.jsx); only the section heading is admin-authored.

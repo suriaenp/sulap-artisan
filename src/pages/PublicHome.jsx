@@ -84,6 +84,25 @@ function highlightPhrase(text = '', phrase) {
   );
 }
 
+// Hero photo positioning — admin-editable via Content tab sliders (focal
+// point X/Y as a percentage, plus zoom) so the admin can choose which part
+// of an uploaded photo shows and how tightly cropped it is, since a plain
+// `object-fit: cover` always centers and never lets you pick a side. Shared
+// with the admin editor's own live preview so the two stay pixel-identical.
+export function heroImgStyle(content) {
+  const x = content.heroImagePosX ?? 50;
+  const y = content.heroImagePosY ?? 50;
+  const zoom = content.heroImageZoom ?? 1;
+  return {
+    position: 'absolute', inset: 0, width: '100%', height: '100%',
+    objectFit: 'cover', objectPosition: `${x}% ${y}%`,
+    transform: zoom !== 1 ? `scale(${zoom})` : undefined,
+    transformOrigin: `${x}% ${y}%`,
+    WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 65%)',
+    maskImage: 'linear-gradient(90deg, transparent 0%, #000 65%)',
+  };
+}
+
 // "12"/"JUL" for the carousel's date badge — falls back to a TBC placeholder
 // for the rare event with no dates set yet.
 function dayMonth(dateStr) {
@@ -204,12 +223,7 @@ export default function PublicHome() {
       <section id="hero" style={{ position: 'relative', background: 'linear-gradient(180deg, #F7EFE3 0%, #F1E2CC 100%)', overflow: 'hidden', minHeight: content.heroImage ? 'clamp(440px, 56vw, 600px)' : undefined }}>
         {content.heroImage && (
           <>
-            <div style={{
-              position: 'absolute', inset: 0,
-              backgroundImage: `url(${content.heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center',
-              WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 65%)',
-              maskImage: 'linear-gradient(90deg, transparent 0%, #000 65%)',
-            }} />
+            <img src={content.heroImage} alt="" style={heroImgStyle(content)} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #F7EFE3 0%, #F1E2CC 40%, rgba(241,226,204,0) 65%)' }} />
           </>
         )}

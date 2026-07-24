@@ -12,6 +12,7 @@ import RichTextEditor from '../components/RichTextEditor';
 import { useStore } from '../lib/store';
 import { money, fmt, fmtShort, fmtTime, payCalc, badge, dayCount, eventStatus, parseDateOnly, EINVOICE_FIELDS, DETAILS_FIELDS, orderTabs, reorderIds } from '../lib/helpers';
 import { VENDOR_TABS } from './VendorDashboard';
+import { heroImgStyle } from './PublicHome';
 import { OFFENSE_PALETTE, EVENT_IMG_PALETTE, isEventPhoto, eventImgFromFile, DEFAULT_ADMIN_PASSWORD, PASS_REJECT_REASONS } from '../data/mockData';
 import { fileToPhoto, downloadZip, safeName, photoExt, renamedFile } from '../lib/photoFiles';
 import { downloadCsv } from '../lib/csv';
@@ -2825,7 +2826,44 @@ export default function AdminDashboard() {
                   <button onClick={()=>set({cf:{...(state.cf||content), heroImage:null}})} style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>Remove</button>
                 )}
               </div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:8, lineHeight:1.5 }}>Ideal size: <strong>1920 × 1080px or larger</strong>, landscape (16:9 or wider works well) — the photo spans the full section width, so a higher-resolution upload stays sharp on large screens. Keep the main subject in the right half of the frame; the left side fades out behind the text.</div>
             </div>
+
+            {(state.cf?.heroImage ?? content.heroImage) && (() => {
+              const heroImg = state.cf?.heroImage ?? content.heroImage;
+              const posX = state.cf?.heroImagePosX ?? content.heroImagePosX ?? 50;
+              const posY = state.cf?.heroImagePosY ?? content.heroImagePosY ?? 50;
+              const zoom = state.cf?.heroImageZoom ?? content.heroImageZoom ?? 1;
+              const patchHero = (patch) => set({cf:{...(state.cf||content), ...patch}});
+              const sliderLbl = { fontSize:12, fontWeight:600, color:'var(--text-primary)' };
+              const sliderVal = { fontSize:11.5, color:'var(--text-muted)', fontWeight:600 };
+              return (
+                <div style={{ marginTop:14 }}>
+                  <div style={lbl}>Reposition photo</div>
+                  <div style={{ position:'relative', width:'100%', height:150, borderRadius:14, overflow:'hidden', background:'linear-gradient(180deg, #F7EFE3 0%, #F1E2CC 100%)', border:'1px solid var(--border-light)' }}>
+                    <img src={heroImg} alt="" style={heroImgStyle({ heroImagePosX:posX, heroImagePosY:posY, heroImageZoom:zoom })}/>
+                    <div style={{ position:'absolute', inset:0, background:'linear-gradient(90deg, #F7EFE3 0%, #F1E2CC 40%, rgba(241,226,204,0) 65%)' }}/>
+                  </div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>This preview matches exactly how the photo renders on the public home page.</div>
+
+                  <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:10 }}>
+                    <div>
+                      <div style={{ display:'flex', justifyContent:'space-between' }}><span style={sliderLbl}>Horizontal focus</span><span style={sliderVal}>{posX}%</span></div>
+                      <input type="range" min={0} max={100} value={posX} onChange={e=>patchHero({heroImagePosX:Number(e.target.value)})} style={{ width:'100%' }}/>
+                    </div>
+                    <div>
+                      <div style={{ display:'flex', justifyContent:'space-between' }}><span style={sliderLbl}>Vertical focus</span><span style={sliderVal}>{posY}%</span></div>
+                      <input type="range" min={0} max={100} value={posY} onChange={e=>patchHero({heroImagePosY:Number(e.target.value)})} style={{ width:'100%' }}/>
+                    </div>
+                    <div>
+                      <div style={{ display:'flex', justifyContent:'space-between' }}><span style={sliderLbl}>Zoom</span><span style={sliderVal}>{Math.round(zoom*100)}%</span></div>
+                      <input type="range" min={100} max={200} value={Math.round(zoom*100)} onChange={e=>patchHero({heroImageZoom:Number(e.target.value)/100})} style={{ width:'100%' }}/>
+                    </div>
+                    <button onClick={()=>patchHero({heroImagePosX:50, heroImagePosY:50, heroImageZoom:1})} style={{ alignSelf:'flex-start', background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', fontSize:12, fontWeight:600, borderRadius:9, padding:'7px 12px', cursor:'pointer' }}>Reset position</button>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div style={{ borderTop:'1px solid var(--border-faint)', marginTop:18, paddingTop:16 }}>
               <div style={{ fontFamily:"'Marcellus',serif", fontSize:16, fontWeight:400, color:'var(--text-primary)' }}>Coming Soon carousel</div>
