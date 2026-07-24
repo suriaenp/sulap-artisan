@@ -2792,7 +2792,7 @@ export default function AdminDashboard() {
         <div style={{ padding:'14px 16px 20px' }}>
           <div style={{ background:'var(--bg-card)', border:'1px solid var(--border-light)', borderRadius:18, padding:16 }}>
             <div style={{ fontFamily:"'Marcellus',serif", fontSize:18, fontWeight:400, color:'var(--text-primary)' }}>Hero section</div>
-            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The top banner on the public home page — title, subtitle, photo, and the two floating stat badges.</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>The top banner on the public home page — title, subtitle, and photo. The photo (if set) fills the section as a full-bleed background, feathered out on the left behind the text — no photo falls back to a plain gradient background.</div>
 
             <div style={{ marginTop:16 }}>
               <div style={lbl}>Title</div>
@@ -2824,17 +2824,6 @@ export default function AdminDashboard() {
                 {(state.cf?.heroImage ?? content.heroImage) && (
                   <button onClick={()=>set({cf:{...(state.cf||content), heroImage:null}})} style={{ background:'var(--bg-subtle)', border:'none', color:'var(--text-secondary)', fontSize:12.5, fontWeight:600, borderRadius:10, padding:'9px 12px', cursor:'pointer' }}>Remove</button>
                 )}
-              </div>
-            </div>
-
-            <div style={{ marginTop:14, display:'flex', gap:12, flexWrap:'wrap' }}>
-              <div style={{ flex:'1 1 200px' }}>
-                <div style={lbl}>Floating badge 1</div>
-                <input value={state.cf?.heroTag1 ?? content.heroTag1} onChange={e=>set({cf:{...(state.cf||content),heroTag1:e.target.value}})} style={inp}/>
-              </div>
-              <div style={{ flex:'1 1 200px' }}>
-                <div style={lbl}>Floating badge 2</div>
-                <input value={state.cf?.heroTag2 ?? content.heroTag2} onChange={e=>set({cf:{...(state.cf||content),heroTag2:e.target.value}})} style={inp}/>
               </div>
             </div>
 

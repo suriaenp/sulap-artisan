@@ -194,10 +194,27 @@ export default function PublicHome() {
         )}
       </section>
 
-      {/* Hero */}
-      <section id="hero" style={{ background: 'linear-gradient(180deg, #F7EFE3 0%, #F1E2CC 100%)', overflow: 'hidden' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '64px 24px 80px', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 420px', minWidth: 300 }}>
+      {/* Hero — the photo (when set) is a full-bleed background across the
+          whole section, feathered out on the left (mask-image) so it blends
+          into the page's own cream background rather than being boxed or
+          cropped to a shape; a matching color-gradient overlay sits on top
+          of that for text contrast, since the mask alone only controls the
+          photo's own transparency, not what's legible over it. No photo set
+          falls back to the plain gradient background, same as before. */}
+      <section id="hero" style={{ position: 'relative', background: 'linear-gradient(180deg, #F7EFE3 0%, #F1E2CC 100%)', overflow: 'hidden', minHeight: content.heroImage ? 'clamp(440px, 56vw, 600px)' : undefined }}>
+        {content.heroImage && (
+          <>
+            <div style={{
+              position: 'absolute', inset: 0,
+              backgroundImage: `url(${content.heroImage})`, backgroundSize: 'cover', backgroundPosition: 'center',
+              WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 65%)',
+              maskImage: 'linear-gradient(90deg, transparent 0%, #000 65%)',
+            }} />
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, #F7EFE3 0%, #F1E2CC 40%, rgba(241,226,204,0) 65%)' }} />
+          </>
+        )}
+        <div style={{ position: 'relative', maxWidth: 1200, margin: '0 auto', padding: '64px 24px 80px' }}>
+          <div style={{ maxWidth: 560 }}>
             <h1 style={{ fontFamily: "'Marcellus', serif", fontSize: 'clamp(38px, 5.2vw, 60px)', lineHeight: 1.1, margin: '0 0 20px', color: '#3A2210', fontWeight: 400 }}>
               {highlightPhrase(content.heroTitle, 'Sulap Artisan')}
             </h1>
@@ -205,16 +222,6 @@ export default function PublicHome() {
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <button onClick={goRegister} style={solidBtn}>Apply as a Vendor</button>
               <button onClick={goVendor} style={outlineBtn}>Vendor Log In</button>
-            </div>
-          </div>
-          <div style={{ flex: '1 1 360px', minWidth: 300, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ position: 'relative', width: 'min(400px, 88vw)', height: 'min(400px, 88vw)' }}>
-              <div style={{ position: 'absolute', inset: -14, border: '2px dashed rgba(154,91,38,0.5)', borderRadius: '50%' }} />
-              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden', background: content.heroImage ? '#E8D3B4' : 'linear-gradient(135deg, #E8D3B4, #D9BB8E)' }}>
-                {content.heroImage && <img src={content.heroImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
-              </div>
-              <div style={{ position: 'absolute', top: '8%', right: '-4%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>{content.heroTag1}</div>
-              <div style={{ position: 'absolute', bottom: '10%', left: '-6%', background: '#FFF8EE', borderRadius: 14, padding: '10px 16px', boxShadow: '0 8px 24px rgba(90,55,20,0.18)', fontSize: 14, fontWeight: 700, color: '#7A431A' }}>{content.heroTag2}</div>
             </div>
           </div>
         </div>

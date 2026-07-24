@@ -360,9 +360,7 @@ export const INITIAL_CONTENT = {
   // Hero section (public home page, top of page)
   heroTitle:    'Showcase your craft at Sulap Artisan markets',
   heroSubtitle: 'Join a curated community of Sabahan makers at Suria Sabah Shopping Mall. Apply online, book your booth, and bring your craft to thousands of visitors.',
-  heroImage:    '/assets/content/hero.jpg', // real photo (2026-07-17); data URL from admin upload takes over from here, else gradient placeholder
-  heroTag1:     '40+ Artisan Vendors',
-  heroTag2:     'Monthly Markets',
+  heroImage:    '/assets/content/hero.jpg', // real photo (2026-07-17); data URL from admin upload takes over from here, else gradient placeholder. Renders full-bleed across the section, feathered on the left (see PublicHome.jsx) — no more floating stat badges.
 
   // "Coming Soon" carousel (public home page) — cards are generated live from
   // state.events (see PublicHome.jsx); only the section heading is admin-authored.
